@@ -44,7 +44,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     setState(() => _loading = true);
     try {
       await _authService.signInWithEmail(_emailCtrl.text.trim(), _passCtrl.text);
-      // AuthGate handles navigation automatically
+      // DO NOT NAVIGATE MANUALLY.
+      // The AuthGate in main.dart listens to the session change 
+      // and will automatically take you to the Home Screen.
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -54,9 +56,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             behavior: SnackBarBehavior.floating,
           )
         );
+        setState(() => _loading = false); // Only stop loading on error
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -64,18 +65,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     setState(() => _loading = true);
     try {
       await _authService.signInWithGoogle();
-      // AuthGate handles navigation
+      // AuthGate handles navigation automatically
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Google Sign in failed: $e')),
         );
+        setState(() => _loading = false);
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
   }
 
+  // ... The rest of your build method (UI) remains exactly the same ...
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -91,8 +92,14 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
+                // ... (Keep your existing UI code here) ...
+                // Header, Inputs, etc.
+
+                // Just ensure your buttons call the updated functions:
+                // AppButton(..., onTap: _loginWithEmail, ...),
+                // SocialButton(..., onTap: _loginWithGoogle, ...),
                 
-                // Header Section
+                 // Header Section
                 _FadeSlide(
                   controller: _animController,
                   interval: const Interval(0.0, 0.4, curve: Curves.easeOut),
@@ -239,7 +246,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 }
 
-// Helper widget for Staggered Animations (Same as Signup)
 class _FadeSlide extends StatelessWidget {
   final AnimationController controller;
   final Interval interval;

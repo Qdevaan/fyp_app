@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/auth_service.dart';
+
+// Screens
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/verify_email_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/profile_completion_screen.dart';
 
-// TODO: Replace with your actual Supabase project values
+// Supabase Configuration
+// TODO: For production, consider moving these to --dart-define or a .env file
 const String SUPABASE_URL = 'https://czjwoqwbwtojlypbzupi.supabase.co';
 const String SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6andvcXdid3Rvamx5cGJ6dXBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMDMxODksImV4cCI6MjA3OTU3OTE4OX0.JXBfOGI_rVumZj9qBwxXguW_6hffjdvrhnly37K3kwM';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Initialize Supabase
   await Supabase.initialize(
     url: SUPABASE_URL,
     anonKey: SUPABASE_ANON_KEY,
-    // authCallbackUrlHostname is removed in v2; deep linking is handled by the platform config
   );
 
   runApp(const BubblesApp());
@@ -28,17 +32,17 @@ class BubblesApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Define a seed color for the system accent
+    // Define the seed color for consistent branding
     const seedColor = Colors.blueAccent;
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Bubbles',
       
-      // Theme Mode: System (follows device settings)
+      // Theme Mode: Follows system settings (Light/Dark)
       themeMode: ThemeMode.system,
       
-      // Light Theme
+      // Light Theme Configuration
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
@@ -53,7 +57,7 @@ class BubblesApp extends StatelessWidget {
         ),
       ),
       
-      // Dark Theme
+      // Dark Theme Configuration
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
@@ -68,10 +72,11 @@ class BubblesApp extends StatelessWidget {
         ),
       ),
 
-      // Routing
-      initialRoute: '/',
+      // The AuthGate manages the root state (Splash -> Login -> App)
+      home: const AuthGate(),
+      
+      // Routes for manual navigation
       routes: {
-        '/': (context) => const AuthGate(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/verify-email': (context) => const VerifyEmailScreen(),
@@ -83,7 +88,7 @@ class BubblesApp extends StatelessWidget {
 }
 
 /// The Gatekeeper Widget
-/// Decides where to send the user based on Auth State and Profile Data.
+/// Dynamically switches between Loading, Login, Profile Setup, and Home.
 class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
 
@@ -93,74 +98,115 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   final _supabase = Supabase.instance.client;
+  
+  // State variables
   bool _isLoading = true;
+  bool _isProfileComplete = false;
+  Session? _session;
 
   @override
   void initState() {
     super.initState();
-    _setupAuthListener();
+    _initialize();
   }
 
-  void _setupAuthListener() {
-    // 1. Listen for Auth State Changes (Login, Logout, etc.)
+  Future<void> _initialize() async {
+    // 1. Check current session immediately on app start
+    final initialSession = _supabase.auth.currentSession;
+    
+    if (initialSession != null) {
+      _session = initialSession;
+      // If we have a session, we must check if the profile is complete
+      await _checkProfile(); 
+    } else {
+      // No session, stop loading so we can show LoginScreen
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _session = null;
+        });
+      }
+    }
+
+    // 2. Listen for auth changes (Login, Logout, Deep Links)
     _supabase.auth.onAuthStateChange.listen((data) {
       final event = data.event;
       final session = data.session;
 
+      if (!mounted) return;
+
+      setState(() => _session = session);
+
       if (session != null) {
-        // User is authenticated, check their profile
+        // If user just signed in, check their profile status
         if (event == AuthChangeEvent.signedIn || event == AuthChangeEvent.initialSession) {
-          _checkProfileAndRedirect();
-        }
+          _checkProfile();
+        } 
+        // Note: We ignore tokenRefreshed events to prevent unnecessary reloads
       } else {
-        // No session, stop loading and show LoginScreen (via build)
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+        // User logged out
+        setState(() {
+          _isLoading = false;
+          _isProfileComplete = false;
+        });
       }
     });
   }
 
-  Future<void> _checkProfileAndRedirect() async {
-    // If we are already loading, keep it that way. 
-    // If not, set it to true to show the spinner while we fetch data.
-    if (mounted) setState(() => _isLoading = true);
+  /// Checks if the user has a valid profile in the database.
+  /// If not, forces them to the completion screen.
+  Future<void> _checkProfile() async {
+    if (!mounted) return;
+    
+    // Show splash while checking
+    setState(() => _isLoading = true);
 
     try {
-      // 2. Fetch Profile Data
+      // AuthService handles local caching now, so this is fast
       final profile = await AuthService.instance.getProfile();
-
+      
       if (!mounted) return;
 
-      if (profile != null && profile['full_name'] != null && profile['full_name'].toString().isNotEmpty) {
-        // Profile exists and is complete -> Go to Home
-        Navigator.of(context).pushReplacementNamed('/home');
-      } else {
-        // Profile missing or incomplete -> Go to Completion
-        // Note: We use pushReplacementNamed to prevent going back to the loading screen
-        Navigator.of(context).pushReplacementNamed('/profile-completion');
-      }
+      // Logic: A profile is complete if it exists and has a Full Name
+      bool isComplete = profile != null && 
+                        profile['full_name'] != null && 
+                        profile['full_name'].toString().isNotEmpty;
+
+      setState(() {
+        _isProfileComplete = isComplete;
+        _isLoading = false;
+      });
+      
     } catch (e) {
-      // If error (e.g. network), default to Home or show error.
-      // For now, let's assume if we can't fetch profile, we might need to retry or go to home.
-      // But safest is to go to completion to fix data.
-      Navigator.of(context).pushReplacementNamed('/profile-completion');
+      // If error (e.g. network issue), default to incomplete to be safe
+      // or stop loading to let user retry via UI interactions
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _isProfileComplete = false; 
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 1. SHOW SPLASH SCREEN WHILE LOADING/CHECKING
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const SplashScreen();
     }
-    
-    // If not loading and no navigation happened, it means we aren't logged in.
-    return const LoginScreen();
+
+    // 2. Unauthenticated -> Login
+    if (_session == null) {
+      return const LoginScreen();
+    }
+
+    // 3. Authenticated but Incomplete Profile -> Setup
+    if (!_isProfileComplete) {
+      return const ProfileCompletionScreen();
+    }
+
+    // 4. Authenticated & Complete -> Home
+    return const HomeScreen();
   }
 }
