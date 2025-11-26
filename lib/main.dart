@@ -9,9 +9,9 @@ import 'screens/connections_screen.dart';
 import 'screens/signup_screen.dart';
 import 'screens/verify_email_screen.dart';
 import 'screens/profile_completion_screen.dart';
-// import 'screens/consultant_screen.dart';
-// import 'screens/sessions_screen.dart';
-// import 'screens/new_session_screen.dart';
+import 'screens/consultant_screen.dart';
+import 'screens/sessions_screen.dart';
+import 'screens/new_session_screen.dart';
 // import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
 // import 'screens/progress_screen.dart';
@@ -100,9 +100,9 @@ class BubblesApp extends StatelessWidget {
           '/profile-completion': (context) => const ProfileCompletionScreen(),
           '/home': (context) => const HomeScreen(),
           '/connections': (context) => const ConnectionsScreen(),
-          // '/new-session': (context) => const NewSessionScreen(),
-          // '/consultant': (context) => const ConsultantScreen(),
-          // '/sessions': (context) => const SessionsScreen(),
+          '/new-session': (context) => const NewSessionScreen(),
+          '/consultant': (context) => const ConsultantScreen(),
+          '/sessions': (context) => const SessionsScreen(),
           // '/progress': (context) => const ProgressScreen(),
           // '/notifications': (context) => const NotificationsScreen(),
           // '/about': (context) => const AboutScreen(),
