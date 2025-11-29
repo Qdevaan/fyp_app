@@ -8,6 +8,7 @@ class AppInput extends StatefulWidget {
   final bool obscure;
   final String? Function(String?)? validator;
   final IconData? prefixIcon;
+  final IconData? suffixIcon;
   final bool readOnly;
   final VoidCallback? onTap;
 
@@ -19,6 +20,7 @@ class AppInput extends StatefulWidget {
     this.obscure = false,
     this.validator,
     this.prefixIcon,
+    this.suffixIcon,
     this.readOnly = false,
     this.onTap,
   });
@@ -62,7 +64,7 @@ class _AppInputState extends State<AppInput> {
                 ),
                 onPressed: () => setState(() => _isObscure = !_isObscure),
               )
-            : null,
+            : (widget.suffixIcon != null ? Icon(widget.suffixIcon, size: 20, color: theme.colorScheme.onSurfaceVariant) : null),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide.none,

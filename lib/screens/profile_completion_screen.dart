@@ -1,9 +1,11 @@
 import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
+import '../widgets/app_logo.dart';
 import '../theme/design_tokens.dart';
 
 class ProfileCompletionScreen extends StatefulWidget {
@@ -15,17 +17,18 @@ class ProfileCompletionScreen extends StatefulWidget {
 
 class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   final _nameCtrl = TextEditingController();
-  final _countryCtrl = TextEditingController(); // Used for Autocomplete
-  final _dobCtrl = TextEditingController(); // Controller for the DOB display text
+  final _countryCtrl = TextEditingController(); 
+  final _dobCtrl = TextEditingController(); 
   
   DateTime? _dob;
   String? _gender;
   
   File? _imageFile;
-  String? _googleAvatarUrl;
+  String? _avatarUrl;
   bool _loading = false;
+  bool _initialLoading = true;
 
-  // Extensive list of countries for the dropdown
+  // Extensive list of countries
   static const List<String> _countries = [
     'United States', 'United Kingdom', 'Canada', 'Australia', 'Pakistan', 'India', 
     'Germany', 'France', 'Italy', 'Spain', 'Brazil', 'Mexico', 'Japan', 'South Korea',
@@ -38,17 +41,41 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   @override
   void initState() {
     super.initState();
-    _prefillGoogleData();
+    _loadProfileData();
   }
 
-  void _prefillGoogleData() {
-    final user = AuthService.instance.currentUser;
-    if (user != null) {
-      final metaName = user.userMetadata?['full_name'];
-      if (metaName != null) _nameCtrl.text = metaName;
+  Future<void> _loadProfileData() async {
+    try {
+      final user = AuthService.instance.currentUser;
+      if (user == null) return;
+
+      final profile = await AuthService.instance.getProfile();
+
+      if (profile != null) {
+        _nameCtrl.text = profile['full_name'] ?? '';
+        _countryCtrl.text = profile['country'] ?? '';
+        _gender = profile['gender'];
+        _avatarUrl = profile['avatar_url'];
+        
+        if (profile['dob'] != null) {
+          _dob = DateTime.parse(profile['dob']);
+          _dobCtrl.text = "${_dob!.day}/${_dob!.month}/${_dob!.year}";
+        }
+      } 
       
-      final metaAvatar = user.userMetadata?['avatar_url'];
-      if (metaAvatar != null) setState(() => _googleAvatarUrl = metaAvatar);
+      if (_nameCtrl.text.isEmpty) {
+        final metaName = user.userMetadata?['full_name'];
+        if (metaName != null) _nameCtrl.text = metaName;
+      }
+      if (_avatarUrl == null) {
+        final metaAvatar = user.userMetadata?['avatar_url'];
+        if (metaAvatar != null) _avatarUrl = metaAvatar;
+      }
+
+    } catch (e) {
+      debugPrint("Error loading profile: $e");
+    } finally {
+      if (mounted) setState(() => _initialLoading = false);
     }
   }
 
@@ -58,12 +85,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     if (picked != null) {
       setState(() {
         _imageFile = File(picked.path);
-        _googleAvatarUrl = null;
       });
     }
   }
 
-  // --- Date Picker Logic ---
   Future<void> _selectDate() async {
     final now = DateTime.now();
     final initialDate = DateTime(2000);
@@ -77,7 +102,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              surface: Theme.of(context).colorScheme.surface, // Modern Dialog bg
+              surface: Theme.of(context).colorScheme.surfaceContainer,
             ),
           ),
           child: child!,
@@ -88,23 +113,119 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     if (picked != null) {
       setState(() {
         _dob = picked;
-        // Update the text field to show the formatted date
         _dobCtrl.text = "${picked.day}/${picked.month}/${picked.year}";
       });
     }
   }
 
+  void _showCountryPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (context) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final filteredCountries = _countries.where((country) => 
+              country.toLowerCase().contains(searchQuery.toLowerCase())
+            ).toList();
+
+            return DraggableScrollableSheet(
+              initialChildSize: 0.7,
+              minChildSize: 0.5,
+              maxChildSize: 0.9,
+              expand: false,
+              builder: (context, scrollController) {
+                return Column(
+                  children: [
+                    // Handle Bar
+                    Center(
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 12),
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    // Search Bar
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      child: TextField(
+                        onChanged: (val) {
+                          setModalState(() => searchQuery = val);
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search Country',
+                          prefixIcon: const Icon(Icons.search),
+                          filled: true,
+                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.lg),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                      ),
+                    ),
+                    const Divider(),
+                    // List
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: filteredCountries.length,
+                        itemBuilder: (context, index) {
+                          final country = filteredCountries[index];
+                          final isSelected = country == _countryCtrl.text;
+                          return ListTile(
+                            title: Text(
+                              country,
+                              style: TextStyle(
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                              ),
+                            ),
+                            trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+                            onTap: () {
+                              setState(() => _countryCtrl.text = country);
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _saveProfile() async {
-    // Validate fields
     if (_nameCtrl.text.isEmpty || _countryCtrl.text.isEmpty || _dob == null || _gender == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all fields')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please fill all fields'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        )
+      );
       return;
     }
 
     setState(() => _loading = true);
 
     try {
-      String? finalAvatarUrl = _googleAvatarUrl;
+      String? finalAvatarUrl = _avatarUrl;
       if (_imageFile != null) {
         finalAvatarUrl = await AuthService.instance.uploadAvatar(_imageFile!);
       }
@@ -118,7 +239,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       );
 
       if (!mounted) return;
-      // Success -> Go Home
       Navigator.of(context).pushReplacementNamed('/home');
 
     } catch (e) {
@@ -128,15 +248,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     }
   }
 
-  // --- Unified Styling Helper ---
-  // This ensures Name, Gender, Country, and Date all look EXACTLY the same
   InputDecoration _getDecoration(BuildContext context, String label, {IconData? icon}) {
     final theme = Theme.of(context);
     return InputDecoration(
       labelText: label,
       filled: true,
       fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-      prefixIcon: icon != null ? Icon(icon, size: 20) : null,
+      prefixIcon: icon != null ? Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant) : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide.none,
@@ -154,6 +272,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
     );
   }
 
@@ -161,145 +280,162 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     
-    // Background Image Helper
     ImageProvider? bgImage;
     if (_imageFile != null) {
       bgImage = FileImage(_imageFile!);
-    } else if (_googleAvatarUrl != null) {
-      bgImage = NetworkImage(_googleAvatarUrl!);
+    } else if (_avatarUrl != null) {
+      bgImage = CachedNetworkImageProvider(_avatarUrl!);
+    }
+
+    if (_initialLoading) {
+      return Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Setup your Profile')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // 1. Photo Section
-            GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: theme.colorScheme.primary.withOpacity(0.2), width: 3),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Center(child: AppLogo(size: 80)),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'Complete Profile',
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                child: CircleAvatar(
-                  radius: 50,
-                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                  backgroundImage: bgImage,
-                  child: bgImage == null 
-                    ? Icon(Icons.add_a_photo_outlined, size: 32, color: theme.colorScheme.primary) 
-                    : null,
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'Tell us a bit more about yourself',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text('Tap to upload photo', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-            
-            const SizedBox(height: 32),
+                const SizedBox(height: AppSpacing.xl),
 
-            // 2. Full Name Input
-            AppInput(
-              controller: _nameCtrl,
-              label: 'Full Name',
-              prefixIcon: Icons.person_outline,
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // 3. Gender Dropdown (Styled to match Input)
-            DropdownButtonFormField<String>(
-              value: _gender,
-              decoration: _getDecoration(context, 'Gender', icon: Icons.wc),
-              icon: const Icon(Icons.arrow_drop_down_circle_outlined),
-              items: ['Male', 'Female', 'Other'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (val) => setState(() => _gender = val),
-            ),
-            
-            const SizedBox(height: 16),
-
-            // 4. Date of Birth (Read-only Text Field that opens Date Picker)
-            AppInput(
-              controller: _dobCtrl,
-              label: 'Date of Birth',
-              prefixIcon: Icons.calendar_today_outlined,
-              readOnly: true,
-              onTap: _selectDate,
-            ),
-
-            const SizedBox(height: 16),
-            
-            // 5. Country Autocomplete
-            LayoutBuilder(
-              builder: (context, constraints) {
-                return Autocomplete<String>(
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text == '') {
-                      return const Iterable<String>.empty();
-                    }
-                    return _countries.where((String option) {
-                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-                    });
-                  },
-                  onSelected: (String selection) {
-                    _countryCtrl.text = selection;
-                  },
-                  // The input field itself
-                  fieldViewBuilder: (context, fieldTextEditingController, focusNode, onFieldSubmitted) {
-                    // Sync the internal autocomplete controller with our main _countryCtrl
-                    if (_countryCtrl.text.isNotEmpty && fieldTextEditingController.text.isEmpty) {
-                       fieldTextEditingController.text = _countryCtrl.text;
-                    }
-                    // Capture changes
-                    fieldTextEditingController.addListener(() {
-                      _countryCtrl.text = fieldTextEditingController.text;
-                    });
-                    
-                    return TextFormField(
-                      controller: fieldTextEditingController,
-                      focusNode: focusNode,
-                      decoration: _getDecoration(context, 'Country', icon: Icons.public),
-                    );
-                  },
-                  // The dropdown list items
-                  optionsViewBuilder: (context, onSelected, options) {
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 4,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        child: Container(
-                          width: constraints.maxWidth, // Matches the width of the input
-                          constraints: const BoxConstraints(maxHeight: 200),
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            itemCount: options.length,
-                            itemBuilder: (BuildContext context, int index) {
-                              final String option = options.elementAt(index);
-                              return ListTile(
-                                title: Text(option),
-                                onTap: () => onSelected(option),
-                              );
-                            },
+                // 1. Photo Section
+                Center(
+                  child: Stack(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: theme.colorScheme.primary, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.primary.withOpacity(0.2),
+                              blurRadius: 15,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 60,
+                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                          backgroundImage: bgImage,
+                          child: bgImage == null 
+                            ? Icon(Icons.person_rounded, size: 60, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)) 
+                            : null,
+                        ),
+                      ),
+                      Positioned(
+                        bottom: 0,
+                        right: 0,
+                        child: GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: theme.scaffoldBackgroundColor, width: 2),
+                            ),
+                            child: Icon(Icons.camera_alt_rounded, size: 20, color: theme.colorScheme.onPrimary),
                           ),
                         ),
                       ),
-                    );
-                  },
-                );
-              }
-            ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: AppSpacing.xl),
 
-            const SizedBox(height: 40),
-            
-            // 6. Complete Button with Animation
-            AppButton(
-              label: 'Complete Setup', 
-              onTap: _saveProfile, 
-              loading: _loading
+                // 2. Full Name Input
+                AppInput(
+                  controller: _nameCtrl,
+                  label: 'Full Name',
+                  prefixIcon: Icons.person_outline_rounded,
+                ),
+                
+                const SizedBox(height: AppSpacing.md),
+                
+                // 3. Gender Dropdown
+                DropdownButtonFormField<String>(
+                  value: _gender,
+                  decoration: _getDecoration(context, 'Gender', icon: Icons.wc_rounded),
+                  icon: Icon(Icons.arrow_drop_down_rounded, color: theme.colorScheme.onSurfaceVariant),
+                  dropdownColor: theme.colorScheme.surfaceContainer,
+                  items: ['Male', 'Female', 'Other'].map((e) => DropdownMenuItem(
+                    value: e, 
+                    child: Text(e, style: TextStyle(color: theme.colorScheme.onSurface))
+                  )).toList(),
+                  onChanged: (val) => setState(() => _gender = val),
+                ),
+                
+                const SizedBox(height: AppSpacing.md),
+
+                // 4. Date of Birth
+                AppInput(
+                  controller: _dobCtrl,
+                  label: 'Date of Birth',
+                  prefixIcon: Icons.calendar_today_rounded,
+                  readOnly: true,
+                  onTap: _selectDate,
+                ),
+
+                const SizedBox(height: AppSpacing.md),
+                
+                // 5. Country Picker (Modern Modal)
+                AppInput(
+                  controller: _countryCtrl,
+                  label: 'Country',
+                  prefixIcon: Icons.public_rounded,
+                  readOnly: true,
+                  onTap: _showCountryPicker,
+                  suffixIcon: Icons.arrow_drop_down_rounded,
+                ),
+
+                const SizedBox(height: AppSpacing.xl),
+                
+                // 6. Complete Button
+                AppButton(
+                  label: 'Complete Setup', 
+                  onTap: _saveProfile, 
+                  loading: _loading
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
             ),
-            const SizedBox(height: 20),
-          ],
+          ),
         ),
       ),
     );
