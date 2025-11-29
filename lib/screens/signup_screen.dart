@@ -3,8 +3,7 @@ import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../widgets/social_button.dart';
-// ignore: unused_import
-import '../theme/design_tokens.dart';
+import '../widgets/app_logo.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -82,10 +81,9 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -103,14 +101,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(Icons.bubble_chart, size: 32, color: theme.colorScheme.primary),
-                      ),
+                      const Center(child: AppLogo(size: 120)),
                       const SizedBox(height: 24),
                       Text(
                         'Create Account',
@@ -193,7 +184,7 @@ class _SignupScreenState extends State<SignupScreen> with SingleTickerProviderSt
                       const SizedBox(height: 24),
                       SocialButton(
                         label: 'Continue with Google',
-                        icon: Icons.g_mobiledata, // Or use a custom SVG asset
+                        imagePath: 'assets/logos/google_logo.png',
                         onTap: _signupWithGoogle,
                         loading: _loading,
                       ),

@@ -1,31 +1,26 @@
 import 'package:flutter/material.dart';
+import '../widgets/app_logo.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Detect system theme for correct logo
-    final isDarkMode = MediaQuery.of(context).platformBrightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset(
-              isDarkMode 
-                  ? 'assets/images/logo_light.png' 
-                  : 'assets/images/logo_dark.png',
-              width: 120,
-              height: 120,
-              errorBuilder: (c, o, s) => const Icon(Icons.bubble_chart, size: 100, color: Colors.blueAccent),
-            ),
+            const AppLogo(size: 180),
             const SizedBox(height: 40),
-            const CircularProgressIndicator(
-              strokeWidth: 3, 
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+            SizedBox(
+              width: 200,
+              child: LinearProgressIndicator(
+                minHeight: 4,
+                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                borderRadius: const BorderRadius.all(Radius.circular(2)),
+              ),
             ),
           ],
         ),

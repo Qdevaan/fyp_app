@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final user = AuthService.instance.currentUser;
     final name = _profile?['full_name'] ?? 'Guest';
-    final avatarUrl = _profile?['avatar_url'];
+    final avatarUrl = _profile?['avatar_url'] ?? user?.userMetadata?['avatar_url'];
 
     return Scaffold(
       // 1. Add the AppDrawer
@@ -51,12 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
         onLogout: _logout,
       ),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
         title: const Text(
           "Bubbles",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         // 2. Replace leading icon with Profile Avatar that opens Drawer
         leading: Builder(
@@ -66,11 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => Scaffold.of(context).openDrawer(),
               borderRadius: BorderRadius.circular(50),
               child: CircleAvatar(
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                 backgroundImage:
                     avatarUrl != null ? NetworkImage(avatarUrl) : null,
                 child: avatarUrl == null
-                    ? const Icon(Icons.person, color: Colors.grey)
+                    ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurfaceVariant)
                     : null,
               ),
             ),
@@ -78,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none, color: Colors.black),
+            icon: const Icon(Icons.notifications_none),
             onPressed: () {
               Navigator.pushNamed(context, '/notifications');
             },
@@ -93,16 +90,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Welcome Section
-                  const Text(
+                  Text(
                     'Welcome back,',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                    style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   Text(
                     name,
-                    style: const TextStyle(
-                      fontSize: 28,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -113,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: "Live Wingman",
                     subtitle: "Real-time conversation assistance",
                     icon: Icons.mic_rounded,
-                    color: Colors.blueAccent,
+                    color: Theme.of(context).colorScheme.primary,
                     route: '/new-session',
                   ),
                   const SizedBox(height: 16),
@@ -154,7 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.surfaceContainer,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -163,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
               offset: const Offset(0, 4),
             )
           ],
-          border: Border.all(color: Colors.grey.shade100),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Row(
           children: [
@@ -190,12 +186,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 4),
                   Text(
                     subtitle,
-                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            Icon(Icons.arrow_forward_ios, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ],
         ),
       ),

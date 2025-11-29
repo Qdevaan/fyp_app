@@ -244,7 +244,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
     final theme = Theme.of(context);
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB), // Light Grey-Blue
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text("Live Wingman", style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
@@ -296,7 +296,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                       decoration: BoxDecoration(
-                        color: isMe ? theme.colorScheme.primary : Colors.white,
+                        color: isMe ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer,
                         borderRadius: BorderRadius.only(
                           topLeft: const Radius.circular(16),
                           topRight: const Radius.circular(16),
@@ -321,7 +321,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                           Text(
                             msg['text'],
                             style: TextStyle(
-                              color: isMe ? Colors.white : Colors.black87,
+                              color: isMe ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
                               fontSize: 16
                             ),
                           ),
@@ -336,10 +336,10 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
           // 2. HUD (The "Wingman" Panel)
           Container(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))],
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 20, offset: Offset(0, -5))],
             ),
             child: Column(
               children: [
@@ -348,9 +348,9 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.indigo.withOpacity(0.05),
+                    color: theme.colorScheme.primaryContainer.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.indigo.withOpacity(0.1)),
+                    border: Border.all(color: theme.colorScheme.primary.withOpacity(0.1)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -359,13 +359,13 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                         children: [
                           Icon(Icons.auto_awesome, size: 16, color: Colors.indigo[400]),
                           const SizedBox(width: 8),
-                          Text("AI INSIGHT", style: TextStyle(color: Colors.indigo[400], fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+                          Text("AI INSIGHT", style: TextStyle(color: theme.colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
                         ],
                       ),
                       const SizedBox(height: 8),
                       Text(
                         _currentSuggestion,
-                        style: TextStyle(color: Colors.indigo[900], fontSize: 16, height: 1.4, fontWeight: FontWeight.w500),
+                        style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, height: 1.4, fontWeight: FontWeight.w500),
                       ),
                     ],
                   ),
@@ -389,11 +389,11 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                       height: 72,
                       width: 72,
                       decoration: BoxDecoration(
-                        color: _isSessionActive ? Colors.redAccent : theme.colorScheme.primary,
+                        color: _isSessionActive ? theme.colorScheme.error : theme.colorScheme.primary,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (_isSessionActive ? Colors.redAccent : theme.colorScheme.primary).withOpacity(0.4),
+                            color: (_isSessionActive ? theme.colorScheme.error : theme.colorScheme.primary).withOpacity(0.4),
                             blurRadius: 15,
                             spreadRadius: 2
                           )

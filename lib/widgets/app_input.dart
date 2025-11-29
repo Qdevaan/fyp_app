@@ -8,6 +8,8 @@ class AppInput extends StatefulWidget {
   final bool obscure;
   final String? Function(String?)? validator;
   final IconData? prefixIcon;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   const AppInput({
     super.key,
@@ -17,6 +19,8 @@ class AppInput extends StatefulWidget {
     this.obscure = false,
     this.validator,
     this.prefixIcon,
+    this.readOnly = false,
+    this.onTap,
   });
 
   @override
@@ -41,6 +45,8 @@ class _AppInputState extends State<AppInput> {
       obscureText: _isObscure,
       validator: widget.validator,
       keyboardType: widget.type,
+      readOnly: widget.readOnly,
+      onTap: widget.onTap,
       style: theme.textTheme.bodyLarge,
       decoration: InputDecoration(
         labelText: widget.label,

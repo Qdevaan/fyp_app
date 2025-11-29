@@ -178,16 +178,11 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
     final theme = Theme.of(context);
     
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
         title: const Text(
           "Consultant AI",
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
       ),
       body: _initializing 
         ? const Center(child: CircularProgressIndicator())
@@ -210,7 +205,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
                         decoration: BoxDecoration(
-                          color: isUser ? theme.colorScheme.primary : Colors.white,
+                          color: isUser ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer,
                           borderRadius: BorderRadius.only(
                             topLeft: const Radius.circular(16),
                             topRight: const Radius.circular(16),
@@ -229,7 +224,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
                           : MarkdownBody(
                               data: msg['text']!, 
                               styleSheet: MarkdownStyleSheet(
-                                p: const TextStyle(color: Colors.black87, fontSize: 15),
+                                p: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                               )
                             ),
                       ),
@@ -251,7 +246,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2, color: theme.colorScheme.primary)
                       ),
                       const SizedBox(width: 8),
-                      const Text("Consultant is thinking...", style: TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text("Consultant is thinking...", style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -260,7 +255,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: theme.colorScheme.surface,
                   boxShadow: [
                     BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -2))
                   ]
@@ -272,9 +267,9 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
                         controller: _controller,
                         decoration: InputDecoration(
                           hintText: "Ask about past sessions...",
-                          hintStyle: const TextStyle(color: Colors.grey),
+                          hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                           filled: true,
-                          fillColor: Colors.grey[100],
+                          fillColor: theme.colorScheme.surfaceContainerHighest,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(30), 
@@ -289,8 +284,8 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
                       onTap: _loading ? null : _sendMessage,
                       child: CircleAvatar(
                         radius: 24,
-                        backgroundColor: _loading ? Colors.grey[300] : theme.colorScheme.primary,
-                        child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                        backgroundColor: _loading ? theme.colorScheme.surfaceContainerHighest : theme.colorScheme.primary,
+                        child: Icon(Icons.send_rounded, color: _loading ? theme.colorScheme.onSurfaceVariant : Colors.white, size: 20),
                       ),
                     )
                   ],

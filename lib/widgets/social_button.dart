@@ -5,15 +5,17 @@ class SocialButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool loading;
-  final IconData icon;
+  final IconData? icon;
+  final String? imagePath;
 
   const SocialButton({
     super.key,
     required this.label,
     required this.onTap,
-    required this.icon,
+    this.icon,
+    this.imagePath,
     this.loading = false,
-  });
+  }) : assert(icon != null || imagePath != null, 'Either icon or imagePath must be provided');
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +46,10 @@ class SocialButton extends StatelessWidget {
                   ),
                 )
               else ...[
-                Icon(icon, size: 20, color: theme.colorScheme.onSurface),
+                if (imagePath != null)
+                  Image.asset(imagePath!, height: 24, width: 24)
+                else
+                  Icon(icon, size: 24, color: theme.colorScheme.onSurface),
                 const SizedBox(width: 12),
                 Text(
                   label,

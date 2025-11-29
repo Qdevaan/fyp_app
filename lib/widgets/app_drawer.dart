@@ -16,7 +16,7 @@ class AppDrawer extends StatelessWidget {
     required this.onLogout,
   });
 
-  Widget _buildConnectionBadge(ConnectionStatus status) {
+  Widget _buildConnectionBadge(BuildContext context, ConnectionStatus status) {
     Color color;
     String text;
     switch (status) {
@@ -37,7 +37,7 @@ class AppDrawer extends StatelessWidget {
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black26,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -68,7 +68,7 @@ class AppDrawer extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(email),
-                    _buildConnectionBadge(conn.status),
+                    _buildConnectionBadge(context, conn.status),
                   ],
                 ),
                 currentAccountPicture: CircleAvatar(
@@ -77,7 +77,10 @@ class AppDrawer extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [Colors.blue.shade800, Colors.blue.shade500],
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.primaryContainer,
+                    ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight
                   ),
@@ -123,6 +126,14 @@ class AppDrawer extends StatelessWidget {
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/settings');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.info_outline_rounded),
+                title: const Text('About'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/about');
                 },
               ),
               const Spacer(),

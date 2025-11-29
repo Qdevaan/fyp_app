@@ -29,20 +29,15 @@ class _SessionsScreenState extends State<SessionsScreen> with SingleTickerProvid
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
         title: const Text(
           'History',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black87),
         bottom: TabBar(
           controller: _tabController,
           labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
           indicatorColor: theme.colorScheme.primary,
           tabs: const [
             Tab(text: "Live Sessions"),
@@ -117,15 +112,15 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
+                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               child: ListTile(
                 title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(formattedDate),
                 trailing: const Icon(Icons.chevron_right),
                 leading: CircleAvatar(
-                  backgroundColor: Colors.blue.shade50,
-                  child: const Icon(Icons.record_voice_over, color: Colors.blue),
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  child: Icon(Icons.record_voice_over, color: Theme.of(context).colorScheme.primary),
                 ),
                 onTap: () {
                   Navigator.push(
@@ -204,12 +199,12 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
-                side: BorderSide(color: Colors.grey.shade200),
+                side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
               ),
               child: ExpansionTile(
                 leading: CircleAvatar(
-                  backgroundColor: Colors.deepPurple.shade50,
-                  child: const Icon(Icons.smart_toy, color: Colors.deepPurple),
+                  backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+                  child: Icon(Icons.smart_toy, color: Theme.of(context).colorScheme.tertiary),
                 ),
                 title: Text(
                   question,
@@ -224,10 +219,10 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text("Question:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                        Text("Question:", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurfaceVariant)),
                         Text(question, style: const TextStyle(fontSize: 15)),
                         const SizedBox(height: 10),
-                        const Text("AI Answer:", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+                        Text("AI Answer:", style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary)),
                         Text(answer, style: const TextStyle(fontSize: 15)),
                       ],
                     ),
@@ -288,16 +283,11 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
       appBar: AppBar(
         title: Text(
           widget.title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        centerTitle: true,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _logsFuture,
@@ -322,8 +312,8 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
               bool isOther = role == 'Other';
               
               // Style based on role
-              Color bubbleColor = Colors.white;
-              Color textColor = Colors.black87;
+              Color bubbleColor = Theme.of(context).colorScheme.surfaceContainer;
+              Color textColor = Theme.of(context).colorScheme.onSurface;
               Alignment align = Alignment.centerLeft;
               
               if (isUser) {
@@ -331,11 +321,11 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
                 textColor = Colors.white;
                 align = Alignment.centerRight;
               } else if (isOther) {
-                bubbleColor = Colors.white;
+                bubbleColor = Theme.of(context).colorScheme.surfaceContainer;
                 align = Alignment.centerLeft;
               } else {
                 // AI Suggestion logs?
-                bubbleColor = Colors.green.shade50;
+                bubbleColor = Theme.of(context).colorScheme.secondaryContainer;
               }
 
               return Align(

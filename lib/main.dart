@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/connection_service.dart';
 import 'services/api_service.dart';
+import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/connections_screen.dart';
@@ -12,7 +13,7 @@ import 'screens/profile_completion_screen.dart';
 import 'screens/consultant_screen.dart';
 import 'screens/sessions_screen.dart';
 import 'screens/new_session_screen.dart';
-// import 'screens/about_screen.dart';
+import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
 // import 'screens/progress_screen.dart';
 // import 'screens/notifications_screen.dart';
@@ -39,9 +40,6 @@ class BubblesApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Define the seed color for consistent branding
-    const seedColor = Colors.blueAccent;
-
     return MultiProvider(
       providers: [
         // 1. Connection Service (Base)
@@ -51,63 +49,46 @@ class BubblesApp extends StatelessWidget {
         ProxyProvider<ConnectionService, ApiService>(
           update: (context, connection, previous) => ApiService(connection),
         ),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Bubbles',
-        
-        // Theme Mode: Follows system settings (Light/Dark)
-        themeMode: ThemeMode.system,
-        
-        // Light Theme Configuration
-        theme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.light,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: seedColor,
-            brightness: Brightness.light,
-          ),
-          scaffoldBackgroundColor: Colors.grey.shade50,
-          appBarTheme: const AppBarTheme(
-            surfaceTintColor: Colors.transparent,
-            backgroundColor: Colors.transparent,
-          ),
-        ),
-        
-        // Dark Theme Configuration
-        darkTheme: ThemeData(
-          useMaterial3: true,
-          brightness: Brightness.dark,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: seedColor,
-            brightness: Brightness.dark,
-          ),
-          scaffoldBackgroundColor: const Color(0xFF121212),
-          appBarTheme: const AppBarTheme(
-            surfaceTintColor: Colors.transparent,
-            backgroundColor: Colors.transparent,
-          ),
-        ),
 
-        // The AuthGate manages the root state (Splash -> Login -> App)
-        home: const AuthGate(),
-        
-        // Routes for manual navigation
-        routes: {
-          '/login': (context) => const LoginScreen(),
-          '/signup': (context) => const SignupScreen(),
-          '/verify-email': (context) => const VerifyEmailScreen(),
-          '/profile-completion': (context) => const ProfileCompletionScreen(),
-          '/home': (context) => const HomeScreen(),
-          '/connections': (context) => const ConnectionsScreen(),
-          '/new-session': (context) => const NewSessionScreen(),
-          '/consultant': (context) => const ConsultantScreen(),
-          '/sessions': (context) => const SessionsScreen(),
-          // '/progress': (context) => const ProgressScreen(),
-          // '/notifications': (context) => const NotificationsScreen(),
-          // '/about': (context) => const AboutScreen(),
-          '/settings': (context) => const SettingsScreen(),
-          // '/enroll-voice': (context) => const VoiceEnrollmentScreen(),
+        // 3. Theme Provider
+        ChangeNotifierProvider(create: (context) => ThemeProvider()),
+      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Bubbles',
+            
+            // Theme Mode: Follows system settings (Light/Dark)
+            themeMode: ThemeMode.system,
+            
+            // Light Theme Configuration
+            theme: themeProvider.lightTheme,
+            
+            // Dark Theme Configuration
+            darkTheme: themeProvider.darkTheme,
+    
+            // The AuthGate manages the root state (Splash -> Login -> App)
+            home: const AuthGate(),
+            
+            // Routes for manual navigation
+            routes: {
+              '/login': (context) => const LoginScreen(),
+              '/signup': (context) => const SignupScreen(),
+              '/verify-email': (context) => const VerifyEmailScreen(),
+              '/profile-completion': (context) => const ProfileCompletionScreen(),
+              '/home': (context) => const HomeScreen(),
+              '/connections': (context) => const ConnectionsScreen(),
+              '/new-session': (context) => const NewSessionScreen(),
+              '/consultant': (context) => const ConsultantScreen(),
+              '/sessions': (context) => const SessionsScreen(),
+              // '/progress': (context) => const ProgressScreen(),
+              // '/notifications': (context) => const NotificationsScreen(),
+              '/about': (context) => const AboutScreen(),
+              '/settings': (context) => const SettingsScreen(),
+              // '/enroll-voice': (context) => const VoiceEnrollmentScreen(),
+            },
+          );
         },
       ),
     );

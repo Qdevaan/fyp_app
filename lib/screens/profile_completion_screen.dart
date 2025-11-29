@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
+import '../widgets/app_input.dart';
 import '../theme/design_tokens.dart';
 
 class ProfileCompletionScreen extends StatefulWidget {
@@ -148,6 +149,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
       ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
+      ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
@@ -194,9 +199,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
             const SizedBox(height: 32),
 
             // 2. Full Name Input
-            TextFormField(
+            AppInput(
               controller: _nameCtrl,
-              decoration: _getDecoration(context, 'Full Name', icon: Icons.person_outline),
+              label: 'Full Name',
+              prefixIcon: Icons.person_outline,
             ),
             
             const SizedBox(height: 16),
@@ -213,11 +219,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
             const SizedBox(height: 16),
 
             // 4. Date of Birth (Read-only Text Field that opens Date Picker)
-            TextFormField(
+            AppInput(
               controller: _dobCtrl,
-              readOnly: true, // Prevents keyboard from opening
+              label: 'Date of Birth',
+              prefixIcon: Icons.calendar_today_outlined,
+              readOnly: true,
               onTap: _selectDate,
-              decoration: _getDecoration(context, 'Date of Birth', icon: Icons.calendar_today_outlined),
             ),
 
             const SizedBox(height: 16),

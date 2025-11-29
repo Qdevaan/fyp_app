@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../widgets/social_button.dart';
+import '../widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -76,13 +77,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
-  // ... The rest of your build method (UI) remains exactly the same ...
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
@@ -92,12 +92,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-                // ... (Keep your existing UI code here) ...
-                // Header, Inputs, etc.
-
-                // Just ensure your buttons call the updated functions:
-                // AppButton(..., onTap: _loginWithEmail, ...),
-                // SocialButton(..., onTap: _loginWithGoogle, ...),
                 
                  // Header Section
                 _FadeSlide(
@@ -106,14 +100,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(Icons.waving_hand_rounded, size: 32, color: theme.colorScheme.primary),
-                      ),
+                      const Center(child: AppLogo(size: 120)),
                       const SizedBox(height: 24),
                       Text(
                         'Welcome Back',
@@ -201,7 +188,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       const SizedBox(height: 24),
                       SocialButton(
                         label: 'Continue with Google',
-                        icon: Icons.g_mobiledata,
+                        imagePath: 'assets/logos/google_logo.png',
                         onTap: _loginWithGoogle,
                         loading: _loading,
                       ),

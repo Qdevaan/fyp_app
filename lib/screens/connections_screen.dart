@@ -52,10 +52,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
       backgroundColor: Colors.black,
       builder: (ctx) => Scaffold(
         appBar: AppBar(
-          title: const Text("Scan Server QR", style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.black,
+          title: Text("Scan Server QR", style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface)),
+          backgroundColor: Theme.of(ctx).colorScheme.surface,
           leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
+            icon: Icon(Icons.close, color: Theme.of(ctx).colorScheme.onSurface),
             onPressed: () => Navigator.pop(ctx),
           ),
         ),
@@ -99,10 +99,14 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: connectionService.isConnected ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                color: connectionService.isConnected 
+                    ? Colors.green.withOpacity(0.1) 
+                    : Theme.of(context).colorScheme.errorContainer.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: connectionService.isConnected ? Colors.green : Colors.red.withOpacity(0.5),
+                  color: connectionService.isConnected 
+                      ? Colors.green 
+                      : Theme.of(context).colorScheme.error,
                   width: 2
                 )
               ),
@@ -110,7 +114,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 children: [
                   Icon(
                     connectionService.isConnected ? Icons.wifi : Icons.wifi_off,
-                    color: connectionService.isConnected ? Colors.green : Colors.red,
+                    color: connectionService.isConnected 
+                        ? Colors.green 
+                        : Theme.of(context).colorScheme.error,
                     size: 32,
                   ),
                   const SizedBox(width: 16),
@@ -123,14 +129,16 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           style: TextStyle(
                             fontSize: 18, 
                             fontWeight: FontWeight.bold,
-                            color: connectionService.isConnected ? Colors.green[800] : Colors.red[800]
+                            color: connectionService.isConnected 
+                                ? Colors.green[800] 
+                                : Theme.of(context).colorScheme.error
                           ),
                         ),
                         Text(
                           connectionService.isConnected 
                             ? "Brain is online & ready." 
                             : "Connect to Colab to activate AI.",
-                          style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                         ),
                       ],
                     ),
@@ -147,8 +155,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
               label: const Text("Scan QR from Colab"),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 18),
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _scanQr,
