@@ -20,7 +20,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
   
   // State Flags
   bool _isSessionActive = false;
-  bool _isUploading = false;
+
   bool _isSaving = false;
   bool _swapSpeakers = false; // Manual toggle for "Diarization Drift"
   

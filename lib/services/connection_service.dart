@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -82,15 +82,22 @@ class ConnectionService with ChangeNotifier {
 
     try {
       print('Pinging $_serverUrl/ ...');
-      final response = await http.get(Uri.parse('$_serverUrl/'))
-          .timeout(const Duration(seconds: 5));
+      final response = await http.get(
+        Uri.parse('$_serverUrl/'),
+        headers: {"ngrok-skip-browser-warning": "true"},
+      ).timeout(const Duration(seconds: 5));
 
-      if (response.statusCode == 200) {
+      print('Ping response: ${response.statusCode}');
+
+      // Accept 200 (OK), 404 (Not Found), and 405 (Method Not Allowed) as "Connected"
+      // This is because the root URL "/" might not have a handler on the Python server,
+      // but the server is still reachable.
+      if (response.statusCode == 200 || response.statusCode == 404 || response.statusCode == 405) {
         _updateStatus(ConnectionStatus.connected);
-        if (notifyResult) print('Connection successful!');
+        if (notifyResult) print('Connection successful! (Status: ${response.statusCode})');
         return true;
       } else {
-        print('Server returned ${response.statusCode}');
+        print('Server returned error status: ${response.statusCode}');
         _updateStatus(ConnectionStatus.error);
         return false;
       }

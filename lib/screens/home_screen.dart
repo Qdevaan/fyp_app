@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../services/connection_service.dart';
 import '../widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -62,13 +65,35 @@ class _HomeScreenState extends State<HomeScreen> {
             child: InkWell(
               onTap: () => Scaffold.of(context).openDrawer(),
               borderRadius: BorderRadius.circular(50),
-              child: CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                backgroundImage:
-                    avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl == null
-                    ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurfaceVariant)
-                    : null,
+              child: Consumer<ConnectionService>(
+                builder: (context, conn, _) {
+                  Color borderColor;
+                  switch (conn.status) {
+                    case ConnectionStatus.connected:
+                      borderColor = Colors.greenAccent;
+                      break;
+                    case ConnectionStatus.connecting:
+                      borderColor = Colors.orangeAccent;
+                      break;
+                    default:
+                      borderColor = Colors.redAccent;
+                  }
+                  
+                  return Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: borderColor, width: 2),
+                    ),
+                    child: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      backgroundImage:
+                          avatarUrl != null ? CachedNetworkImageProvider(avatarUrl) : null,
+                      child: avatarUrl == null
+                          ? Icon(Icons.person, color: Theme.of(context).colorScheme.onSurfaceVariant)
+                          : null,
+                    ),
+                  );
+                },
               ),
             ),
           ),

@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+
 import 'package:http/http.dart' as http;
 import 'connection_service.dart';
 
@@ -24,6 +24,7 @@ class ApiService {
 
     try {
       final request = http.MultipartRequest('POST', uri);
+      request.headers['ngrok-skip-browser-warning'] = 'true';
       request.fields['user_id'] = userId;
       request.fields['user_name'] = userName;
       request.files.add(await http.MultipartFile.fromPath('file', audioPath));
@@ -47,6 +48,7 @@ class ApiService {
     try {
       var uri = Uri.parse("$_baseUrl/process_audio");
       var request = http.MultipartRequest('POST', uri);
+      request.headers['ngrok-skip-browser-warning'] = 'true';
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
       
       var streamedResponse = await request.send().timeout(const Duration(seconds: 5));
@@ -77,7 +79,10 @@ class ApiService {
 
       var response = await http.post(
         uri,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
         body: jsonEncode({
           "user_id": userId,
           "transcript": fullTranscript,
@@ -101,7 +106,10 @@ class ApiService {
       var uri = Uri.parse("$_baseUrl/ask_consultant");
       var response = await http.post(
         uri,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
         body: jsonEncode({
           "user_id": userId,
           "question": question
