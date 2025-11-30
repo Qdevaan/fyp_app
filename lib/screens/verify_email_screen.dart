@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 
@@ -9,25 +10,9 @@ class VerifyEmailScreen extends StatefulWidget {
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> with SingleTickerProviderStateMixin {
+class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   final AuthService _authService = AuthService.instance;
   bool _loading = false;
-  late AnimationController _animController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..forward();
-  }
-
-  @override
-  void dispose() {
-    _animController.dispose();
-    super.dispose();
-  }
 
   void _checkVerification() async {
     // Reload user to get latest metadata
@@ -90,10 +75,11 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> with SingleTicker
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        title: const Text("Verify Email", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_rounded, color: theme.colorScheme.onSurface),
+          icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -106,102 +92,66 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> with SingleTicker
               const Spacer(flex: 1),
               
               // Icon & Title
-              _FadeSlide(
-                controller: _animController,
-                interval: const Interval(0.0, 0.4, curve: Curves.easeOut),
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer.withOpacity(0.5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.mark_email_unread_rounded,
-                        size: 64,
-                        color: theme.colorScheme.primary,
-                      ),
+              Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer.withOpacity(0.5),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 32),
-                    Text(
-                      'Verify your email',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurface,
-                      ),
+                    child: Icon(
+                      Icons.mark_email_unread_rounded,
+                      size: 64,
+                      color: theme.colorScheme.primary,
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'We have sent a verification link to your email address. Please tap the link in the email to continue.',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
+                  ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+                  const SizedBox(height: 32),
+                  Text(
+                    'Verify your email',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onSurface,
                     ),
-                  ],
-                ),
+                  ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+                  const SizedBox(height: 16),
+                  Text(
+                    'We have sent a verification link to your email address. Please tap the link in the email to continue.',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
+                ],
               ),
 
               const Spacer(flex: 2),
 
               // Buttons
-              _FadeSlide(
-                controller: _animController,
-                interval: const Interval(0.2, 0.6, curve: Curves.easeOut),
-                child: Column(
-                  children: [
-                    AppButton(
-                      label: 'I have verified it',
-                      onTap: _checkVerification,
-                      loading: _loading,
-                      filled: true,
-                    ),
-                    const SizedBox(height: 16),
-                    AppButton(
-                      label: 'Resend Email',
-                      onTap: _resendEmail,
-                      loading: _loading,
-                      filled: false,
-                    ),
-                  ],
-                ),
+              Column(
+                children: [
+                  AppButton(
+                    label: 'I have verified it',
+                    onTap: _checkVerification,
+                    loading: _loading,
+                    filled: true,
+                  ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
+                  const SizedBox(height: 16),
+                  AppButton(
+                    label: 'Resend Email',
+                    onTap: _resendEmail,
+                    loading: _loading,
+                    filled: false,
+                  ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+                ],
               ),
               
               const Spacer(flex: 1),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// Helper widget for Staggered Animations
-class _FadeSlide extends StatelessWidget {
-  final AnimationController controller;
-  final Interval interval;
-  final Widget child;
-
-  const _FadeSlide({
-    required this.controller,
-    required this.interval,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: controller, curve: interval),
-      ),
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
-          CurvedAnimation(parent: controller, curve: interval),
-        ),
-        child: child,
       ),
     );
   }

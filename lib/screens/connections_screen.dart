@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/connection_service.dart';
 
 class ConnectionsScreen extends StatefulWidget {
@@ -89,7 +90,11 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     final connectionService = Provider.of<ConnectionService>(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text("Connect Brain")),
+      appBar: AppBar(
+        title: const Text("Connect Brain", style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -118,7 +123,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                         ? Colors.green 
                         : Theme.of(context).colorScheme.error,
                     size: 32,
-                  ),
+                  ).animate(target: connectionService.isConnected ? 1 : 0).scale(curve: Curves.elasticOut),
                   const SizedBox(width: 16),
                   Expanded(
                     child: Column(
@@ -145,7 +150,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                   )
                 ],
               ),
-            ),
+            ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2, end: 0),
 
             const SizedBox(height: 30),
             
@@ -160,10 +165,11 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _scanQr,
-            ),
+            ).animate().fadeIn(delay: 200.ms).slideX(begin: -0.1, end: 0),
             
             const SizedBox(height: 20),
-            const Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.all(8.0), child: Text("OR")), Expanded(child: Divider())]),
+            const Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.all(8.0), child: Text("OR")), Expanded(child: Divider())])
+                .animate().fadeIn(delay: 300.ms),
             const SizedBox(height: 20),
             
             // Manual Input
@@ -177,7 +183,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 filled: true,
                 fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
               ),
-            ),
+            ).animate().fadeIn(delay: 400.ms).slideX(begin: 0.1, end: 0),
             
             const SizedBox(height: 20),
             
@@ -190,7 +196,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
               child: connectionService.status == ConnectionStatus.connecting 
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text("Save & Test Connection"),
-            ),
+            ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
           ],
         ),
       ),

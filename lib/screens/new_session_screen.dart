@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:record/record.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -273,9 +274,12 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.mic_none, size: 60, color: Colors.grey[400]),
+                    Icon(Icons.mic_none, size: 60, color: Colors.grey[400])
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .scale(begin: const Offset(1, 1), end: const Offset(1.1, 1.1), duration: 2000.ms),
                     const SizedBox(height: 10),
-                    Text("Ready to listen...", style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+                    Text("Ready to listen...", style: TextStyle(color: Colors.grey[500], fontSize: 16))
+                        .animate().fadeIn(delay: 500.ms),
                   ],
                 ),
               )
@@ -328,6 +332,10 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                         ],
                       ),
                     ),
+                  ).animate().fadeIn(duration: 300.ms).slide(
+                    begin: isMe ? const Offset(0.2, 0) : const Offset(-0.2, 0),
+                    end: Offset.zero,
+                    curve: Curves.easeOutQuad,
                   );
                 },
               ),
@@ -366,7 +374,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                       Text(
                         _currentSuggestion,
                         style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, height: 1.4, fontWeight: FontWeight.w500),
-                      ),
+                      ).animate(key: ValueKey(_currentSuggestion)).fadeIn(),
                     ],
                   ),
                 ),
@@ -380,7 +388,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                       const SizedBox(height: 10),
                       const Text("Saving Memories...", style: TextStyle(color: Colors.grey))
                     ],
-                  )
+                  ).animate().fadeIn()
                 else
                   GestureDetector(
                     onTap: _toggleSession,
@@ -404,7 +412,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                         color: Colors.white,
                         size: 36,
                       ),
-                    ),
+                    ).animate(target: _isSessionActive ? 1 : 0).shimmer(duration: 1000.ms, color: Colors.white.withOpacity(0.5)),
                   ),
                   
                 const SizedBox(height: 12),
@@ -412,10 +420,10 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                   Text(
                     _isSessionActive ? "Listening..." : "Tap to Start",
                     style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.w500),
-                  ),
+                  ).animate().fadeIn(),
               ],
             ),
-          )
+          ).animate().slideY(begin: 0.3, end: 0, duration: 500.ms, curve: Curves.easeOutBack),
         ],
       ),
     );

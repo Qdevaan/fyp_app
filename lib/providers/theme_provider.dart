@@ -34,6 +34,11 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: ColorScheme.fromSeed(
         seedColor: _seedColor,
         brightness: Brightness.light,
+      ).copyWith(
+        primary: _seedColor,
+        onPrimary: Colors.white,
+        secondary: _seedColor, // Also set secondary to match for consistency
+        onSecondary: Colors.white,
       ),
       scaffoldBackgroundColor: Colors.grey.shade50,
       appBarTheme: AppBarTheme(
@@ -52,6 +57,11 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: ColorScheme.fromSeed(
         seedColor: _seedColor,
         brightness: Brightness.dark,
+      ).copyWith(
+        primary: _seedColor,
+        onPrimary: Colors.white,
+        secondary: _seedColor,
+        onSecondary: Colors.white,
       ),
       scaffoldBackgroundColor: const Color(0xFF121212),
       appBarTheme: AppBarTheme(

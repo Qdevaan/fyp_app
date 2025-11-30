@@ -117,8 +117,7 @@ class AppDrawer extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context, String name, String email, String? photoUrl, ConnectionStatus status) {
     final theme = Theme.of(context);
-    final appBarTheme = theme.appBarTheme;
-    final foregroundColor = appBarTheme.foregroundColor ?? Colors.white;
+    final foregroundColor = theme.colorScheme.onPrimary;
     
     Color statusColor;
     String statusText;
@@ -139,7 +138,7 @@ class AppDrawer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 60, AppSpacing.lg, AppSpacing.lg),
       decoration: BoxDecoration(
-        color: appBarTheme.backgroundColor,
+        color: theme.colorScheme.primary,
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppRadius.xl),
           bottomRight: Radius.circular(AppRadius.xl),
@@ -179,7 +178,7 @@ class AppDrawer extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: statusColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: appBarTheme.backgroundColor ?? theme.primaryColor, width: 2),
+                    border: Border.all(color: theme.colorScheme.primary, width: 2),
                   ),
                 ),
               ),

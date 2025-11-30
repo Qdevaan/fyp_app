@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -17,12 +17,10 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
-  // Initial message to set context for the user
-  // We will load history into this list
   final List<Map<String, String>> _messages = [];
   
   bool _loading = false;
-  bool _initializing = false; // Changed to false as we don't load initially
+  bool _initializing = false;
   bool _historyLoaded = false;
   bool _showScrollToBottom = false;
 
@@ -31,7 +29,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_scrollListener);
-    // _loadChatHistory(); // Don't load history automatically
   }
 
   @override
@@ -48,7 +45,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     super.didChangeMetrics();
     final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
     if (bottomInset > 0.0) {
-      // Keyboard is opened
       _scrollToBottom();
     }
   }
@@ -57,7 +53,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     if (_scrollController.hasClients) {
       final maxScroll = _scrollController.position.maxScrollExtent;
       final currentScroll = _scrollController.offset;
-      // Show button if we are not at the bottom (with some threshold)
       if (maxScroll - currentScroll > 200) {
         if (!_showScrollToBottom) setState(() => _showScrollToBottom = true);
       } else {
@@ -66,7 +61,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     }
   }
 
-  // --- 1. LOAD HISTORY ---
   Future<void> _loadChatHistory() async {
     if (_historyLoaded) return;
     
@@ -81,30 +75,17 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     try {
       final supabase = Supabase.instance.client;
       
-      // Fetch past interactions
       final response = await supabase
           .from('consultant_logs')
           .select()
           .eq('user_id', user.id)
-          .order('created_at', ascending: true); // Oldest first for chat flow
+          .order('created_at', ascending: true);
 
       if (mounted) {
         setState(() {
-          // Don't clear existing messages if user has started typing/chatting
-          // But usually we want to prepend history? 
-          // Requirement: "load previous chat"
-          // Let's prepend history to current messages if any, or just add them.
-          // Since the requirement implies "loading previous chat" is a distinct action,
-          // we'll insert them at the beginning if there are new messages, or just populate.
-          
           List<Map<String, String>> history = [];
-          
-          // Add default greeting if history is empty? 
-          // Only add greeting if we haven't added it yet and history is empty?
-          // For now, let's just load the logs.
 
           for (var log in response) {
-            // Each row has 'question' (User) and 'answer' (AI)
             if (log['question'] != null) {
               history.add({"role": "user", "text": log['question']});
             }
@@ -115,9 +96,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
           
           if (history.isNotEmpty) {
              _messages.insertAll(0, history);
-             // If we just loaded history and there were no messages, add the greeting at top?
-             // Or maybe the greeting is part of the history?
-             // Let's add a greeting if it's the very first interaction ever.
              if (_messages.isEmpty) {
                 _messages.add({
                   "role": "ai", 
@@ -135,16 +113,14 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
           _historyLoaded = true;
         });
         
-        // Scroll to bottom after loading
         WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
       }
     } catch (e) {
-      print("Error loading history: $e");
+      debugPrint("Error loading history: $e");
       if (mounted) setState(() => _initializing = false);
     }
   }
 
-  // --- 2. SAVE INTERACTION ---
   Future<void> _saveInteraction(String question, String answer) async {
     final user = AuthService.instance.currentUser;
     if (user == null) return;
@@ -155,14 +131,12 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
         'user_id': user.id,
         'question': question,
         'answer': answer,
-        // 'created_at' is auto-generated by Supabase
       });
     } catch (e) {
-      print("Error saving interaction: $e");
+      debugPrint("Error saving interaction: $e");
     }
   }
 
-  // --- 3. SEND MESSAGE ---
   void _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
@@ -180,7 +154,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
       return;
     }
 
-    // Optimistic UI Update
     setState(() {
       _messages.add({"role": "user", "text": text});
       _loading = true;
@@ -190,7 +163,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     _scrollToBottom();
 
     try {
-      // Call the Backend API (RAG + Graph Update logic happens on server)
       final api = Provider.of<ApiService>(context, listen: false);
       final answer = await api.askConsultant(user.id, text);
 
@@ -200,7 +172,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
         });
         _scrollToBottom();
         
-        // Persist this turn to Supabase
         await _saveInteraction(text, answer);
       }
     } catch (e) {
@@ -243,6 +214,8 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
           "Consultant AI",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: Stack(
         children: [
@@ -292,6 +265,10 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                                     )
                                   ),
                             ),
+                          ).animate().fadeIn(duration: 400.ms).slide(
+                            begin: isUser ? const Offset(0.2, 0) : const Offset(-0.2, 0),
+                            end: Offset.zero,
+                            curve: Curves.easeOutQuad,
                           );
                         },
                       ),
@@ -312,7 +289,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                       const SizedBox(width: 8),
                       Text("Consultant is thinking...", style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
                     ],
-                  ),
+                  ).animate().fadeIn(),
                 ),
 
               // --- INPUT AREA ---
@@ -326,7 +303,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                 ),
                 child: Row(
                   children: [
-                    // Circular Load History Button (only if messages exist and history not loaded)
+                    // Circular Load History Button
                     if (showInputLoadButton)
                       Padding(
                         padding: const EdgeInsets.only(right: 10),
@@ -338,7 +315,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                             child: Icon(Icons.history, color: theme.colorScheme.onSecondaryContainer, size: 20),
                           ),
                         ),
-                      ),
+                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
 
                     Expanded(
                       child: TextField(
@@ -385,7 +362,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                   textStyle: const TextStyle(fontSize: 16),
                 ),
               ),
-            ),
+            ).animate().fadeIn(duration: 500.ms).scale(curve: Curves.easeOutBack),
 
           // --- SCROLL TO BOTTOM BUTTON ---
           if (_showScrollToBottom)
@@ -400,7 +377,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                   child: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.onPrimaryContainer),
                 ),
               ),
-            ),
+            ).animate().fadeIn().slideY(begin: 0.5, end: 0),
         ],
       ),
     );

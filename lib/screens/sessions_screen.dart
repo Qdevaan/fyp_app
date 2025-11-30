@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -34,11 +35,13 @@ class _SessionsScreenState extends State<SessionsScreen> with SingleTickerProvid
           'History',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
         bottom: TabBar(
           controller: _tabController,
-          labelColor: theme.colorScheme.primary,
-          unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-          indicatorColor: theme.colorScheme.primary,
+          labelColor: theme.colorScheme.onPrimary,
+          unselectedLabelColor: theme.colorScheme.onPrimary.withOpacity(0.7),
+          indicatorColor: theme.colorScheme.onPrimary,
           tabs: const [
             Tab(text: "Live Sessions"),
             Tab(text: "Consultant Chat"),
@@ -134,7 +137,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                   );
                 },
               ),
-            );
+            ).animate().fadeIn(duration: 400.ms, delay: (index * 50).ms).slideY(begin: 0.1, end: 0);
           },
         );
       },
@@ -229,7 +232,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                   )
                 ],
               ),
-            );
+            ).animate().fadeIn(duration: 400.ms, delay: (index * 50).ms).slideY(begin: 0.1, end: 0);
           },
         );
       },
@@ -247,7 +250,7 @@ Widget _buildEmptyState(String message, IconData icon) {
         const SizedBox(height: 16),
         Text(message, style: TextStyle(fontSize: 16, color: Colors.grey[500])),
       ],
-    ),
+    ).animate().fadeIn().scale(),
   );
 }
 
@@ -282,12 +285,15 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(
           widget.title,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
         future: _logsFuture,
@@ -358,6 +364,9 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
                     ),
                   ],
                 ),
+              ).animate().fadeIn(duration: 400.ms, delay: (index * 30).ms).slide(
+                begin: isUser ? const Offset(0.1, 0) : const Offset(-0.1, 0),
+                end: Offset.zero,
               );
             },
           );

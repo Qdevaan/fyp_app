@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/auth_service.dart';
 import '../services/connection_service.dart';
 import '../widgets/app_drawer.dart';
@@ -23,7 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadProfile() async {
-    // Fetch profile using the existing service method
     final data = await AuthService.instance.getProfile();
     if (mounted) {
       setState(() {
@@ -47,7 +47,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final avatarUrl = _profile?['avatar_url'] ?? user?.userMetadata?['avatar_url'];
 
     return Scaffold(
-      // 1. Add the AppDrawer
       drawer: AppDrawer(
         currentUser: user,
         userData: _profile,
@@ -58,7 +57,8 @@ class _HomeScreenState extends State<HomeScreen> {
           "Bubbles",
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        // 2. Replace leading icon with Profile Avatar that opens Drawer
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
         leading: Builder(
           builder: (context) => Padding(
             padding: const EdgeInsets.all(8.0),
@@ -118,43 +118,45 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     'Welcome back,',
                     style: TextStyle(fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  ),
+                  ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1, end: 0),
                   Text(
                     name,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                  ),
+                  ).animate().fadeIn(delay: 200.ms, duration: 500.ms).slideX(begin: -0.1, end: 0),
                   const SizedBox(height: 30),
 
-                  // 3. Feature Cards (Navigation)
-                  _buildFeatureCard(
-                    context,
-                    title: "Live Wingman",
-                    subtitle: "Real-time conversation assistance",
-                    icon: Icons.mic_rounded,
-                    color: Theme.of(context).colorScheme.primary,
-                    route: '/new-session',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFeatureCard(
-                    context,
-                    title: "Consultant AI",
-                    subtitle: "Ask questions about past chats",
-                    icon: Icons.smart_toy_rounded,
-                    color: Colors.deepPurpleAccent,
-                    route: '/consultant',
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFeatureCard(
-                    context,
-                    title: "History",
-                    subtitle: "View past session logs",
-                    icon: Icons.history_rounded,
-                    color: Colors.orangeAccent,
-                    route: '/sessions',
-                  ),
+                  // Feature Cards
+                  ...[
+                    _buildFeatureCard(
+                      context,
+                      title: "Live Wingman",
+                      subtitle: "Real-time conversation assistance",
+                      icon: Icons.mic_rounded,
+                      color: Theme.of(context).colorScheme.primary,
+                      route: '/new-session',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFeatureCard(
+                      context,
+                      title: "Consultant AI",
+                      subtitle: "Ask questions about past chats",
+                      icon: Icons.smart_toy_rounded,
+                      color: Colors.deepPurpleAccent,
+                      route: '/consultant',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildFeatureCard(
+                      context,
+                      title: "History",
+                      subtitle: "View past session logs",
+                      icon: Icons.history_rounded,
+                      color: Colors.orangeAccent,
+                      route: '/sessions',
+                    ),
+                  ].animate(interval: 100.ms).fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
                 ],
               ),
             ),

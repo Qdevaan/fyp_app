@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -12,7 +13,7 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService.instance;
   final _formKey = GlobalKey<FormState>();
   
@@ -20,22 +21,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _passCtrl = TextEditingController();
   
   bool _loading = false;
-  late AnimationController _animController;
-
-  @override
-  void initState() {
-    super.initState();
-    _animController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..forward();
-  }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passCtrl.dispose();
-    _animController.dispose();
     super.dispose();
   }
 
@@ -94,167 +84,127 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                 const SizedBox(height: 40),
                 
                  // Header Section
-                _FadeSlide(
-                  controller: _animController,
-                  interval: const Interval(0.0, 0.4, curve: Curves.easeOut),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Center(child: AppLogo(size: 120)),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Welcome Back',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onSurface,
-                        ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Center(child: AppLogo(size: 120))
+                        .animate()
+                        .fadeIn(duration: 600.ms)
+                        .scale(delay: 200.ms, duration: 400.ms, curve: Curves.easeOutBack),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Welcome Back',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: theme.colorScheme.onSurface,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Sign in to continue to Bubbles.',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
+                    ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.2, end: 0),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Sign in to continue to Bubbles.',
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ],
-                  ),
+                    ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
+                  ],
                 ),
 
                 const SizedBox(height: 40),
 
                 // Form Section
-                _FadeSlide(
-                  controller: _animController,
-                  interval: const Interval(0.2, 0.6, curve: Curves.easeOut),
-                  child: Column(
-                    children: [
-                      AppInput(
-                        controller: _emailCtrl,
-                        label: 'Email Address',
-                        prefixIcon: Icons.email_outlined,
-                        type: TextInputType.emailAddress,
-                        validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
-                      ),
-                      const SizedBox(height: 16),
-                      AppInput(
-                        controller: _passCtrl,
-                        label: 'Password',
-                        prefixIcon: Icons.lock_outline,
-                        obscure: true,
-                        validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            // TODO: Add Forgot Password logic
-                          },
-                          child: Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: theme.colorScheme.primary),
-                          ),
+                Column(
+                  children: [
+                    AppInput(
+                      controller: _emailCtrl,
+                      label: 'Email Address',
+                      prefixIcon: Icons.email_outlined,
+                      type: TextInputType.emailAddress,
+                      validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
+                    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
+                    const SizedBox(height: 16),
+                    AppInput(
+                      controller: _passCtrl,
+                      label: 'Password',
+                      prefixIcon: Icons.lock_outline,
+                      obscure: true,
+                      validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
+                    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          // TODO: Add Forgot Password logic
+                        },
+                        child: Text(
+                          'Forgot Password?',
+                          style: TextStyle(color: theme.colorScheme.primary),
                         ),
                       ),
-                    ],
-                  ),
+                    ).animate().fadeIn(delay: 700.ms),
+                  ],
                 ),
 
                 const SizedBox(height: 24),
 
                 // Buttons Section
-                _FadeSlide(
-                  controller: _animController,
-                  interval: const Interval(0.4, 0.8, curve: Curves.easeOut),
-                  child: Column(
-                    children: [
-                      AppButton(
-                        label: 'Log In',
-                        onTap: _loginWithEmail,
-                        loading: _loading,
-                        filled: true,
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text('OR', style: TextStyle(color: theme.colorScheme.outline, fontSize: 12)),
-                          ),
-                          Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      SocialButton(
-                        label: 'Continue with Google',
-                        imagePath: 'assets/logos/google_logo.png',
-                        onTap: _loginWithGoogle,
-                        loading: _loading,
-                      ),
-                    ],
-                  ),
+                Column(
+                  children: [
+                    AppButton(
+                      label: 'Log In',
+                      onTap: _loginWithEmail,
+                      loading: _loading,
+                      filled: true,
+                    ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('OR', style: TextStyle(color: theme.colorScheme.outline, fontSize: 12)),
+                        ),
+                        Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                      ],
+                    ).animate().fadeIn(delay: 900.ms),
+                    const SizedBox(height: 24),
+                    SocialButton(
+                      label: 'Continue with Google',
+                      imagePath: 'assets/logos/google_logo.png',
+                      onTap: _loginWithGoogle,
+                      loading: _loading,
+                    ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),
+                  ],
                 ),
 
                 const SizedBox(height: 24),
 
                 // Footer Section
-                _FadeSlide(
-                  controller: _animController,
-                  interval: const Interval(0.6, 1.0, curve: Curves.easeOut),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        "Don't have an account?",
-                        style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/signup');
-                        },
-                        child: Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.primary,
-                          ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "Don't have an account?",
+                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/signup');
+                      },
+                      child: Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  ],
+                ).animate().fadeIn(delay: 1100.ms),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _FadeSlide extends StatelessWidget {
-  final AnimationController controller;
-  final Interval interval;
-  final Widget child;
-
-  const _FadeSlide({
-    required this.controller,
-    required this.interval,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(parent: controller, curve: interval),
-      ),
-      child: SlideTransition(
-        position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
-          CurvedAnimation(parent: controller, curve: interval),
-        ),
-        child: child,
       ),
     );
   }
