@@ -258,7 +258,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Colors.pinkAccent,
                 Colors.amberAccent,
                 Colors.indigoAccent,
-                Colors.cyanAccent,
+                Colors.grey,
               ].map((color) {
                 return GestureDetector(
                   onTap: () {

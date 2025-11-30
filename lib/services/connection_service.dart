@@ -81,18 +81,16 @@ class ConnectionService with ChangeNotifier {
     if (notifyResult) _updateStatus(ConnectionStatus.connecting);
 
     try {
-      print('Pinging $_serverUrl/ ...');
+      print('Pinging $_serverUrl/health ...');
       final response = await http.get(
-        Uri.parse('$_serverUrl/'),
+        Uri.parse('$_serverUrl/health'),
         headers: {"ngrok-skip-browser-warning": "true"},
       ).timeout(const Duration(seconds: 5));
 
       print('Ping response: ${response.statusCode}');
 
-      // Accept 200 (OK), 404 (Not Found), and 405 (Method Not Allowed) as "Connected"
-      // This is because the root URL "/" might not have a handler on the Python server,
-      // but the server is still reachable.
-      if (response.statusCode == 200 || response.statusCode == 404 || response.statusCode == 405) {
+      // Strictly check for 200 OK on the health endpoint
+      if (response.statusCode == 200) {
         _updateStatus(ConnectionStatus.connected);
         if (notifyResult) print('Connection successful! (Status: ${response.statusCode})');
         return true;

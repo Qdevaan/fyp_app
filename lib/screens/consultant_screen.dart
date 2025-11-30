@@ -13,7 +13,7 @@ class ConsultantScreen extends StatefulWidget {
   State<ConsultantScreen> createState() => _ConsultantScreenState();
 }
 
-class _ConsultantScreenState extends State<ConsultantScreen> {
+class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBindingObserver {
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -22,23 +22,56 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
   final List<Map<String, String>> _messages = [];
   
   bool _loading = false;
-  bool _initializing = true;
+  bool _initializing = false; // Changed to false as we don't load initially
+  bool _historyLoaded = false;
+  bool _showScrollToBottom = false;
 
   @override
   void initState() {
     super.initState();
-    _loadChatHistory();
+    WidgetsBinding.instance.addObserver(this);
+    _scrollController.addListener(_scrollListener);
+    // _loadChatHistory(); // Don't load history automatically
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
+    _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    if (bottomInset > 0.0) {
+      // Keyboard is opened
+      _scrollToBottom();
+    }
+  }
+
+  void _scrollListener() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.offset;
+      // Show button if we are not at the bottom (with some threshold)
+      if (maxScroll - currentScroll > 200) {
+        if (!_showScrollToBottom) setState(() => _showScrollToBottom = true);
+      } else {
+        if (_showScrollToBottom) setState(() => _showScrollToBottom = false);
+      }
+    }
+  }
+
   // --- 1. LOAD HISTORY ---
   Future<void> _loadChatHistory() async {
+    if (_historyLoaded) return;
+    
+    setState(() => _initializing = true);
+    
     final user = AuthService.instance.currentUser;
     if (user == null) {
       setState(() => _initializing = false);
@@ -57,24 +90,49 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
 
       if (mounted) {
         setState(() {
-          _messages.clear();
-          // Add default greeting if history is empty, or just at the top always?
-          // Let's add it at the top always for context.
-          _messages.add({
-            "role": "ai", 
-            "text": "Hello! I have access to your past conversation history. Ask me anything about what you've discussed previously."
-          });
+          // Don't clear existing messages if user has started typing/chatting
+          // But usually we want to prepend history? 
+          // Requirement: "load previous chat"
+          // Let's prepend history to current messages if any, or just add them.
+          // Since the requirement implies "loading previous chat" is a distinct action,
+          // we'll insert them at the beginning if there are new messages, or just populate.
+          
+          List<Map<String, String>> history = [];
+          
+          // Add default greeting if history is empty? 
+          // Only add greeting if we haven't added it yet and history is empty?
+          // For now, let's just load the logs.
 
           for (var log in response) {
             // Each row has 'question' (User) and 'answer' (AI)
             if (log['question'] != null) {
-              _messages.add({"role": "user", "text": log['question']});
+              history.add({"role": "user", "text": log['question']});
             }
             if (log['answer'] != null) {
-              _messages.add({"role": "ai", "text": log['answer']});
+              history.add({"role": "ai", "text": log['answer']});
             }
           }
+          
+          if (history.isNotEmpty) {
+             _messages.insertAll(0, history);
+             // If we just loaded history and there were no messages, add the greeting at top?
+             // Or maybe the greeting is part of the history?
+             // Let's add a greeting if it's the very first interaction ever.
+             if (_messages.isEmpty) {
+                _messages.add({
+                  "role": "ai", 
+                  "text": "Hello! I have access to your past conversation history. Ask me anything about what you've discussed previously."
+                });
+             }
+          } else if (_messages.isEmpty) {
+             _messages.add({
+                "role": "ai", 
+                "text": "Hello! I have access to your past conversation history. Ask me anything about what you've discussed previously."
+              });
+          }
+
           _initializing = false;
+          _historyLoaded = true;
         });
         
         // Scroll to bottom after loading
@@ -176,6 +234,8 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final bool showCenterLoadButton = _messages.isEmpty && !_historyLoaded && !_initializing;
+    final bool showInputLoadButton = _messages.isNotEmpty && !_historyLoaded && !_initializing;
     
     return Scaffold(
       appBar: AppBar(
@@ -184,53 +244,57 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
-      body: _initializing 
-        ? const Center(child: CircularProgressIndicator())
-        : Column(
+      body: Stack(
+        children: [
+          Column(
             children: [
               // --- CHAT HISTORY AREA ---
               Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = _messages[index];
-                    bool isUser = msg['role'] == "user";
-                    
-                    return Align(
-                      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                        decoration: BoxDecoration(
-                          color: isUser ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer,
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
-                            bottomRight: isUser ? Radius.zero : const Radius.circular(16),
-                          ),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
-                          ]
-                        ),
-                        child: isUser 
-                          ? Text(
-                              msg['text']!, 
-                              style: const TextStyle(color: Colors.white, fontSize: 15)
-                            )
-                          : MarkdownBody(
-                              data: msg['text']!, 
-                              styleSheet: MarkdownStyleSheet(
-                                p: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
-                              )
+                child: _initializing 
+                  ? const Center(child: CircularProgressIndicator())
+                  : _messages.isEmpty && !_historyLoaded
+                    ? const SizedBox.shrink() // Blank screen initially
+                    : ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _messages.length,
+                        itemBuilder: (context, index) {
+                          final msg = _messages[index];
+                          bool isUser = msg['role'] == "user";
+                          
+                          return Align(
+                            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                              decoration: BoxDecoration(
+                                color: isUser ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: const Radius.circular(16),
+                                  topRight: const Radius.circular(16),
+                                  bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
+                                  bottomRight: isUser ? Radius.zero : const Radius.circular(16),
+                                ),
+                                boxShadow: [
+                                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
+                                ]
+                              ),
+                              child: isUser 
+                                ? Text(
+                                    msg['text']!, 
+                                    style: const TextStyle(color: Colors.white, fontSize: 15)
+                                  )
+                                : MarkdownBody(
+                                    data: msg['text']!, 
+                                    styleSheet: MarkdownStyleSheet(
+                                      p: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
+                                    )
+                                  ),
                             ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
               
               // --- LOADING INDICATOR ---
@@ -262,11 +326,25 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
                 ),
                 child: Row(
                   children: [
+                    // Circular Load History Button (only if messages exist and history not loaded)
+                    if (showInputLoadButton)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 10),
+                        child: GestureDetector(
+                          onTap: _loadChatHistory,
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: theme.colorScheme.secondaryContainer,
+                            child: Icon(Icons.history, color: theme.colorScheme.onSecondaryContainer, size: 20),
+                          ),
+                        ),
+                      ),
+
                     Expanded(
                       child: TextField(
                         controller: _controller,
                         decoration: InputDecoration(
-                          hintText: "Ask about past sessions...",
+                          hintText: "Ask something...",
                           hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
                           filled: true,
                           fillColor: theme.colorScheme.surfaceContainerHighest,
@@ -294,6 +372,37 @@ class _ConsultantScreenState extends State<ConsultantScreen> {
               )
             ],
           ),
+
+          // --- CENTER LOAD BUTTON ---
+          if (showCenterLoadButton)
+            Center(
+              child: ElevatedButton.icon(
+                onPressed: _loadChatHistory,
+                icon: const Icon(Icons.history),
+                label: const Text("Load Previous Chat"),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+
+          // --- SCROLL TO BOTTOM BUTTON ---
+          if (_showScrollToBottom)
+            Positioned(
+              bottom: 100, // Above the input area
+              right: 20,
+              child: GestureDetector(
+                onTap: _scrollToBottom,
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  child: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.onPrimaryContainer),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
