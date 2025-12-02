@@ -1,34 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../widgets/app_logo.dart';
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Always use logo_light as per redesign request
+    const logoAsset = 'assets/logos/logo_light.png';
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const AppLogo(size: 180)
-                .animate()
-                .fadeIn(duration: 800.ms)
-                .scale(delay: 200.ms, duration: 600.ms, curve: Curves.easeOutBack)
-                .shimmer(delay: 1000.ms, duration: 1500.ms),
-            const SizedBox(height: 40),
-            SizedBox(
-              width: 200,
-              child: LinearProgressIndicator(
-                minHeight: 4,
-                valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
-                borderRadius: const BorderRadius.all(Radius.circular(2)),
+        child: Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            color: primaryColor,
+            borderRadius: BorderRadius.circular(50), // Squircle-ish
+            boxShadow: [
+              BoxShadow(
+                color: primaryColor.withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-            ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.5, end: 0),
-          ],
-        ),
+            ],
+          ),
+          child: Center(
+            child: Image.asset(
+              logoAsset,
+              width: 120, // Smaller than container to fit inside
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+          ),
+        )
+        .animate()
+        .scale(duration: 600.ms, curve: Curves.easeOutBack)
+        .fadeIn(duration: 400.ms),
       ),
     );
   }

@@ -18,6 +18,7 @@ import 'screens/settings_screen.dart';
 // import 'screens/progress_screen.dart';
 // import 'screens/notifications_screen.dart';
 // import 'screens/voice_enrollment_screen.dart';
+import 'screens/splash_screen.dart';
 // import 'theme/theme_data.dart';
 
 const String SUPABASE_URL = 'https://czjwoqwbwtojlypbzupi.supabase.co';
@@ -97,26 +98,44 @@ class BubblesApp extends StatelessWidget {
 
 /// The Gatekeeper Widget
 /// Dynamically switches between Loading, Login, Profile Setup, and Home.
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool _minSplashPassed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Ensure splash screen is visible for at least 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _minSplashPassed = true;
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        // While checking auth state, show splash screen or loader
-        if (snapshot.connectionState == ConnectionState.waiting) {
-            // You can return a Splash Screen here if you prefer
-            return const Scaffold(body: Center(child: CircularProgressIndicator())); 
+        // Show splash screen if:
+        // 1. Minimum time hasn't passed OR
+        // 2. Auth state is still loading
+        if (!_minSplashPassed || snapshot.connectionState == ConnectionState.waiting) {
+            return const SplashScreen(); 
         }
         
         final session = snapshot.data?.session;
 
         if (session != null) {
-            // User is logged in, check profile or go to home
-            // For simplicity in this gate, we go to Home. 
-            // HomeScreen handles profile check internally as per your existing logic.
           return const HomeScreen(); 
         } else {
           return const LoginScreen(); 
