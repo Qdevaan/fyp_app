@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:record/record.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/livekit_service.dart';
 
 class NewSessionScreen extends StatefulWidget {
   const NewSessionScreen({super.key});
@@ -17,11 +15,9 @@ class NewSessionScreen extends StatefulWidget {
 
 class _NewSessionScreenState extends State<NewSessionScreen> {
   // --- CORE VARIABLES ---
-  final AudioRecorder _audioRecorder = AudioRecorder();
   
   // State Flags
   bool _isSessionActive = false;
-
   bool _isSaving = false;
   bool _swapSpeakers = false; // Manual toggle for "Diarization Drift"
   
@@ -30,37 +26,86 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
   String _currentSuggestion = "Tap mic to start Wingman...";
   
   // Controllers
-  Timer? _loopTimer;
   final ScrollController _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    // Listen to LiveKit updates
+    final liveKit = Provider.of<LiveKitService>(context, listen: false);
+    liveKit.addListener(_onLiveKitUpdate);
+  }
+
+  @override
   void dispose() {
-    _stopLoop(); // Safety kill
-    _audioRecorder.dispose();
+    final liveKit = Provider.of<LiveKitService>(context, listen: false);
+    liveKit.removeListener(_onLiveKitUpdate);
+    liveKit.disconnect(); // Ensure we disconnect when leaving
     _scrollController.dispose();
     super.dispose();
   }
 
+  void _onLiveKitUpdate() {
+    if (!mounted) return;
+    final liveKit = Provider.of<LiveKitService>(context, listen: false);
+    
+    // Check for new transcript
+    if (liveKit.currentTranscript.isNotEmpty) {
+      // In a real app, we'd handle partial vs final more gracefully.
+      // For now, let's just add it if it's new or update the last one.
+      // Since the service just gives us the latest string event, we might need to be smarter.
+      // But for this demo, let's assume the service notifies us on every new sentence.
+      
+      // Simple de-duplication or just append for now
+      if (_sessionLogs.isEmpty || _sessionLogs.last['text'] != liveKit.currentTranscript) {
+         setState(() {
+            _sessionLogs.add({
+              "speaker": _swapSpeakers ? "Other" : "User", // Simple assumption for now
+              "text": liveKit.currentTranscript
+            });
+            _scrollToBottom();
+         });
+      }
+    }
+  }
+
   // ===========================================================
-  // 🎤 CORE LOGIC: START / STOP / LOOP
+  // 🎤 CORE LOGIC: START / STOP
   // ===========================================================
 
-  void _toggleSession() {
+  void _toggleSession() async {
+    final liveKit = Provider.of<LiveKitService>(context, listen: false);
+
     if (_isSessionActive) {
+      // STOP
+      await liveKit.disconnect();
       _endSessionAndSave();
     } else {
+      // START
       setState(() { 
         _isSessionActive = true; 
         _sessionLogs.clear(); 
-        _currentSuggestion = "Listening for conversation..."; 
+        _currentSuggestion = "Connecting to LiveKit..."; 
       });
-      _startLoop();
+      
+      await liveKit.connect();
+      
+      if (mounted) {
+        setState(() {
+          if (liveKit.isConnected) {
+            _currentSuggestion = "Listening...";
+          } else {
+            _isSessionActive = false;
+            _currentSuggestion = "Connection Failed";
+          }
+        });
+      }
     }
   }
 
   // This function is responsible for saving the history when the user stops
   Future<void> _endSessionAndSave() async {
-    _stopLoop();
+    setState(() { _isSessionActive = false; });
     
     final user = AuthService.instance.currentUser;
     
@@ -107,119 +152,6 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
       }
     } else {
       if(mounted) Navigator.pop(context);
-    }
-  }
-
-  void _startLoop() async {
-    if (!_isSessionActive) return;
-
-    try {
-      // 1. Prepare File Path
-      final dir = await getTemporaryDirectory();
-      final path = '${dir.path}/chunk_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      
-      // 2. Check Permissions
-      if (!await _audioRecorder.hasPermission()) {
-        _stopLoop();
-        if(mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Microphone permission denied")));
-        return;
-      }
-
-      // 3. Start Recording (AAC is efficient for upload)
-      await _audioRecorder.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
-
-      // 4. The "Heartbeat": Stop after 1.5 seconds
-      _loopTimer = Timer(const Duration(milliseconds: 1500), () async {
-        if (!_isSessionActive) return;
-        
-        final recordedPath = await _audioRecorder.stop();
-        
-        // 5. Restart Loop IMMEDIATELY (Don't wait for upload)
-        _startLoop();
-
-        // 6. Process the chunk in background
-        if (recordedPath != null) {
-          _processChunk(recordedPath); 
-        }
-      });
-
-    } catch (e) {
-      print("Mic Error: $e");
-      _stopLoop();
-    }
-  }
-
-  void _stopLoop() async {
-    _loopTimer?.cancel();
-    if (await _audioRecorder.isRecording()) await _audioRecorder.stop();
-    if (mounted) setState(() { _isSessionActive = false; });
-  }
-
-  // ===========================================================
-  // ☁️ API PROCESSING & STATE UPDATES
-  // ===========================================================
-
-  Future<void> _processChunk(String path) async {
-    if (!mounted) return;
-    
-    try {
-      final api = Provider.of<ApiService>(context, listen: false);
-      final result = await api.processAudioChunk(path);
-      
-      if (!mounted) return;
-
-      setState(() {
-        // 1. Update Advice (Only if valid)
-        if (result['suggestion'] != "WAITING" && result['suggestion'] != "" && result['suggestion'] != null) {
-          _currentSuggestion = result['suggestion'];
-        }
-
-        // 2. Parse Transcript & Add to Logs
-        String raw = result['transcript'] ?? "";
-        List<String> lines = raw.split('\n');
-        
-        bool addedNewLogs = false;
-
-        for (var line in lines) {
-          if (line.trim().isEmpty) continue;
-          
-          String speaker = "Unknown";
-          String text = line;
-
-          // Speaker Logic: "User" vs "Other"
-          // We use the _swapSpeakers flag to let the user manually correct the AI
-          if (line.contains("User:")) {
-            speaker = _swapSpeakers ? "Other" : "User";
-            text = line.replaceAll("User:", "").trim();
-          } else if (line.contains("Other:")) {
-            speaker = _swapSpeakers ? "User" : "Other";
-            text = line.replaceAll("Other:", "").trim();
-          }
-          
-          // Only add if text is substantial
-          if (text.isNotEmpty) {
-            _sessionLogs.add({"speaker": speaker, "text": text});
-            addedNewLogs = true;
-          }
-        }
-
-        // Auto-scroll if new logs came in
-        if (addedNewLogs) {
-          _scrollToBottom();
-        }
-      });
-    } catch (e) {
-      print("Upload Error: $e");
-    } finally {
-      // Clean up temp file to save space
-      try {
-        final file = File(path);
-        if (await file.exists()) {
-          await file.delete();
-        }
-      } catch (e) {
-        print("Cleanup error: $e");
-      }
     }
   }
 
@@ -320,7 +252,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                               child: Text(
                                 "Other",
                                 style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.bold),
-                              ),
+                                ),
                             ),
                           Text(
                             msg['text'],

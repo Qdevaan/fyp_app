@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/connection_service.dart';
 import 'services/api_service.dart';
+import 'services/livekit_service.dart';
 import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -51,7 +52,12 @@ class BubblesApp extends StatelessWidget {
           update: (context, connection, previous) => ApiService(connection),
         ),
 
-        // 3. Theme Provider
+        // 3. LiveKit Service (Depends on ApiService)
+        ProxyProvider<ApiService, LiveKitService>(
+          update: (context, api, previous) => LiveKitService(api),
+        ),
+
+        // 4. Theme Provider
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(

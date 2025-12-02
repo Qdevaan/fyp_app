@@ -11,6 +11,19 @@ class ApiService {
   String get _baseUrl => _connectionService.serverUrl;
   bool get isConnected => _connectionService.isConnected;
 
+  Future<Map<String, dynamic>?> getLiveKitToken() async {
+    if (_baseUrl.isEmpty) return null;
+    try {
+      final response = await http.get(Uri.parse('$_baseUrl/token'));
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+    } catch (e) {
+      print("Token Error: $e");
+    }
+    return null;
+  }
+
   // --- 1. VOICE ENROLLMENT ---
   /// Uploads audio to enroll the user's voice signature
   Future<void> enrollVoice({
