@@ -75,10 +75,26 @@ class BubblesApp extends StatelessWidget {
             themeMode: ThemeMode.system,
             
             // Light Theme Configuration
-            theme: themeProvider.lightTheme,
+            theme: themeProvider.lightTheme.copyWith(
+              pageTransitionsTheme: const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                  TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+                },
+              ),
+            ),
             
             // Dark Theme Configuration
-            darkTheme: themeProvider.darkTheme,
+            darkTheme: themeProvider.darkTheme.copyWith(
+              pageTransitionsTheme: const PageTransitionsTheme(
+                builders: {
+                  TargetPlatform.android: ZoomPageTransitionsBuilder(),
+                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+                  TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+                },
+              ),
+            ),
     
             // The AuthGate manages the root state (Splash -> Login -> App)
             home: const AuthGate(),

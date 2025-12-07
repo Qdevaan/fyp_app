@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+
 import '../services/auth_service.dart';
 import '../services/connection_service.dart';
 import '../providers/theme_provider.dart';
@@ -71,10 +72,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(conn.isConnected ? Icons.cloud_done : Icons.cloud_off, 
-                           color: conn.isConnected ? Colors.green : Colors.orange, size: 30)
-                           .animate(target: conn.isConnected ? 1 : 0)
-                           .scale(curve: Curves.elasticOut),
+                       Icon(conn.isConnected ? Icons.cloud_done : Icons.cloud_off, 
+                           color: conn.isConnected ? Colors.green : Colors.orange, size: 30),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
@@ -106,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         )
                     ],
                   ),
-                ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2, end: 0);
+                );
               }
             ),
 
@@ -215,9 +214,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                       onPressed: _logout,
                     ),
-            ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
+            ),
             const SizedBox(height: 32),
-          ],
+          ].animate(interval: 50.ms).fadeIn(duration: 400.ms).slideX(begin: -0.05, end: 0, curve: Curves.easeOut),
         ),
       ),
     );
@@ -242,7 +241,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           color: theme.colorScheme.primary,
         ),
       ),
-    ).animate().fadeIn().slideX(begin: -0.1, end: 0);
+    );
   }
 
   void _showColorPicker(BuildContext context, ThemeProvider themeProvider) {
@@ -324,6 +323,6 @@ class _SettingsTile extends StatelessWidget {
       ),
       onTap: onTap,
       trailing: trailing ?? const Icon(Icons.chevron_right),
-    ).animate().fadeIn().slideX(begin: -0.1, end: 0);
+    );
   }
 }

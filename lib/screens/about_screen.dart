@@ -1,6 +1,5 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/app_card.dart';
 
@@ -17,7 +16,7 @@ class AboutScreen extends StatelessWidget {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Ambient Background Animation
+          // Ambient Background (Static)
           const _AmbientBackground(),
           
           CustomScrollView(
@@ -27,148 +26,119 @@ class AboutScreen extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
-                    _buildAnimatedSection(
-                      delay: 200,
-                      child: _buildSectionHeader(
-                        theme,
-                        icon: Icons.auto_awesome,
-                        title: 'Project Abstract',
+                    _buildSectionHeader(
+                      theme,
+                      icon: Icons.auto_awesome,
+                      title: 'Project Abstract',
+                    ),
+                    const SizedBox(height: 16),
+                    _GlassCard(
+                      child: Text(
+                        'The aim of our project is to enhance communication skills by using AI and NLP to assist during and after conversations. It aims to recognize the tone and flow of discussions, provide real-time suggestions for impactful responses, and help users understand industry-specific jargon. By analysing conversations, it offers tailored tips to improve communication, ensuring users can refine their skills over time.',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          height: 1.6,
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                        ),
+                        textAlign: TextAlign.justify,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _buildAnimatedSection(
-                      delay: 300,
-                      child: _GlassCard(
-                        child: Text(
-                          'The aim of our project is to enhance communication skills by using AI and NLP to assist during and after conversations. It aims to recognize the tone and flow of discussions, provide real-time suggestions for impactful responses, and help users understand industry-specific jargon. By analysing conversations, it offers tailored tips to improve communication, ensuring users can refine their skills over time.',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            height: 1.6,
-                            color: theme.colorScheme.onSurface.withOpacity(0.8),
-                          ),
-                          textAlign: TextAlign.justify,
+                    _GlassCard(
+                      child: Text(
+                        'The tool not only transcribes and summarizes conversations but also finds key participants, highlights key details, and provides actionable insights. It includes a "replay" feature that suggests alternative phrases or approaches, helping users reflect on what could have been said more effectively. Whether it is a formal business meeting, an informal chat, or a professional negotiation, this AI-powered assistant is designed to support users in becoming more confident and articulate communicators.',
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          height: 1.6,
+                          color: theme.colorScheme.onSurface.withOpacity(0.8),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildAnimatedSection(
-                      delay: 400,
-                      child: _GlassCard(
-                        child: Text(
-                          'The tool not only transcribes and summarizes conversations but also finds key participants, highlights key details, and provides actionable insights. It includes a "replay" feature that suggests alternative phrases or approaches, helping users reflect on what could have been said more effectively. Whether it is a formal business meeting, an informal chat, or a professional negotiation, this AI-powered assistant is designed to support users in becoming more confident and articulate communicators.',
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            height: 1.6,
-                             color: theme.colorScheme.onSurface.withOpacity(0.8),
-                          ),
-                          textAlign: TextAlign.justify,
-                        ),
+                        textAlign: TextAlign.justify,
                       ),
                     ),
                     const SizedBox(height: 32),
-                     _buildAnimatedSection(
-                      delay: 500,
-                      child: _buildSectionHeader(
-                        theme,
-                        icon: Icons.lightbulb_circle,
-                        title: 'Project Rationale',
-                      ),
+                     _buildSectionHeader(
+                      theme,
+                      icon: Icons.lightbulb_circle,
+                      title: 'Project Rationale',
                     ),
                      const SizedBox(height: 16),
-                    _buildAnimatedSection(
-                      delay: 600,
-                      child: _GlassCard(
-                        child: Column(
-                          children: [
-                            Text(
-                              'As a student, sometime after a conversation ends, I realize the words that I used were not appropriate for the conversation and I could have done it in a better way, or how could I have delivered my message more clearly and made my conversation more engaging? But then, after some time passes, I forget all the points that I wanted to keep in mind.',
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                height: 1.6,
-                                 color: theme.colorScheme.onSurface.withOpacity(0.8),
-                              ),
-                              textAlign: TextAlign.justify,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'The purpose of our project is to create a smart assistant that can not only capture, summarize, and analyze conversations in real-time but also assist people in improving their communication skills. The system will determine the tone of the conversation, map the flow of the conversation, provide instant responses, suggest strong phrases, and comment on the clarity, structure, and engagement of the conversation.',
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                height: 1.6,
-                                 color: theme.colorScheme.onSurface.withOpacity(0.8),
-                              ),
-                              textAlign: TextAlign.justify,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    _buildAnimatedSection(
-                      delay: 700,
-                      child: _buildSectionHeader(
-                        theme,
-                        icon: Icons.groups_rounded,
-                        title: 'Meet the Team',
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    _buildAnimatedSection(
-                      delay: 800,
-                      child: Row(
+                    _GlassCard(
+                      child: Column(
                         children: [
-                          Expanded(
-                            child: _DeveloperInfoCard(
-                              name: 'Muhammad Ahmad',
-                              regNo: 'FA22-BCS-025',
-                              delay: 800,
+                          Text(
+                            'As a student, sometime after a conversation ends, I realize the words that I used were not appropriate for the conversation and I could have done it in a better way, or how could I have delivered my message more clearly and made my conversation more engaging? But then, after some time passes, I forget all the points that I wanted to keep in mind.',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              height: 1.6,
+                               color: theme.colorScheme.onSurface.withOpacity(0.8),
                             ),
+                            textAlign: TextAlign.justify,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _DeveloperInfoCard(
-                              name: 'Attique Rehman',
-                              regNo: 'FA22-BCS-164',
-                              delay: 900,
+                          const SizedBox(height: 12),
+                          Text(
+                            'The purpose of our project is to create a smart assistant that can not only capture, summarize, and analyze conversations in real-time but also assist people in improving their communication skills. The system will determine the tone of the conversation, map the flow of the conversation, provide instant responses, suggest strong phrases, and comment on the clarity, structure, and engagement of the conversation.',
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              height: 1.6,
+                               color: theme.colorScheme.onSurface.withOpacity(0.8),
                             ),
+                            textAlign: TextAlign.justify,
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 40),
-                    _buildAnimatedSection(
-                      delay: 1000,
-                      child: _buildAffiliationSection(theme),
+                    const SizedBox(height: 32),
+                    _buildSectionHeader(
+                      theme,
+                      icon: Icons.groups_rounded,
+                      title: 'Meet the Team',
                     ),
-                    const SizedBox(height: 30),
-                    _buildAnimatedSection(
-                      delay: 1100,
-                      child: Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Crafted with ❤️ by the Bubbles Team',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
-                                letterSpacing: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: theme.colorScheme.outline.withOpacity(0.1),
-                                ),
-                              ),
-                              child: Text(
-                                'Version $appVersion',
-                                style: theme.textTheme.labelMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                    const SizedBox(height: 16),
+                    const Row(
+                      children: [
+                        Expanded(
+                          child: _DeveloperInfoCard(
+                            name: 'Muhammad Ahmad',
+                            regNo: 'FA22-BCS-025',
+                          ),
                         ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: _DeveloperInfoCard(
+                            name: 'Attique Rehman',
+                            regNo: 'FA22-BCS-164',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 40),
+                    _buildAffiliationSection(theme),
+                    const SizedBox(height: 30),
+                    Center(
+                      child: Column(
+                        children: [
+                          Text(
+                            'Crafted with ❤️ by the Bubbles Team',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: theme.colorScheme.outline.withOpacity(0.1),
+                              ),
+                            ),
+                            child: Text(
+                              'Version $appVersion',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                      const SizedBox(height: 30),
@@ -179,20 +149,6 @@ class AboutScreen extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAnimatedSection({required Widget child, required int delay}) {
-    return child.animate().fadeIn(
-      duration: 800.ms,
-      delay: delay.ms,
-      curve: Curves.easeOutQuad,
-    ).slideY(
-      begin: 0.1,
-      end: 0,
-      duration: 800.ms,
-      delay: delay.ms,
-      curve: Curves.easeOutQuad,
     );
   }
 
@@ -267,15 +223,7 @@ class AboutScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 40),
-                const AppLogo(size: 120)
-                    .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                    .scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.05, 1.05),
-                      duration: 3000.ms,
-                      curve: Curves.easeInOut,
-                    )
-                    .shimmer(duration: 2000.ms, delay: 1000.ms, color: Colors.white.withOpacity(0.5)),
+                const AppLogo(size: 120),
                 const SizedBox(height: 16),
                 Text(
                   'AI-powered Conversational Assistant',
@@ -284,7 +232,7 @@ class AboutScreen extends StatelessWidget {
                     letterSpacing: 1.0,
                     fontWeight: FontWeight.w500,
                   ),
-                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.5, end: 0),
+                ),
               ],
             ),
           ],
@@ -413,12 +361,10 @@ class _GlassCard extends StatelessWidget {
 class _DeveloperInfoCard extends StatelessWidget {
   final String name;
   final String regNo;
-  final int delay;
 
   const _DeveloperInfoCard({
     required this.name,
     required this.regNo,
-    required this.delay,
   });
 
   @override
@@ -447,7 +393,7 @@ class _DeveloperInfoCard extends StatelessWidget {
                 ),
               ),
             ),
-          ).animate(delay: (delay + 200).ms).scale(curve: Curves.elasticOut),
+          ),
           const SizedBox(height: 12),
           Text(
             name, 
@@ -493,8 +439,7 @@ class _AmbientBackground extends StatelessWidget {
               shape: BoxShape.circle,
               color: theme.colorScheme.primaryContainer.withOpacity(0.3),
             ),
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-           .scale(begin: const Offset(1, 1), end: const Offset(1.2, 1.2), duration: 4000.ms),
+          ),
         ),
         // Bottom left ambient blob
         Positioned(
@@ -507,8 +452,7 @@ class _AmbientBackground extends StatelessWidget {
               shape: BoxShape.circle,
               color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
             ),
-          ).animate(onPlay: (controller) => controller.repeat(reverse: true))
-           .scale(begin: const Offset(1, 1), end: const Offset(1.3, 1.3), duration: 5000.ms),
+          ),
         ),
       ],
     );

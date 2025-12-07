@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
+
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -265,11 +266,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                                     )
                                   ),
                             ),
-                          ).animate().fadeIn(duration: 400.ms).slide(
-                            begin: isUser ? const Offset(0.2, 0) : const Offset(-0.2, 0),
-                            end: Offset.zero,
-                            curve: Curves.easeOutQuad,
-                          );
+                            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOut);
                         },
                       ),
               ),
@@ -289,7 +286,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                       const SizedBox(width: 8),
                       Text("Consultant is thinking...", style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 12)),
                     ],
-                  ).animate().fadeIn(),
+                  ),
                 ),
 
               // --- INPUT AREA ---
@@ -315,7 +312,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                             child: Icon(Icons.history, color: theme.colorScheme.onSecondaryContainer, size: 20),
                           ),
                         ),
-                      ).animate().scale(duration: 300.ms, curve: Curves.easeOutBack),
+                        ),
 
                     Expanded(
                       child: TextField(
@@ -362,7 +359,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                   textStyle: const TextStyle(fontSize: 16),
                 ),
               ),
-            ).animate().fadeIn(duration: 500.ms).scale(curve: Curves.easeOutBack),
+            ),
 
           // --- SCROLL TO BOTTOM BUTTON ---
           if (_showScrollToBottom)
@@ -377,7 +374,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                   child: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.onPrimaryContainer),
                 ),
               ),
-            ).animate().fadeIn().slideY(begin: 0.5, end: 0),
+            ),
         ],
       ),
     );

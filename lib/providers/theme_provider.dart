@@ -47,6 +47,12 @@ class ThemeProvider extends ChangeNotifier {
         elevation: 0,
         centerTitle: true,
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+        },
+      ),
     );
   }
 
@@ -69,6 +75,12 @@ class ThemeProvider extends ChangeNotifier {
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
+      ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: ZoomPageTransitionsBuilder(),
+          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
+        },
       ),
     );
   }

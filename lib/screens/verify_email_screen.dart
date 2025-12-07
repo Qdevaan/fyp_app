@@ -105,7 +105,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       size: 64,
                       color: theme.colorScheme.primary,
                     ),
-                  ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+                  ).animate().scale(duration: 600.ms, curve: Curves.elasticOut)
+                   .then(delay: 500.ms).shimmer(duration: 2.seconds),
                   const SizedBox(height: 32),
                   Text(
                     'Verify your email',

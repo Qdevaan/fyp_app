@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../services/connection_service.dart';
 import '../services/auth_service.dart';
 import '../theme/design_tokens.dart';
@@ -37,7 +38,8 @@ class AppDrawer extends StatelessWidget {
         children: [
           Consumer<ConnectionService>(
             builder: (context, conn, _) => _buildHeader(context, name, email, photoUrl, conn.status),
-          ),
+          ).animate().fadeIn(duration: 600.ms).slideY(begin: -0.2, end: 0, curve: Curves.easeOutBack),
+
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(
@@ -106,7 +108,7 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pushNamed(context, '/about');
                   },
                 ),
-              ],
+              ].animate(interval: 50.ms).fadeIn(duration: 400.ms).slideX(begin: -0.1, end: 0, curve: Curves.easeOutBack),
             ),
           ),
           _buildFooter(context),
