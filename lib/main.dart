@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/connection_service.dart';
 import 'services/api_service.dart';
 import 'services/livekit_service.dart';
+import 'services/deepgram_service.dart';
 import 'providers/theme_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -53,12 +54,16 @@ class BubblesApp extends StatelessWidget {
         ),
 
         // 3. LiveKit Service (Depends on ApiService)
-        ProxyProvider<ApiService, LiveKitService>(
+        ChangeNotifierProxyProvider<ApiService, LiveKitService>(
+          create: (context) => LiveKitService(Provider.of<ApiService>(context, listen: false)),
           update: (context, api, previous) => LiveKitService(api),
         ),
 
         // 4. Theme Provider
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
+
+        // 5. Deepgram Service
+        ChangeNotifierProvider(create: (context) => DeepgramService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

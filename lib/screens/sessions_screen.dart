@@ -313,9 +313,9 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
             itemCount: logs.length,
             itemBuilder: (context, index) {
               final log = logs[index];
-              final role = log['role'];
-              bool isUser = role == 'User';
-              bool isOther = role == 'Other';
+              final role = log['role']?.toString().toLowerCase() ?? 'unknown';
+              bool isUser = role == 'user';
+              bool isOther = role == 'other';
               
               // Style based on role
               Color bubbleColor = Theme.of(context).colorScheme.surfaceContainer;

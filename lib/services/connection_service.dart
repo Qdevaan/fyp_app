@@ -83,7 +83,7 @@ class ConnectionService with ChangeNotifier {
     try {
       print('Pinging $_serverUrl/health ...');
       final response = await http.get(
-        Uri.parse('$_serverUrl/health'),
+        Uri.parse('$_serverUrl/'),
         headers: {"ngrok-skip-browser-warning": "true"},
       ).timeout(const Duration(seconds: 5));
 

@@ -15,14 +15,20 @@ class LiveKitService extends ChangeNotifier {
   String _currentTranscript = "";
   String get currentTranscript => _currentTranscript;
 
+  String _currentAdvice = "";
+  String get currentAdvice => _currentAdvice;
+
+  String _currentSpeaker = "user";
+  String get currentSpeaker => _currentSpeaker;
+
   LiveKitService(this._apiService);
 
-  Future<void> connect() async {
+  Future<void> connect(String userId) async {
     if (_isConnected) return;
 
     // 1. Get Token from Server
     try {
-      final tokenData = await _apiService.getLiveKitToken();
+      final tokenData = await _apiService.getLiveKitToken(userId);
       if (tokenData == null) {
         print("Failed to get LiveKit token");
         return;
@@ -51,15 +57,18 @@ class LiveKitService extends ChangeNotifier {
           if (data['type'] == 'transcript') {
             final String text = data['text'];
             final bool isFinal = data['is_final'] ?? false;
+            final String speaker = data['speaker'] ?? "user";
             
-            // We can expose this stream or just update a state
-            // For now, let's just print it and maybe append to a log if we want
-            print("TRANSCRIPT: $text (Final: $isFinal)");
+            print("TRANSCRIPT: $text (Final: $isFinal, Speaker: $speaker)");
             
-            // Notify listeners (UI)
-            // In a real app, we might want a stream controller
             _currentTranscript = text;
+            _currentSpeaker = speaker;
             notifyListeners();
+          } else if (data['type'] == 'assistant_response') {
+             final String text = data['text'];
+             print("ADVICE: $text");
+             _currentAdvice = text;
+             notifyListeners();
           }
         } catch (e) {
           print("Error parsing data: $e");

@@ -11,10 +11,10 @@ class ApiService {
   String get _baseUrl => _connectionService.serverUrl;
   bool get isConnected => _connectionService.isConnected;
 
-  Future<Map<String, dynamic>?> getLiveKitToken() async {
+  Future<Map<String, dynamic>?> getLiveKitToken(String userId) async {
     if (_baseUrl.isEmpty) return null;
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/token'));
+      final response = await http.get(Uri.parse('$_baseUrl/getToken?userId=$userId'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -137,5 +137,33 @@ class ApiService {
     } catch (e) {
       return "Connection Error: $e";
     }
+  }
+
+  // --- 5. WINGMAN (TEXT) ---
+  Future<String?> sendTranscriptToWingman(String userId, String transcript) async {
+    if (_baseUrl.isEmpty) return null;
+
+    try {
+      var uri = Uri.parse("$_baseUrl/process_transcript_wingman");
+      var response = await http.post(
+        uri,
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: jsonEncode({
+          "user_id": userId,
+          "transcript": transcript
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        var data = jsonDecode(response.body);
+        return data['advice'];
+      }
+    } catch (e) {
+      print("Wingman API Error: $e");
+    }
+    return null;
   }
 }

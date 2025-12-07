@@ -105,14 +105,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         fontWeight: FontWeight.w800,
                         color: theme.colorScheme.onSurface,
                       ),
-                    ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.2, end: 0),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Join your personal Wingman today.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
+                    ),
                   ],
                 ),
 
@@ -127,7 +127,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       prefixIcon: Icons.email_outlined,
                       type: TextInputType.emailAddress,
                       validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
-                    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
+                    ),
                     const SizedBox(height: 16),
                     AppInput(
                       controller: _passCtrl,
@@ -135,7 +135,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       prefixIcon: Icons.lock_outline,
                       obscure: true,
                       validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
-                    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+                    ),
                     const SizedBox(height: 16),
                     AppInput(
                       controller: _confirmPassCtrl,
@@ -143,7 +143,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       prefixIcon: Icons.lock_reset,
                       obscure: true,
                       validator: (v) => v == _passCtrl.text ? null : 'Passwords do not match',
-                    ).animate().fadeIn(delay: 700.ms).slideY(begin: 0.2, end: 0),
+                    ),
                   ],
                 ),
 
@@ -157,7 +157,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       onTap: _signupWithEmail,
                       loading: _loading,
                       filled: true,
-                    ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
+                    ),
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -168,14 +168,14 @@ class _SignupScreenState extends State<SignupScreen> {
                         ),
                         Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
                       ],
-                    ).animate().fadeIn(delay: 900.ms),
+                    ),
                     const SizedBox(height: 24),
                     SocialButton(
                       label: 'Continue with Google',
                       imagePath: 'assets/logos/google_logo.png',
                       onTap: _signupWithGoogle,
                       loading: _loading,
-                    ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),
+                    ),
                   ],
                 ),
 
@@ -200,7 +200,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                   ],
-                ).animate().fadeIn(delay: 1100.ms),
+                ),
                 
                 // Bottom spacing for scroll
                 const SizedBox(height: 20),
