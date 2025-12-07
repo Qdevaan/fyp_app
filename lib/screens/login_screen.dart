@@ -98,14 +98,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         fontWeight: FontWeight.w800,
                         color: theme.colorScheme.onSurface,
                       ),
-                    ).animate().fadeIn(delay: 300.ms).slideX(begin: -0.2, end: 0),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Sign in to continue to Bubbles.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
-                    ).animate().fadeIn(delay: 400.ms).slideX(begin: -0.2, end: 0),
+                    ),
                   ],
                 ),
 
@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icons.email_outlined,
                       type: TextInputType.emailAddress,
                       validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
-                    ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
+                    ),
                     const SizedBox(height: 16),
                     AppInput(
                       controller: _passCtrl,
@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icons.lock_outline,
                       obscure: true,
                       validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
-                    ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+                    ),
                     const SizedBox(height: 8),
                     Align(
                       alignment: Alignment.centerRight,
@@ -141,7 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(color: theme.colorScheme.primary),
                         ),
                       ),
-                    ).animate().fadeIn(delay: 700.ms),
+                    ),
                   ],
                 ),
 
@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: _loginWithEmail,
                       loading: _loading,
                       filled: true,
-                    ).animate().fadeIn(delay: 800.ms).slideY(begin: 0.2, end: 0),
+                    ),
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -166,14 +166,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
                       ],
-                    ).animate().fadeIn(delay: 900.ms),
+                    ),
                     const SizedBox(height: 24),
                     SocialButton(
                       label: 'Continue with Google',
                       imagePath: 'assets/logos/google_logo.png',
                       onTap: _loginWithGoogle,
                       loading: _loading,
-                    ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),
+                    ),
                   ],
                 ),
 
@@ -200,7 +200,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
-                ).animate().fadeIn(delay: 1100.ms),
+                ),
               ],
             ),
           ),

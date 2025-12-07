@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
-import '../services/livekit_service.dart';
+import '../services/deepgram_service.dart';
 
 class NewSessionScreen extends StatefulWidget {
   const NewSessionScreen({super.key});
@@ -31,41 +31,65 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
   @override
   void initState() {
     super.initState();
-    // Listen to LiveKit updates
-    final liveKit = Provider.of<LiveKitService>(context, listen: false);
-    liveKit.addListener(_onLiveKitUpdate);
+    // Listen to Deepgram updates
+    final deepgram = Provider.of<DeepgramService>(context, listen: false);
+    deepgram.addListener(_onDeepgramUpdate);
   }
 
   @override
   void dispose() {
-    final liveKit = Provider.of<LiveKitService>(context, listen: false);
-    liveKit.removeListener(_onLiveKitUpdate);
-    liveKit.disconnect(); // Ensure we disconnect when leaving
+    final deepgram = Provider.of<DeepgramService>(context, listen: false);
+    deepgram.removeListener(_onDeepgramUpdate);
+    deepgram.disconnect(); // Ensure we disconnect when leaving
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _onLiveKitUpdate() {
+  void _onDeepgramUpdate() {
     if (!mounted) return;
-    final liveKit = Provider.of<LiveKitService>(context, listen: false);
+    final deepgram = Provider.of<DeepgramService>(context, listen: false);
     
     // Check for new transcript
-    if (liveKit.currentTranscript.isNotEmpty) {
-      // In a real app, we'd handle partial vs final more gracefully.
-      // For now, let's just add it if it's new or update the last one.
-      // Since the service just gives us the latest string event, we might need to be smarter.
-      // But for this demo, let's assume the service notifies us on every new sentence.
-      
+    if (deepgram.currentTranscript.isNotEmpty) {
       // Simple de-duplication or just append for now
-      if (_sessionLogs.isEmpty || _sessionLogs.last['text'] != liveKit.currentTranscript) {
+      if (_sessionLogs.isEmpty || _sessionLogs.last['text'] != deepgram.currentTranscript) {
          setState(() {
+            // Determine speaker based on server info + manual swap
+            String serverSpeaker = deepgram.currentSpeaker == "user" ? "User" : "Other";
+            String finalSpeaker = serverSpeaker;
+            
+            if (_swapSpeakers) {
+              finalSpeaker = serverSpeaker == "User" ? "Other" : "User";
+            }
+
             _sessionLogs.add({
-              "speaker": _swapSpeakers ? "Other" : "User", // Simple assumption for now
-              "text": liveKit.currentTranscript
+              "speaker": finalSpeaker,
+              "text": deepgram.currentTranscript
             });
             _scrollToBottom();
+            
+            // If speaker is Other, ask Wingman
+            if (finalSpeaker == "Other") {
+               _askWingman(deepgram.currentTranscript);
+            }
          });
       }
+    }
+  }
+
+  Future<void> _askWingman(String transcript) async {
+    final api = Provider.of<ApiService>(context, listen: false);
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+
+    // Show loading state in suggestion box? Optional.
+    // setState(() => _currentSuggestion = "Thinking...");
+
+    final advice = await api.sendTranscriptToWingman(user.id, transcript);
+    if (advice != null && mounted) {
+       setState(() {
+          _currentSuggestion = advice;
+       });
     }
   }
 
@@ -74,25 +98,35 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
   // ===========================================================
 
   void _toggleSession() async {
-    final liveKit = Provider.of<LiveKitService>(context, listen: false);
+    final deepgram = Provider.of<DeepgramService>(context, listen: false);
+    final user = AuthService.instance.currentUser;
+
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("User not found. Please login again.")),
+        );
+      }
+      return;
+    }
 
     if (_isSessionActive) {
       // STOP
-      await liveKit.disconnect();
+      await deepgram.disconnect();
       _endSessionAndSave();
     } else {
       // START
       setState(() { 
         _isSessionActive = true; 
         _sessionLogs.clear(); 
-        _currentSuggestion = "Connecting to LiveKit..."; 
+        _currentSuggestion = "Connecting to Deepgram..."; 
       });
       
-      await liveKit.connect();
+      await deepgram.connect();
       
       if (mounted) {
         setState(() {
-          if (liveKit.isConnected) {
+          if (deepgram.isConnected) {
             _currentSuggestion = "Listening...";
           } else {
             _isSessionActive = false;
@@ -166,6 +200,91 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
         );
       });
     }
+  }
+
+  Widget _buildAdviceContent(ThemeData theme) {
+    // 1. Check if it's a structured response
+    if (_currentSuggestion.contains("**Context-Based Advice:**")) {
+      List<Widget> sections = [];
+      
+      // Regex to capture content between headers
+      final adviceMatch = RegExp(r"\*\*Context-Based Advice:\*\*\s*(.*?)(?=\*\*Clarification Request:|\*\*Apology & Confirmation Statement:|$)", dotAll: true).firstMatch(_currentSuggestion);
+      final clarificationMatch = RegExp(r"\*\*Clarification Request:\*\*\s*(.*?)(?=\*\*Apology & Confirmation Statement:|$)", dotAll: true).firstMatch(_currentSuggestion);
+      final apologyMatch = RegExp(r"\*\*Apology & Confirmation Statement:\*\*\s*(.*)", dotAll: true).firstMatch(_currentSuggestion);
+
+      if (adviceMatch != null && adviceMatch.group(1)!.trim().isNotEmpty) {
+        sections.add(_buildSectionCard(
+          theme, 
+          "ADVICE", 
+          adviceMatch.group(1)!.trim(), 
+          Colors.green.shade100, 
+          Colors.green.shade900,
+          Icons.lightbulb_outline
+        ));
+      }
+
+      if (clarificationMatch != null && clarificationMatch.group(1)!.trim().isNotEmpty) {
+        sections.add(_buildSectionCard(
+          theme, 
+          "CLARIFICATION", 
+          clarificationMatch.group(1)!.trim(), 
+          Colors.amber.shade100, 
+          Colors.amber.shade900,
+          Icons.help_outline
+        ));
+      }
+
+      if (apologyMatch != null && apologyMatch.group(1)!.trim().isNotEmpty) {
+        sections.add(_buildSectionCard(
+          theme, 
+          "CONFIRMATION", 
+          apologyMatch.group(1)!.trim(), 
+          Colors.blueGrey.shade100, 
+          Colors.blueGrey.shade900,
+          Icons.info_outline
+        ));
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: sections,
+      ).animate(key: ValueKey(_currentSuggestion)).fadeIn();
+    } 
+    
+    // 2. Fallback / Status Message
+    return Text(
+      _currentSuggestion,
+      style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, height: 1.4, fontWeight: FontWeight.w500),
+    ).animate(key: ValueKey(_currentSuggestion)).fadeIn();
+  }
+
+  Widget _buildSectionCard(ThemeData theme, String title, String content, Color bg, Color fg, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: fg.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 14, color: fg),
+              const SizedBox(width: 6),
+              Text(title, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: fg, letterSpacing: 0.5)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content,
+            style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.3),
+          ),
+        ],
+      ),
+    );
   }
 
   // ===========================================================
@@ -303,10 +422,20 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        _currentSuggestion,
-                        style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 16, height: 1.4, fontWeight: FontWeight.w500),
-                      ).animate(key: ValueKey(_currentSuggestion)).fadeIn(),
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeInOut,
+                        alignment: Alignment.topLeft,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            maxHeight: MediaQuery.of(context).size.height * 0.85, // Max 85% of screen height
+                          ),
+                          child: SingleChildScrollView(
+                            physics: const BouncingScrollPhysics(),
+                            child: _buildAdviceContent(theme),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
