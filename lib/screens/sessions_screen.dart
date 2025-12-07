@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
 
@@ -137,7 +138,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                   );
                 },
               ),
-            ).animate().fadeIn(duration: 400.ms, delay: (index * 50).ms).slideY(begin: 0.1, end: 0);
+            ).animate(delay: (index * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOut);
           },
         );
       },
@@ -232,7 +233,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                   )
                 ],
               ),
-            ).animate().fadeIn(duration: 400.ms, delay: (index * 50).ms).slideY(begin: 0.1, end: 0);
+            ).animate(delay: (index * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOut);
           },
         );
       },
@@ -250,7 +251,7 @@ Widget _buildEmptyState(String message, IconData icon) {
         const SizedBox(height: 16),
         Text(message, style: TextStyle(fontSize: 16, color: Colors.grey[500])),
       ],
-    ).animate().fadeIn().scale(),
+    ),
   );
 }
 
@@ -364,9 +365,6 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
                     ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 400.ms, delay: (index * 30).ms).slide(
-                begin: isUser ? const Offset(0.1, 0) : const Offset(-0.1, 0),
-                end: Offset.zero,
               );
             },
           );
