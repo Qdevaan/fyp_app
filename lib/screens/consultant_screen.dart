@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart'; 
 
 import '../services/api_service.dart';
@@ -248,7 +248,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                                     p: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                                   )
                                 ),
-                            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOut);
+                            );
                         },
                       ),
               ),

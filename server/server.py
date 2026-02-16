@@ -490,7 +490,138 @@ async def process_transcript_wingman(req: WingmanRequest):
     return {"advice": advice}
 
 
-# --- 3C. LiveKit Agent Worker (Wingman Mode) ---
+# --- 3B-2. Voice Command Endpoint (for "Hey Bubbles" Assistant) ---
+
+class VoiceCommandRequest(BaseModel):
+    user_id: str = Field(..., min_length=1, description="Supabase user UUID")
+    command: str = Field(..., min_length=1, max_length=2000, description="Voice command text")
+
+@app.post("/voice_command")
+async def voice_command(req: VoiceCommandRequest):
+    """
+    Processes a natural language voice command from the 'Hey Bubbles' assistant.
+    Uses the fast 8B model to parse intent, then routes to the appropriate service.
+    Returns a structured response with action, target, and spoken response.
+    """
+    user_id = req.user_id
+    command = req.command.strip().lower()
+
+    print(f"🎙️ Voice Command from {user_id}: '{command}'")
+
+    # 1. Use LLM to classify the intent
+    try:
+        intent_prompt = (
+            "You are a voice command parser for an app called Bubbles. "
+            "Classify the user's command into ONE of these intents:\n"
+            "1. 'start_session' - User wants to start a new live wingman session\n"
+            "2. 'ask_consultant' - User wants to ask a question about past sessions or general advice\n"
+            "3. 'view_sessions' - User wants to see session history\n"
+            "4. 'go_home' - User wants to go to the home screen\n"
+            "5. 'general_chat' - User is just chatting or the intent is unclear\n\n"
+            "Return JSON ONLY: {\"intent\": \"<intent>\", \"query\": \"<extracted question if ask_consultant, else empty>\"}\n"
+            "Examples:\n"
+            "- 'start a new session' -> {\"intent\": \"start_session\", \"query\": \"\"}\n"
+            "- 'what did we talk about last time' -> {\"intent\": \"ask_consultant\", \"query\": \"what did we talk about last time\"}\n"
+            "- 'show me my history' -> {\"intent\": \"view_sessions\", \"query\": \"\"}\n"
+            "- 'take me home' -> {\"intent\": \"go_home\", \"query\": \"\"}\n"
+            "- 'hello how are you' -> {\"intent\": \"general_chat\", \"query\": \"\"}\n"
+        )
+
+        completion = brain_svc.client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": intent_prompt},
+                {"role": "user", "content": command}
+            ],
+            model=settings.WINGMAN_MODEL,
+            temperature=0.2,
+            max_tokens=100,
+            response_format={"type": "json_object"}
+        )
+
+        intent_data = json.loads(completion.choices[0].message.content)
+        intent = intent_data.get("intent", "general_chat")
+        query = intent_data.get("query", "")
+
+        print(f"   Intent: {intent}, Query: '{query}'")
+
+    except Exception as e:
+        print(f"❌ Voice Command: Intent parsing failed: {e}")
+        intent = "general_chat"
+        query = command
+
+    # 2. Route based on intent
+    if intent == "start_session":
+        return {
+            "action": "navigate",
+            "target": "/new-session",
+            "response": "Starting a new live session for you. Let's go!"
+        }
+
+    elif intent == "view_sessions":
+        return {
+            "action": "navigate",
+            "target": "/sessions",
+            "response": "Here are your past sessions."
+        }
+
+    elif intent == "go_home":
+        return {
+            "action": "navigate",
+            "target": "/home",
+            "response": "Taking you home."
+        }
+
+    elif intent == "ask_consultant":
+        # Use the full consultant pipeline
+        question = query if query else command
+        try:
+            graph_svc.load_graph(user_id)
+            g_ctx = graph_svc.find_context(user_id, question, top_k=10)
+            v_ctx = vector_svc.search_memory(user_id, question)
+            h_ctx = session_svc.fetch_consultant_history(user_id, limit=5)
+
+            answer = brain_svc.ask_consultant(user_id, question, h_ctx, g_ctx, v_ctx)
+            session_svc.log_consultant_qa(user_id, question, answer)
+            graph_svc.save_graph(user_id)
+
+            return {
+                "action": "speak",
+                "target": None,
+                "response": answer
+            }
+        except Exception as e:
+            print(f"❌ Voice Command: Consultant query failed: {e}")
+            return {
+                "action": "speak",
+                "target": None,
+                "response": "I had trouble looking that up. Can you try again?"
+            }
+
+    else:
+        # General chat / fallback
+        try:
+            chat_completion = brain_svc.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": "You are Bubbles, a friendly AI assistant. Keep responses short, warm, and conversational (1-2 sentences max). You help users with their conversations and social interactions."},
+                    {"role": "user", "content": command}
+                ],
+                model=settings.WINGMAN_MODEL,
+                temperature=0.7,
+                max_tokens=80
+            )
+            response = chat_completion.choices[0].message.content.strip()
+            return {
+                "action": "speak",
+                "target": None,
+                "response": response
+            }
+        except Exception as e:
+            print(f"❌ Voice Command: General chat failed: {e}")
+            return {
+                "action": "speak",
+                "target": None,
+                "response": "Hey! I'm here to help. What can I do for you?"
+            }
 # NOTE: This is kept for reference but might be unused if we switch to client-side Deepgram.
 
 async def entrypoint(ctx: JobContext):

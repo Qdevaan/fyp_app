@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 
 import '../services/connection_service.dart';
 
@@ -197,7 +197,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Text("Save & Test Connection"),
             ),
-          ].animate(interval: 100.ms).fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0, curve: Curves.easeOut),
+          ],
         ),
       ),
     );
