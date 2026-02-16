@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import '../widgets/chat_bubble.dart';
 
 class SessionsScreen extends StatefulWidget {
@@ -138,7 +138,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                   );
                 },
               ),
-            ).animate(delay: (index * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOut);
+            );
           },
         );
       },
@@ -233,7 +233,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                   )
                 ],
               ),
-            ).animate(delay: (index * 100).ms).fadeIn(duration: 400.ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOut);
+            );
           },
         );
       },

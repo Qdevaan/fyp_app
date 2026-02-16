@@ -27,6 +27,8 @@ dependencies:
   record: ^6.1.2
   flutter_dotenv: ^5.1.0
   http: ^1.2.0
+  flutter_tts: ^4.2.0
+  speech_to_text: ^7.0.0
 
 flutter_launcher_icons:
   android: "launcher_icon"

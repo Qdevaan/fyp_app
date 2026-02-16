@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 
@@ -105,8 +105,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       size: 64,
                       color: theme.colorScheme.primary,
                     ),
-                  ).animate().scale(duration: 600.ms, curve: Curves.elasticOut)
-                   .then(delay: 500.ms).shimmer(duration: 2.seconds),
+                  ),
                   const SizedBox(height: 32),
                   Text(
                     'Verify your email',
@@ -115,7 +114,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       fontWeight: FontWeight.w800,
                       color: theme.colorScheme.onSurface,
                     ),
-                  ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'We have sent a verification link to your email address. Please tap the link in the email to continue.',
@@ -124,7 +123,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       color: theme.colorScheme.onSurfaceVariant,
                       height: 1.5,
                     ),
-                  ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
+                  ),
                 ],
               ),
 
@@ -138,14 +137,14 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     onTap: _checkVerification,
                     loading: _loading,
                     filled: true,
-                  ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.2, end: 0),
+                  ),
                   const SizedBox(height: 16),
                   AppButton(
                     label: 'Resend Email',
                     onTap: _resendEmail,
                     loading: _loading,
                     filled: false,
-                  ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.2, end: 0),
+                  ),
                 ],
               ),
               

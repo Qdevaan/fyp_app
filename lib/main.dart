@@ -6,7 +6,9 @@ import 'services/connection_service.dart';
 import 'services/api_service.dart';
 import 'services/livekit_service.dart';
 import 'services/deepgram_service.dart';
+import 'services/voice_assistant_service.dart';
 import 'providers/theme_provider.dart';
+import 'widgets/voice_overlay.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/connections_screen.dart';
@@ -68,6 +70,14 @@ class BubblesApp extends StatelessWidget {
 
         // 5. Deepgram Service
         ChangeNotifierProvider(create: (context) => DeepgramService()),
+
+        // 6. Voice Assistant Service
+        ChangeNotifierProxyProvider<ConnectionService, VoiceAssistantService>(
+          create: (context) => VoiceAssistantService(
+            Provider.of<ConnectionService>(context, listen: false),
+          ),
+          update: (context, connection, previous) => previous!,
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -102,6 +112,11 @@ class BubblesApp extends StatelessWidget {
     
             // The AuthGate manages the root state (Splash -> Login -> App)
             home: const AuthGate(),
+
+            // Global builder: adds VoiceOverlay on all routes except /settings
+            builder: (context, child) {
+              return _VoiceOverlayWrapper(child: child ?? const SizedBox());
+            },
             
             // Routes for manual navigation
             routes: {
@@ -120,6 +135,23 @@ class BubblesApp extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Wrapper that adds VoiceOverlay on top of all screens except settings & auth.
+class _VoiceOverlayWrapper extends StatelessWidget {
+  final Widget child;
+  const _VoiceOverlayWrapper({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        // The overlay manages its own visibility; it hides during settings
+        const VoiceOverlay(),
+      ],
     );
   }
 }
