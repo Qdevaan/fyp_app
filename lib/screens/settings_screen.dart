@@ -5,7 +5,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../services/auth_service.dart';
 import '../services/connection_service.dart';
 import '../providers/theme_provider.dart';
-import 'connections_screen.dart'; 
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -45,6 +44,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     }
+  }
+
+  void _showComingSoon(BuildContext context, String feature) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature is coming soon!'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -89,12 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       if (!conn.isConnected)
                         ElevatedButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const ConnectionsScreen(),
-                              ),
-                            );
+                            Navigator.pushNamed(context, '/connections');
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.black, 
@@ -141,31 +144,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // --- 1. Add Voice Enrollment Tile ---
             _SettingsTile(
               context: context,
-              icon: Icons.record_voice_over_outlined, // Appropriate icon
+              icon: Icons.record_voice_over_outlined,
               title: 'Update Voice Print',
               subtitle: 'Re-record your voice for identification',
-              onTap: () {
-                // Navigate to the enrollment screen, possibly passing an argument
-                Navigator.pushNamed(
-                  context,
-                  '/enroll-voice',
-                  arguments: {'isUpdate': true},
-                );
-              },
+              onTap: () => _showComingSoon(context, 'Voice enrollment'),
             ),
             _SettingsTile(
               context: context,
               icon: Icons.link_outlined,
               title: 'Connection Settings',
               subtitle: 'Manage PC server connection', // Updated subtitle
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ConnectionsScreen(),
-                  ),
-                );
-              },
+              onTap: () => Navigator.pushNamed(context, '/connections'),
             ),
             const Divider(height: 32),
             _buildSectionHeader(theme, title: 'General'),

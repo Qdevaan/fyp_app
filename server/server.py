@@ -18,8 +18,9 @@ from datetime import datetime
 # FastAPI & Server
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pyngrok import ngrok
+from dotenv import load_dotenv
 
 # AI & DB
 from groq import Groq
@@ -35,8 +36,15 @@ from livekit import api
 from livekit.plugins import deepgram
 from livekit.agents import AutoSubscribe, JobContext, Worker, WorkerOptions, JobRequest
 
-# Fix for Colab/Jupyter event loops
-nest_asyncio.apply()
+# Load .env file if present (for local development)
+load_dotenv()
+
+# Fix for Colab/Jupyter event loops (only apply when needed)
+try:
+    import IPython
+    nest_asyncio.apply()
+except ImportError:
+    pass  # Not in a notebook environment, no fix needed
 
 
 # ==========================================
@@ -387,12 +395,26 @@ session_svc = SessionService()
 
 # --- 3B. FastAPI Server (Token Generation & Consultant) ---
 
-app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app = FastAPI(title="Bubbles Brain API", description="Backend API for the Bubbles conversation assistant")
+
+# CORS: Restrict to known origins in production
+_allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8080").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def root():
     return {"status": "Bubbles Brain Online", "consultant_model": settings.CONSULTANT_MODEL, "wingman_model": settings.WINGMAN_MODEL}
+
+@app.get("/health")
+def health_check():
+    """Health check endpoint for monitoring and connection testing."""
+    return {"status": "healthy", "version": "1.0.0"}
 
 @app.get("/getToken")
 async def get_token(userId: str, roomName: str = "default-room"):
@@ -407,8 +429,8 @@ async def get_token(userId: str, roomName: str = "default-room"):
     return {"token": jwt_token, "url": settings.LIVEKIT_URL}
 
 class ConsultantRequest(BaseModel):
-    user_id: str # This should be the UUID used in Supabase
-    question: str
+    user_id: str = Field(..., min_length=1, description="Supabase user UUID")
+    question: str = Field(..., min_length=1, max_length=5000, description="User question")
 
 @app.post("/ask_consultant")
 async def ask_consultant_endpoint(req: ConsultantRequest):

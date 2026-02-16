@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../widgets/chat_bubble.dart';
 
 class ConsultantScreen extends StatefulWidget {
   const ConsultantScreen({super.key});
@@ -44,7 +45,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
   @override
   void didChangeMetrics() {
     super.didChangeMetrics();
-    final bottomInset = WidgetsBinding.instance.window.viewInsets.bottom;
+    final bottomInset = View.of(context).viewInsets.bottom;
     if (bottomInset > 0.0) {
       _scrollToBottom();
     }
@@ -236,36 +237,17 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                           final msg = _messages[index];
                           bool isUser = msg['role'] == "user";
                           
-                          return Align(
-                            alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                              decoration: BoxDecoration(
-                                color: isUser ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer,
-                                borderRadius: BorderRadius.only(
-                                  topLeft: const Radius.circular(16),
-                                  topRight: const Radius.circular(16),
-                                  bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
-                                  bottomRight: isUser ? Radius.zero : const Radius.circular(16),
-                                ),
-                                boxShadow: [
-                                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
-                                ]
-                              ),
-                              child: isUser 
-                                ? Text(
-                                    msg['text']!, 
-                                    style: const TextStyle(color: Colors.white, fontSize: 15)
+                          return ChatBubble(
+                            text: msg['text']!,
+                            isUser: isUser,
+                            contentWidget: isUser 
+                              ? null
+                              : MarkdownBody(
+                                  data: msg['text']!, 
+                                  styleSheet: MarkdownStyleSheet(
+                                    p: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
                                   )
-                                : MarkdownBody(
-                                    data: msg['text']!, 
-                                    styleSheet: MarkdownStyleSheet(
-                                      p: TextStyle(color: theme.colorScheme.onSurface, fontSize: 15),
-                                    )
-                                  ),
-                            ),
+                                ),
                             ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOut);
                         },
                       ),

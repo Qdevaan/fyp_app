@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/deepgram_service.dart';
+import '../widgets/chat_bubble.dart';
 
 class NewSessionScreen extends StatefulWidget {
   const NewSessionScreen({super.key});
@@ -82,8 +83,8 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
     final user = AuthService.instance.currentUser;
     if (user == null) return;
 
-    // Show loading state in suggestion box? Optional.
-    // setState(() => _currentSuggestion = "Thinking...");
+    // Show loading state in suggestion box
+    setState(() => _currentSuggestion = "Thinking...");
 
     final advice = await api.sendTranscriptToWingman(user.id, transcript);
     if (advice != null && mounted) {
@@ -111,7 +112,20 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
     }
 
     if (_isSessionActive) {
-      // STOP
+      // STOP — Ask for confirmation first
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("End Session?"),
+          content: const Text("Are you sure you want to stop the live session? Your conversation will be saved."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancel")),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("End Session")),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+
       await deepgram.disconnect();
       _endSessionAndSave();
     } else {
@@ -177,7 +191,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
           }
         }
       } catch (e) {
-        print("Save failed: $e");
+        debugPrint("Save failed: $e");
         if (mounted) {
            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Save Error: $e")));
         }
@@ -207,10 +221,10 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
     if (_currentSuggestion.contains("**Context-Based Advice:**")) {
       List<Widget> sections = [];
       
-      // Regex to capture content between headers
-      final adviceMatch = RegExp(r"\*\*Context-Based Advice:\*\*\s*(.*?)(?=\*\*Clarification Request:|\*\*Apology & Confirmation Statement:|$)", dotAll: true).firstMatch(_currentSuggestion);
-      final clarificationMatch = RegExp(r"\*\*Clarification Request:\*\*\s*(.*?)(?=\*\*Apology & Confirmation Statement:|$)", dotAll: true).firstMatch(_currentSuggestion);
-      final apologyMatch = RegExp(r"\*\*Apology & Confirmation Statement:\*\*\s*(.*)", dotAll: true).firstMatch(_currentSuggestion);
+      // Regex to capture content between headers, handling potential list numbering (e.g. "2.") before the next header
+      final adviceMatch = RegExp(r"\*\*Context-Based Advice:\*\*\s*(.*?)(?=(?:\d+\.?\s*)?\*\*Clarification Request:|(?:\d+\.?\s*)?\*\*Apology & Confirmation.*?:?\*\*|$)", dotAll: true).firstMatch(_currentSuggestion);
+      final clarificationMatch = RegExp(r"\*\*Clarification Request:\*\*\s*(.*?)(?=(?:\d+\.?\s*)?\*\*Apology & Confirmation.*?:?\*\*|$)", dotAll: true).firstMatch(_currentSuggestion);
+      final apologyMatch = RegExp(r"\*\*Apology & Confirmation.*?:?\*\*\s*(.*)", dotAll: true).firstMatch(_currentSuggestion);
 
       if (adviceMatch != null && adviceMatch.group(1)!.trim().isNotEmpty) {
         sections.add(_buildSectionCard(
@@ -280,7 +294,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
           const SizedBox(height: 4),
           Text(
             content,
-            style: TextStyle(fontSize: 14, color: Colors.black87, height: 1.3),
+            style: TextStyle(fontSize: 14, color: fg, height: 1.3),
           ),
         ],
       ),
@@ -325,9 +339,9 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.mic_none, size: 60, color: Colors.grey[400]),
+                    Icon(Icons.mic_none, size: 60, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.4)),
                     const SizedBox(height: 10),
-                    Text("Ready to listen...", style: TextStyle(color: Colors.grey[500], fontSize: 16)),
+                    Text("Ready to listen...", style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 16)),
                   ],
                 ),
               )
@@ -341,45 +355,10 @@ class _NewSessionScreenState extends State<NewSessionScreen> {
                   final msg = _sessionLogs[_sessionLogs.length - 1 - index];
                   bool isMe = msg['speaker'] == "User";
                   
-                  return Align(
-                    alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                      decoration: BoxDecoration(
-                        color: isMe ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer,
-                        borderRadius: BorderRadius.only(
-                          topLeft: const Radius.circular(16),
-                          topRight: const Radius.circular(16),
-                          bottomLeft: isMe ? const Radius.circular(16) : Radius.zero,
-                          bottomRight: isMe ? Radius.zero : const Radius.circular(16),
-                        ),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 5, offset: const Offset(0, 2))
-                        ]
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (!isMe) // Show label for other person
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 4.0),
-                              child: Text(
-                                "Other",
-                                style: TextStyle(fontSize: 10, color: Colors.grey[600], fontWeight: FontWeight.bold),
-                                ),
-                            ),
-                          Text(
-                            msg['text'],
-                            style: TextStyle(
-                              color: isMe ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
-                              fontSize: 16
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  return ChatBubble(
+                    text: msg['text'],
+                    isUser: isMe,
+                    speakerLabel: isMe ? null : "Other",
                   );
                 },
               ),

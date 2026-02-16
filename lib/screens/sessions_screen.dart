@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
+import '../widgets/chat_bubble.dart';
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -243,15 +243,20 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
 
 // --- HELPER: EMPTY STATE ---
 Widget _buildEmptyState(String message, IconData icon) {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 64, color: Colors.grey[300]),
-        const SizedBox(height: 16),
-        Text(message, style: TextStyle(fontSize: 16, color: Colors.grey[500])),
-      ],
-    ),
+  return Builder(
+    builder: (context) {
+      final theme = Theme.of(context);
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 64, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3)),
+            const SizedBox(height: 16),
+            Text(message, style: TextStyle(fontSize: 16, color: theme.colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      );
+    },
   );
 }
 
@@ -335,36 +340,22 @@ class _SessionDetailPageState extends State<SessionDetailPage> {
                 bubbleColor = Theme.of(context).colorScheme.secondaryContainer;
               }
 
-              return Align(
-                alignment: align,
-                child: Column(
-                  crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                      decoration: BoxDecoration(
-                        color: bubbleColor,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))
-                        ]
-                      ),
-                      child: Text(
-                        log['content'],
-                        style: TextStyle(color: textColor, fontSize: 15),
-                      ),
+              return Column(
+                crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  ChatBubble(
+                    text: log['content'],
+                    isUser: isUser,
+                    speakerLabel: isUser ? null : (isOther ? "Other" : "System"),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
+                    child: Text(
+                      isUser ? "You" : (isOther ? "Other" : "System"),
+                      style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4, right: 4, bottom: 8),
-                      child: Text(
-                        isUser ? "You" : (isOther ? "Other" : "System"),
-                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               );
             },
           );

@@ -102,8 +102,14 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none),
+            tooltip: "Coming Soon",
             onPressed: () {
-              Navigator.pushNamed(context, '/notifications');
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Notifications coming soon!"),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             },
           )
         ],
