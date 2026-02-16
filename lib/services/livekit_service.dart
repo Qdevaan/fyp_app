@@ -5,7 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'api_service.dart';
 
 class LiveKitService extends ChangeNotifier {
-  final ApiService _apiService;
+  ApiService _apiService;
   Room? _room;
   EventsListener<RoomEvent>? _listener;
   
@@ -23,6 +23,12 @@ class LiveKitService extends ChangeNotifier {
 
   LiveKitService(this._apiService);
 
+  /// Update the API service reference without recreating the whole service.
+  /// This preserves the LiveKit connection state across Provider updates.
+  void updateApiService(ApiService apiService) {
+    _apiService = apiService;
+  }
+
   Future<void> connect(String userId) async {
     if (_isConnected) return;
 
@@ -30,7 +36,7 @@ class LiveKitService extends ChangeNotifier {
     try {
       final tokenData = await _apiService.getLiveKitToken(userId);
       if (tokenData == null) {
-        print("Failed to get LiveKit token");
+        debugPrint("Failed to get LiveKit token");
         return;
       }
 
@@ -59,24 +65,24 @@ class LiveKitService extends ChangeNotifier {
             final bool isFinal = data['is_final'] ?? false;
             final String speaker = data['speaker'] ?? "user";
             
-            print("TRANSCRIPT: $text (Final: $isFinal, Speaker: $speaker)");
+            debugPrint("TRANSCRIPT: $text (Final: $isFinal, Speaker: $speaker)");
             
             _currentTranscript = text;
             _currentSpeaker = speaker;
             notifyListeners();
           } else if (data['type'] == 'assistant_response') {
              final String text = data['text'];
-             print("ADVICE: $text");
+             debugPrint("ADVICE: $text");
              _currentAdvice = text;
              notifyListeners();
           }
         } catch (e) {
-          print("Error parsing data: $e");
+          debugPrint("Error parsing data: $e");
         }
       });
 
     } catch (e) {
-      print("LiveKit Connection Error: $e");
+      debugPrint("LiveKit Connection Error: $e");
       _isConnected = false;
       notifyListeners();
     }
@@ -98,3 +104,4 @@ class LiveKitService extends ChangeNotifier {
     super.dispose();
   }
 }
+

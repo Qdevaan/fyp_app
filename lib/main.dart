@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/connection_service.dart';
 import 'services/api_service.dart';
 import 'services/livekit_service.dart';
@@ -17,23 +18,25 @@ import 'screens/sessions_screen.dart';
 import 'screens/new_session_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
-// import 'screens/progress_screen.dart';
-// import 'screens/notifications_screen.dart';
-// import 'screens/voice_enrollment_screen.dart';
 import 'screens/splash_screen.dart';
-// import 'theme/theme_data.dart';
-
-const String SUPABASE_URL = 'https://czjwoqwbwtojlypbzupi.supabase.co';
-const String SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6andvcXdid3Rvamx5cGJ6dXBpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQwMDMxODksImV4cCI6MjA3OTU3OTE4OX0.JXBfOGI_rVumZj9qBwxXguW_6hffjdvrhnly37K3kwM';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Supabase
+  // Load environment variables from .env file
+  await dotenv.load(fileName: ".env");
+
+  // Initialize Supabase using environment variables
   await Supabase.initialize(
-    url: SUPABASE_URL,
-    anonKey: SUPABASE_ANON_KEY,
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
+
+  // Set up global error handling
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exceptionAsString()}');
+  };
 
   runApp(const BubblesApp());
 }
@@ -54,9 +57,10 @@ class BubblesApp extends StatelessWidget {
         ),
 
         // 3. LiveKit Service (Depends on ApiService)
+        // FIX: Reuse previous instance instead of creating new one on every update
         ChangeNotifierProxyProvider<ApiService, LiveKitService>(
           create: (context) => LiveKitService(Provider.of<ApiService>(context, listen: false)),
-          update: (context, api, previous) => LiveKitService(api),
+          update: (context, api, previous) => previous!..updateApiService(api),
         ),
 
         // 4. Theme Provider
@@ -110,11 +114,8 @@ class BubblesApp extends StatelessWidget {
               '/new-session': (context) => const NewSessionScreen(),
               '/consultant': (context) => const ConsultantScreen(),
               '/sessions': (context) => const SessionsScreen(),
-              // '/progress': (context) => const ProgressScreen(),
-              // '/notifications': (context) => const NotificationsScreen(),
               '/about': (context) => const AboutScreen(),
               '/settings': (context) => const SettingsScreen(),
-              // '/enroll-voice': (context) => const VoiceEnrollmentScreen(),
             },
           );
         },

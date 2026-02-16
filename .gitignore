@@ -47,3 +47,11 @@ app.*.map.json
 
 secrets.txt
 content.pdf
+
+# Environment variables (contains API keys)
+.env
+server/.env
+
+# Python cache
+__pycache__/
+server/__pycache__/

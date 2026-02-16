@@ -2,16 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:record/record.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/io.dart';
 
 class DeepgramService extends ChangeNotifier {
-  // CONFIG
-  static const String _apiKey = "8f4f1c36dd57bd1fdeb2d77841d095bb5e8c1983"; 
-  // Removed encoding=linear16 to allow auto-detection (since we are sending AAC/Container)
-  // Kept sample_rate=16000 just in case, but Deepgram usually detects it.
-  // Actually, for AAC, it's safer to let Deepgram detect everything.
+  // CONFIG — loaded from environment variables
+  static String get _apiKey => dotenv.env['DEEPGRAM_API_KEY'] ?? '';
   static const String _wsUrl = "wss://api.deepgram.com/v1/listen?smart_format=true&diarize=true&model=nova-2";
 
   // STATE
@@ -32,10 +30,15 @@ class DeepgramService extends ChangeNotifier {
   Future<void> connect() async {
     if (_isConnected) return;
 
+    if (_apiKey.isEmpty) {
+      debugPrint("❌ DeepgramService: No API key found in .env");
+      return;
+    }
+
     try {
       // 1. Check Permissions
       if (!await _recorder.hasPermission()) {
-        print("❌ DeepgramService: No microphone permission");
+        debugPrint("❌ DeepgramService: No microphone permission");
         return;
       }
 
@@ -46,7 +49,7 @@ class DeepgramService extends ChangeNotifier {
       );
 
       await _channel!.ready;
-      print("✅ DeepgramService: WebSocket Connected");
+      debugPrint("✅ DeepgramService: WebSocket Connected");
       _isConnected = true;
       notifyListeners();
 
@@ -73,17 +76,17 @@ class DeepgramService extends ChangeNotifier {
           _handleMessage(message);
         },
         onError: (error) {
-          print("❌ DeepgramService: WebSocket Error: $error");
+          debugPrint("❌ DeepgramService: WebSocket Error: $error");
           disconnect();
         },
         onDone: () {
-          print("⚠️ DeepgramService: WebSocket Closed");
+          debugPrint("⚠️ DeepgramService: WebSocket Closed");
           disconnect();
         },
       );
 
     } catch (e) {
-      print("❌ DeepgramService: Connection Failed: $e");
+      debugPrint("❌ DeepgramService: Connection Failed: $e");
       disconnect();
     }
   }
@@ -94,8 +97,6 @@ class DeepgramService extends ChangeNotifier {
       
       // Check if it's a transcript
       if (data['type'] == 'Results') {
-         // Deepgram format: channel -> alternatives -> [0] -> transcript
-         // Diarization: words -> speaker
          final channel = data['channel'];
          final alternatives = channel['alternatives'] as List;
          if (alternatives.isNotEmpty) {
@@ -112,13 +113,13 @@ class DeepgramService extends ChangeNotifier {
              _currentTranscript = transcript;
              _currentSpeaker = speakerId == 0 ? "user" : "other"; // Simple mapping
              
-             print("🗣️ Deepgram: [$_currentSpeaker] $transcript");
+             debugPrint("🗣️ Deepgram: [$_currentSpeaker] $transcript");
              notifyListeners();
            }
          }
       }
     } catch (e) {
-      print("Error parsing Deepgram message: $e");
+      debugPrint("Error parsing Deepgram message: $e");
     }
   }
 

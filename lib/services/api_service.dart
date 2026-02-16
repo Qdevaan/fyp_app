@@ -19,7 +19,7 @@ class ApiService {
         return jsonDecode(response.body);
       }
     } catch (e) {
-      print("Token Error: $e");
+      debugPrint("Token Error: $e");
     }
     return null;
   }
@@ -70,11 +70,11 @@ class ApiService {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        print("Server Error (${response.statusCode}): ${response.body}");
+        debugPrint("Server Error (${response.statusCode}): ${response.body}");
         return {"transcript": "", "suggestion": ""}; // Return empty on error
       }
     } catch (e) {
-      print("API Chunk Error: $e");
+      debugPrint("API Chunk Error: $e");
       return {"transcript": "", "suggestion": ""};
     }
   }
@@ -105,7 +105,7 @@ class ApiService {
 
       return response.statusCode == 200;
     } catch (e) {
-      print("Save Session Error: $e");
+      debugPrint("Save Session Error: $e");
       return false;
     }
   }
@@ -162,7 +162,7 @@ class ApiService {
         return data['advice'];
       }
     } catch (e) {
-      print("Wingman API Error: $e");
+      debugPrint("Wingman API Error: $e");
     }
     return null;
   }

@@ -81,26 +81,26 @@ class ConnectionService with ChangeNotifier {
     if (notifyResult) _updateStatus(ConnectionStatus.connecting);
 
     try {
-      print('Pinging $_serverUrl/health ...');
+      debugPrint('Pinging $_serverUrl/ ...');
       final response = await http.get(
         Uri.parse('$_serverUrl/'),
         headers: {"ngrok-skip-browser-warning": "true"},
       ).timeout(const Duration(seconds: 5));
 
-      print('Ping response: ${response.statusCode}');
+      debugPrint('Ping response: ${response.statusCode}');
 
       // Strictly check for 200 OK on the health endpoint
       if (response.statusCode == 200) {
         _updateStatus(ConnectionStatus.connected);
-        if (notifyResult) print('Connection successful! (Status: ${response.statusCode})');
+        if (notifyResult) debugPrint('Connection successful! (Status: ${response.statusCode})');
         return true;
       } else {
-        print('Server returned error status: ${response.statusCode}');
+        debugPrint('Server returned error status: ${response.statusCode}');
         _updateStatus(ConnectionStatus.error);
         return false;
       }
     } catch (e) {
-      print('Connection check failed: $e');
+      debugPrint('Connection check failed: $e');
       _updateStatus(ConnectionStatus.error);
       return false;
     } finally {
