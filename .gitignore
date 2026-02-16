@@ -55,3 +55,4 @@ server/.env
 # Python cache
 __pycache__/
 server/__pycache__/
+server/new_server.py

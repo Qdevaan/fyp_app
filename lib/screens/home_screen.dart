@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 
 import '../services/auth_service.dart';
 import '../services/connection_service.dart';
+import '../services/voice_assistant_service.dart';
 import '../widgets/app_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,6 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadProfile();
+    // Activate voice assistant now that user is authenticated and on home screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<VoiceAssistantService>(context, listen: false).activate();
+    });
   }
 
   Future<void> _loadProfile() async {
@@ -132,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
-                  ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOut),
+                  ),
                   const SizedBox(height: 30),
 
                   // Feature Cards
@@ -163,10 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: Colors.orangeAccent,
                       route: '/sessions',
                     ),
-                  ].animate(interval: 100.ms)
-                   .fadeIn(duration: 600.ms)
-                   .slideY(begin: 0.2, end: 0, curve: Curves.easeOutBack)
-                   .scale(begin: const Offset(0.9, 0.9), curve: Curves.easeOutBack),
+                  ],
                 ],
               ),
             ),

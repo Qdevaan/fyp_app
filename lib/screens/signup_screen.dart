@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -94,10 +94,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Center(child: AppLogo(size: 120))
-                        .animate()
-                        .fadeIn(duration: 600.ms)
-                        .scale(delay: 200.ms, duration: 400.ms, curve: Curves.easeOutBack),
+                    const Center(child: AppLogo(size: 120)),
                     const SizedBox(height: 24),
                     Text(
                       'Create Account',
@@ -113,7 +110,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ].animate(interval: 100.ms).fadeIn(duration: 500.ms).slideX(begin: -0.1, end: 0),
+                  ],
                 ),
 
                 const SizedBox(height: 40),
@@ -144,7 +141,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       obscure: true,
                       validator: (v) => v == _passCtrl.text ? null : 'Passwords do not match',
                     ),
-                  ].animate(interval: 150.ms, delay: 300.ms).fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
+                  ],
                 ),
 
                 const SizedBox(height: 32),
@@ -176,7 +173,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       onTap: _signupWithGoogle,
                       loading: _loading,
                     ),
-                  ].animate(interval: 150.ms, delay: 600.ms).fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
+                  ],
                 ),
 
                 const SizedBox(height: 24),
@@ -200,7 +197,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                     ),
                   ],
-                ).animate(delay: 900.ms).fadeIn().slideY(begin: 1, end: 0),
+                ),
                 
                 // Bottom spacing for scroll
                 const SizedBox(height: 20),

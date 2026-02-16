@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -35,10 +35,7 @@ class SplashScreen extends StatelessWidget {
               fit: BoxFit.contain,
             ),
           ),
-        )
-        .animate()
-        .scale(duration: 600.ms, curve: Curves.easeOutBack)
-        .fadeIn(duration: 400.ms),
+        ),
       ),
     );
   }

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -314,10 +314,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Center(child: AppLogo(size: 80))
-                    .animate()
-                    .fadeIn(duration: 600.ms)
-                    .scale(delay: 200.ms, curve: Curves.easeOutBack),
+                const Center(child: AppLogo(size: 80)),
                 const SizedBox(height: AppSpacing.lg),
                 Text(
                   'Complete Profile',
@@ -326,7 +323,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                     color: theme.colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
-                ).animate().fadeIn(delay: 300.ms).slideY(begin: 0.2, end: 0),
+                ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Tell us a bit more about yourself',
@@ -334,7 +331,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
-                ).animate().fadeIn(delay: 400.ms).slideY(begin: 0.2, end: 0),
+                ),
                 const SizedBox(height: AppSpacing.xl),
 
                 // 1. Photo Section
@@ -380,7 +377,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                       ),
                     ],
                   ),
-                ).animate().fadeIn(delay: 500.ms).scale(curve: Curves.easeOutBack),
+                ),
                 
                 const SizedBox(height: AppSpacing.xl),
 
@@ -389,7 +386,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                   controller: _nameCtrl,
                   label: 'Full Name',
                   prefixIcon: Icons.person_outline_rounded,
-                ).animate().fadeIn(delay: 600.ms).slideX(begin: 0.1, end: 0),
+                ),
                 
                 const SizedBox(height: AppSpacing.md),
                 
@@ -404,7 +401,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                     child: Text(e, style: TextStyle(color: theme.colorScheme.onSurface))
                   )).toList(),
                   onChanged: (val) => setState(() => _gender = val),
-                ).animate().fadeIn(delay: 700.ms).slideX(begin: 0.1, end: 0),
+                ),
                 
                 const SizedBox(height: AppSpacing.md),
 
@@ -415,7 +412,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                   prefixIcon: Icons.calendar_today_rounded,
                   readOnly: true,
                   onTap: _selectDate,
-                ).animate().fadeIn(delay: 800.ms).slideX(begin: 0.1, end: 0),
+                ),
 
                 const SizedBox(height: AppSpacing.md),
                 
@@ -427,7 +424,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                   readOnly: true,
                   onTap: _showCountryPicker,
                   suffixIcon: Icons.arrow_drop_down_rounded,
-                ).animate().fadeIn(delay: 900.ms).slideX(begin: 0.1, end: 0),
+                ),
 
                 const SizedBox(height: AppSpacing.xl),
                 
@@ -436,7 +433,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                   label: 'Complete Setup', 
                   onTap: _saveProfile, 
                   loading: _loading
-                ).animate().fadeIn(delay: 1000.ms).slideY(begin: 0.2, end: 0),
+                ),
                 const SizedBox(height: AppSpacing.xl),
               ],
             ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+
 
 import '../services/auth_service.dart';
 import '../services/connection_service.dart';
+import '../services/voice_assistant_service.dart';
 import '../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -133,6 +134,87 @@ class _SettingsScreenState extends State<SettingsScreen> {
             
             const Divider(height: 32),
 
+            // ── Voice Assistant Section ──
+            _buildSectionHeader(theme, title: 'Voice Assistant'),
+            Consumer<VoiceAssistantService>(
+              builder: (context, voice, _) {
+                return Column(
+                  children: [
+                    // Wake Word Toggle
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: ListTile(
+                        leading: Icon(
+                          voice.isWakeWordEnabled ? Icons.hearing_rounded : Icons.hearing_disabled_rounded,
+                          color: theme.colorScheme.secondary,
+                        ),
+                        title: const Text('"Hey Bubbles" Wake Word', style: TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          voice.isWakeWordEnabled ? 'Always listening for wake word' : 'Tap mic to activate',
+                          style: TextStyle(color: theme.textTheme.bodySmall?.color),
+                        ),
+                        trailing: Switch(
+                          value: voice.isWakeWordEnabled,
+                          onChanged: (val) => voice.setWakeWordEnabled(val),
+                          activeColor: theme.colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Voice Mode Picker
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16.0, bottom: 8),
+                            child: Text(
+                              'Voice Mode',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          Row(
+                            children: [
+                              _buildVoiceModeCard(
+                                context, voice,
+                                mode: VoiceMode.male,
+                                icon: Icons.man_rounded,
+                                label: 'Male',
+                                color: Colors.blueAccent,
+                              ),
+                              const SizedBox(width: 10),
+                              _buildVoiceModeCard(
+                                context, voice,
+                                mode: VoiceMode.female,
+                                icon: Icons.woman_rounded,
+                                label: 'Female',
+                                color: Colors.pinkAccent,
+                              ),
+                              const SizedBox(width: 10),
+                              _buildVoiceModeCard(
+                                context, voice,
+                                mode: VoiceMode.neutral,
+                                icon: Icons.smart_toy_rounded,
+                                label: 'Jarvis',
+                                color: Colors.tealAccent.shade700,
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+
+            const Divider(height: 32),
+
             _buildSectionHeader(theme, title: 'Account'),
             _SettingsTile(
               context: context,
@@ -205,17 +287,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
             ),
             const SizedBox(height: 32),
-          ].animate(interval: 50.ms).fadeIn(duration: 400.ms).slideX(begin: -0.05, end: 0, curve: Curves.easeOut),
+          ],
         ),
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('The $feature is coming soon!'),
-        behavior: SnackBarBehavior.floating,
       ),
     );
   }
@@ -279,6 +352,62 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildVoiceModeCard(
+    BuildContext context,
+    VoiceAssistantService voice, {
+    required VoiceMode mode,
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    final isSelected = voice.voiceMode == mode;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => voice.setVoiceMode(mode),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            color: isSelected
+                ? color.withOpacity(0.15)
+                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            border: Border.all(
+              color: isSelected ? color : theme.colorScheme.outlineVariant,
+              width: isSelected ? 2 : 1,
+            ),
+            boxShadow: isSelected
+                ? [BoxShadow(color: color.withOpacity(0.2), blurRadius: 8, spreadRadius: 1)]
+                : [],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: isSelected ? color : theme.colorScheme.onSurfaceVariant, size: 30),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                  color: isSelected ? color : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (isSelected)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Icon(Icons.check_circle_rounded, color: color, size: 16),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
