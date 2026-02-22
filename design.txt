@@ -1,0 +1,153 @@
+Design Prompt for Stitch
+
+You are a senior mobile product designer and UX strategist. Design a polished, modern, premium Flutter app UI for “Bubbles” (an AI Wingman + Consultant app).
+
+Goal
+Create a complete mobile app design system and high-fidelity screen set that feels intelligent, calm, trustworthy, and futuristic without being flashy. The design must be implementation-ready for Flutter (Material 3 style), with clear component specs and consistent spacing, typography, and states.
+
+Product Context
+Bubbles has two core modes:
+1) Live Wingman: real-time conversation assistance during live social/professional interactions.
+2) Consultant AI: deeper strategic advice based on memory/history of past sessions.
+
+Primary User Value
+- Fast real-time help under pressure.
+- Long-term insight from conversation history.
+- Confidence, clarity, and privacy.
+
+Design Direction
+- Style: premium minimal, clean cards, subtle depth, soft gradients only where needed.
+- Tone: confident, empathetic, smart assistant.
+- Visual language: rounded cards, clear hierarchy, high readability, low clutter.
+- Motion: short and purposeful micro-interactions only.
+- Accessibility: WCAG-friendly contrast, touch targets >= 44px, readable text at all sizes.
+
+Brand Personality
+- Intelligent
+- Calm
+- Reliable
+- Human-centered
+- Strategic
+
+Platform + Constraints
+- Mobile-first app (Android and iOS).
+- Use Material 3 patterns adapted to custom brand style.
+- Light and dark mode versions for all core screens.
+- Keep UI feasible for Flutter widgets and Provider-based state architecture.
+
+Navigation Structure
+Use this information architecture:
+- Splash
+- Auth flow:
+  - Login
+  - Sign up
+  - Verify email
+  - Profile completion
+- Main app:
+  - Home dashboard
+  - New Live Session (Wingman)
+  - Consultant AI chat
+  - Sessions history
+  - Connections/contacts
+  - Settings
+  - About
+- Side drawer navigation from Home and relevant primary screens.
+
+Core UX Requirements
+1) Home Dashboard
+- Personalized welcome with user name/avatar.
+- Three prominent feature cards:
+  - Live Wingman
+  - Consultant AI
+  - History
+- Clear visual priority for “Live Wingman” as primary action.
+- Connection status indicator concept (Connected / Connecting / Offline) integrated subtly near profile area.
+
+2) New Live Session Screen
+- Setup state before session starts (mic, permissions, connection readiness).
+- Strong clear CTA to start session.
+- Real-time guidance area concept once active (listening state, short actionable tips).
+- Visual safety: never overwhelm user while in live mode.
+
+3) Consultant AI Screen
+- Chat-first layout with excellent readability.
+- Distinct user vs assistant message styling.
+- Support markdown-like rich text feel for assistant output.
+- Input area with attach/voice affordance placeholders.
+- Show memory-aware hint (for example “Using your past sessions”).
+
+4) Sessions History
+- List of past sessions with date, type (Wingman/Consultant), short summary.
+- Search and filter bar concept (simple and clean).
+- Session detail entry affordance.
+
+5) Connections Screen
+- Relationship/contact cards with name, context tags, and quick actions.
+- Empty state design for first-time users.
+
+6) Settings
+- Theme behavior UI (follow system with clear explanation).
+- Account, privacy, permissions, notifications sections.
+- Simple, structured list layout.
+
+7) Auth Screens
+- Professional and minimal onboarding/auth visuals.
+- High trust look and clear form validation states.
+- Smooth transition from sign-up to verify email to profile completion.
+
+Design System Requirements
+Create and show:
+- Color tokens (semantic): primary, secondary, surface, surface-variant, success, warning, error, info.
+- Neutral scale for text/background layers.
+- Typography scale: display, headline, title, body, label with usage guidance.
+- Spacing scale that maps to 6, 12, 18, 24, 32 patterns.
+- Corner radius scale aligned with 8, 12, 20, 28.
+- Elevation/shadow guidelines (subtle, minimal).
+- Icon style guidance.
+- Button variants (primary, secondary, text, danger).
+- Card component spec.
+- Input field spec.
+- Chip/tag spec.
+- Toast/snackbar and inline status specs.
+
+State Design Requirements
+For key components and screens, include visual states:
+- Default
+- Hover/pressed (if relevant)
+- Focus
+- Disabled
+- Loading
+- Empty
+- Error
+- Success
+
+Microcopy Style
+- Short, supportive, and actionable.
+- Avoid robotic phrasing.
+- Include examples for:
+  - Empty states
+  - Permission prompts
+  - Session start errors
+  - Reconnect messages
+
+Output Format Needed
+Provide the design output in this order:
+1) High-level design rationale (concise)
+2) Color + typography + spacing token tables
+3) Component library specs
+4) Full screen-by-screen layouts (light + dark)
+5) Interaction and motion notes
+6) Accessibility checklist
+7) Developer handoff notes for Flutter
+
+Quality Bar
+- Must look production-ready, not template-like.
+- Must feel consistent across all screens.
+- Prioritize clarity and confidence under real-time usage pressure.
+- Avoid unnecessary decorative elements.
+
+Important
+- Keep the design minimal and polished.
+- Do not invent extra features outside this scope.
+- Every screen should clearly map to the app architecture above.
+- Ensure all UI decisions are practical for Flutter implementation.

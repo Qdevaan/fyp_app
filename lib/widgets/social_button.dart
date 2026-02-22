@@ -1,65 +1,57 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
 
 class SocialButton extends StatelessWidget {
   final String label;
+  final String? imagePath;
+  final IconData? icon;
   final VoidCallback onTap;
   final bool loading;
-  final IconData? icon;
-  final String? imagePath;
 
   const SocialButton({
     super.key,
     required this.label,
-    required this.onTap,
-    this.icon,
     this.imagePath,
+    this.icon,
+    required this.onTap,
     this.loading = false,
-  }) : assert(icon != null || imagePath != null, 'Either icon or imagePath must be provided');
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: loading ? null : onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14),
+          height: 52,
           decoration: BoxDecoration(
-            border: Border.all(color: theme.colorScheme.outline.withOpacity(0.3)),
+            color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            color: theme.colorScheme.surface,
+            border: Border.all(
+              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            ),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (loading)
-                SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                )
-              else ...[
-                if (imagePath != null)
-                  Image.asset(imagePath!, height: 24, width: 24)
-                else
-                  Icon(icon, size: 24, color: theme.colorScheme.onSurface),
-                const SizedBox(width: 12),
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                    fontSize: 16,
-                  ),
+              if (imagePath != null)
+                Image.asset(imagePath!, height: 22, width: 22)
+              else if (icon != null)
+                Icon(icon, size: 22, color: isDark ? Colors.white : Colors.black87),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
                 ),
-              ],
+              ),
             ],
           ),
         ),

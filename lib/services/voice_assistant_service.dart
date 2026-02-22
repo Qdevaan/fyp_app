@@ -1,13 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:http/http.dart' as http;
 import 'connection_service.dart';
+import 'wake_word_service.dart';
 
 // ─── Enums ───────────────────────────────────────────────
 
@@ -20,10 +24,11 @@ enum VoiceAssistantState {
 }
 
 /// Voice modes the user can choose from.
+/// Each maps to a specific Deepgram Aura voice model.
 enum VoiceMode {
-  male,    // Deep, lower pitch
-  female,  // Higher pitch
-  neutral, // Robotic, Jarvis-like
+  male,    // aura-arcas-en   — masculine, confident
+  female,  // aura-asteria-en — feminine, clear, energetic
+  neutral, // aura-orpheus-en — neutral, professional
 }
 
 // ─── Service ────────────────────────────────────────────
@@ -31,13 +36,15 @@ enum VoiceMode {
 class VoiceAssistantService extends ChangeNotifier {
   // ── Dependencies ──
   final ConnectionService _connectionService;
+  final WakeWordService _wakeWordService;
 
-  // ── Speech-to-Text ──
+  // ── Speech-to-Text (used ONLY for command capture, NOT wake word) ──
   final SpeechToText _stt = SpeechToText();
   bool _sttInitialized = false;
 
-  // ── Text-to-Speech ──
-  final FlutterTts _tts = FlutterTts();
+  // ── Deepgram Aura TTS (replaces flutter_tts) ──
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  String _deepgramApiKey = '';
 
   // ── State ──
   VoiceAssistantState _state = VoiceAssistantState.idle;
@@ -62,16 +69,14 @@ class VoiceAssistantService extends ChangeNotifier {
   VoiceMode _voiceMode = VoiceMode.neutral;
   VoiceMode get voiceMode => _voiceMode;
 
-  // ── Wake word detection ──
-  bool _isBackgroundListening = false;
-  Timer? _restartTimer;
-
   // ── Prefs keys ──
   static const String _voiceModeKey = 'voice_mode';
   static const String _wakeWordKey = 'wake_word_enabled';
 
   // ── Constructor ──
-  VoiceAssistantService(this._connectionService) {
+  VoiceAssistantService(this._connectionService, this._wakeWordService) {
+    // Wire up the wake word callback
+    _wakeWordService.onWakeWordDetected = _onWakeWordDetected;
     _init();
   }
 
@@ -80,18 +85,25 @@ class VoiceAssistantService extends ChangeNotifier {
   Future<void> _init() async {
     await _loadPreferences();
     await _initSTT();
-    await _initTTS();
+    _initDeepgramTTS();
+    await _wakeWordService.init();
     // Don't auto-start wake word listening here.
     // Wait for activate() to be called (e.g. from HomeScreen).
   }
 
   /// Call this when user is authenticated and on a main screen.
+  /// Wake word listening always starts here (unless explicitly disabled in settings).
   void activate() {
     if (_isActive) return;
     _isActive = true;
     debugPrint('🎙️ Voice assistant activated');
-    if (_isWakeWordEnabled && _sttInitialized) {
-      _startWakeWordListening();
+    // Always start wake word on activation — user can disable in settings if needed
+    if (_isWakeWordEnabled) {
+      _wakeWordService.init().then((_) {
+        if (_isActive && _isWakeWordEnabled) {
+          _wakeWordService.startListening();
+        }
+      });
     }
   }
 
@@ -100,7 +112,7 @@ class VoiceAssistantService extends ChangeNotifier {
     if (!_isActive) return;
     _isActive = false;
     debugPrint('🎙️ Voice assistant deactivated');
-    _stopWakeWordListening();
+    _wakeWordService.stopListening();
   }
 
   Future<void> _loadPreferences() async {
@@ -114,7 +126,6 @@ class VoiceAssistantService extends ChangeNotifier {
   Future<void> _initSTT() async {
     try {
       _sttInitialized = await _stt.initialize(
-        onStatus: _onSTTStatus,
         onError: (error) => debugPrint('🎙️ STT error: ${error.errorMsg}'),
       );
       debugPrint('🎙️ STT initialized: $_sttInitialized');
@@ -123,16 +134,20 @@ class VoiceAssistantService extends ChangeNotifier {
     }
   }
 
-  Future<void> _initTTS() async {
-    await _tts.setLanguage('en-US');
-    await _applyVoiceMode();
-    _tts.setCompletionHandler(() {
-      // When TTS finishes speaking, return to idle
+  void _initDeepgramTTS() {
+    _deepgramApiKey = dotenv.env['DEEPGRAM_API_KEY'] ?? '';
+    if (_deepgramApiKey.isEmpty) {
+      debugPrint('⚠️ Deepgram: No DEEPGRAM_API_KEY found in .env — TTS will not work');
+    } else {
+      debugPrint('🔊 Deepgram Aura TTS initialized');
+    }
+
+    // When audio finishes playing, return to idle and restart wake word
+    _audioPlayer.onPlayerComplete.listen((_) {
       _setState(VoiceAssistantState.idle);
-      // Restart wake word after a short delay
       Future.delayed(const Duration(milliseconds: 500), () {
-        if (_isWakeWordEnabled && !_isBackgroundListening) {
-          _startWakeWordListening();
+        if (_isActive && _isWakeWordEnabled) {
+          _wakeWordService.startListening();
         }
       });
     });
@@ -140,29 +155,24 @@ class VoiceAssistantService extends ChangeNotifier {
 
   // ─── Voice Mode ───────────────────────────────────────
 
+  /// Returns the Deepgram Aura model name for the current voice mode.
+  String get _deepgramModel {
+    switch (_voiceMode) {
+      case VoiceMode.male:
+        return 'aura-arcas-en';
+      case VoiceMode.female:
+        return 'aura-asteria-en';
+      case VoiceMode.neutral:
+        return 'aura-orpheus-en';
+    }
+  }
+
   Future<void> setVoiceMode(VoiceMode mode) async {
     _voiceMode = mode;
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_voiceModeKey, mode.index);
-    await _applyVoiceMode();
-  }
-
-  Future<void> _applyVoiceMode() async {
-    switch (_voiceMode) {
-      case VoiceMode.male:
-        await _tts.setPitch(0.8);
-        await _tts.setSpeechRate(0.45);
-        break;
-      case VoiceMode.female:
-        await _tts.setPitch(1.3);
-        await _tts.setSpeechRate(0.50);
-        break;
-      case VoiceMode.neutral:
-        await _tts.setPitch(1.0);
-        await _tts.setSpeechRate(0.42);
-        break;
-    }
+    // No need to reconfigure anything — _deepgramModel getter handles it
   }
 
   // ─── Wake Word Toggle ────────────────────────────────
@@ -173,89 +183,28 @@ class VoiceAssistantService extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_wakeWordKey, enabled);
 
-    if (enabled) {
-      _startWakeWordListening();
+    if (enabled && _isActive) {
+      await _wakeWordService.startListening();
     } else {
-      _stopWakeWordListening();
+      await _wakeWordService.stopListening();
     }
   }
 
-  // ─── Wake Word Listening (Background) ────────────────
+  // ─── Wake Word Detected (Porcupine Callback) ─────────
 
-  void _startWakeWordListening() {
-    if (!_isActive) return;
-    if (!_sttInitialized || _isBackgroundListening) return;
-    if (_state != VoiceAssistantState.idle) return;
+  void _onWakeWordDetected() {
+    debugPrint('🎙️ ✅ Wake word "Hey Bubbles" detected via Porcupine!');
 
-    _isBackgroundListening = true;
-    debugPrint('🎙️ Starting wake word listening...');
+    // Stop Porcupine while we capture the user's command
+    // (avoids microphone conflict with speech_to_text)
+    _wakeWordService.stopListening();
 
-    _stt.listen(
-      onResult: _onWakeWordResult,
-      listenMode: ListenMode.dictation,
-      pauseFor: const Duration(seconds: 3),
-      cancelOnError: false,
-      partialResults: true,
-    );
+    // Show overlay and start active command listening
+    _showOverlay();
+    _startCommandListening();
   }
 
-  void _stopWakeWordListening() {
-    _isBackgroundListening = false;
-    _restartTimer?.cancel();
-    if (_stt.isListening) {
-      _stt.stop();
-    }
-  }
-
-  void _onWakeWordResult(SpeechRecognitionResult result) {
-    final text = result.recognizedWords.toLowerCase();
-    debugPrint('🎙️ Wake word partial: "$text"');
-
-    if (text.contains('hey bubbles') || text.contains('hey bubble')) {
-      debugPrint('🎙️ ✅ Wake word detected!');
-      _stt.stop();
-      _isBackgroundListening = false;
-
-      // Extract any command text that came after the wake word
-      String afterWake = '';
-      final wakeIdx = text.indexOf('hey bubbles');
-      final wakeIdx2 = text.indexOf('hey bubble');
-      final idx = wakeIdx >= 0 ? wakeIdx : wakeIdx2;
-      if (idx >= 0) {
-        final wakePhrase = wakeIdx >= 0 ? 'hey bubbles' : 'hey bubble';
-        afterWake = text.substring(idx + wakePhrase.length).trim();
-      }
-
-      // Show overlay and start active listening
-      _showOverlay();
-
-      if (afterWake.isNotEmpty && result.finalResult) {
-        // User already said the command with the wake word
-        _processCommand(afterWake);
-      } else {
-        // Switch to active command listening
-        _startCommandListening();
-      }
-    }
-  }
-
-  void _onSTTStatus(String status) {
-    debugPrint('🎙️ STT status: $status');
-    if (status == 'done' || status == 'notListening') {
-      if (_isBackgroundListening) {
-        // Restart wake word listening after a pause
-        _isBackgroundListening = false;
-        _restartTimer?.cancel();
-        _restartTimer = Timer(const Duration(milliseconds: 300), () {
-          if (_isActive && _isWakeWordEnabled && _state == VoiceAssistantState.idle) {
-            _startWakeWordListening();
-          }
-        });
-      }
-    }
-  }
-
-  // ─── Active Command Listening ────────────────────────
+  // ─── Active Command Listening (STT) ──────────────────
 
   void _startCommandListening() {
     if (!_sttInitialized) return;
@@ -288,14 +237,6 @@ class VoiceAssistantService extends ChangeNotifier {
         _hideOverlayAfterDelay();
       }
     }
-  }
-
-  // ─── Manual Activation (Tap the FAB) ─────────────────
-
-  void activateManually() {
-    _stopWakeWordListening();
-    _showOverlay();
-    _startCommandListening();
   }
 
   // ─── Command Processing ──────────────────────────────
@@ -346,9 +287,7 @@ class VoiceAssistantService extends ChangeNotifier {
   }
 
   String _getUserId() {
-    // Get user ID from Supabase - imported at usage site
     try {
-      // Access via a method that can be set externally
       return _userId ?? 'anonymous';
     } catch (e) {
       return 'anonymous';
@@ -387,13 +326,62 @@ class VoiceAssistantService extends ChangeNotifier {
     }
   }
 
-  // ─── TTS ─────────────────────────────────────────────
+  // ─── Deepgram Aura TTS ──────────────────────────────
 
+  /// Speaks text using Deepgram Aura TTS API.
+  /// Sends text to Deepgram, receives MP3 audio bytes, and plays them.
   Future<void> _speak(String text) async {
     _lastResponse = text;
     _setState(VoiceAssistantState.speaking);
     notifyListeners();
-    await _tts.speak(text);
+
+    // If no API key, fall back silently (the text is still shown in overlay)
+    if (_deepgramApiKey.isEmpty) {
+      debugPrint('⚠️ Deepgram TTS: No API key, skipping audio playback');
+      Future.delayed(const Duration(seconds: 2), () {
+        _setState(VoiceAssistantState.idle);
+        if (_isActive && _isWakeWordEnabled) {
+          _wakeWordService.startListening();
+        }
+      });
+      return;
+    }
+
+    try {
+      debugPrint('🔊 Deepgram TTS: Requesting audio with model=$_deepgramModel');
+
+      final response = await http.post(
+        Uri.parse('https://api.deepgram.com/v1/speak?model=$_deepgramModel'),
+        headers: {
+          'Authorization': 'Token $_deepgramApiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'text': text}),
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        // Save audio bytes to a temp file and play
+        final tempDir = await getTemporaryDirectory();
+        final audioFile = File('${tempDir.path}/bubbles_tts_response.mp3');
+        await audioFile.writeAsBytes(response.bodyBytes);
+
+        await _audioPlayer.play(DeviceFileSource(audioFile.path));
+        debugPrint('🔊 Deepgram TTS: Playing audio (${response.bodyBytes.length} bytes)');
+      } else {
+        debugPrint('❌ Deepgram TTS error: ${response.statusCode} ${response.body}');
+        // Still return to idle on error
+        _setState(VoiceAssistantState.idle);
+        if (_isActive && _isWakeWordEnabled) {
+          _wakeWordService.startListening();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Deepgram TTS network error: $e');
+      _setState(VoiceAssistantState.idle);
+      if (_isActive && _isWakeWordEnabled) {
+        _wakeWordService.startListening();
+      }
+    }
   }
 
   // ─── Overlay Visibility ──────────────────────────────
@@ -406,15 +394,15 @@ class VoiceAssistantService extends ChangeNotifier {
   void hideOverlay() {
     _isOverlayVisible = false;
     _setState(VoiceAssistantState.idle);
-    _tts.stop();
+    _audioPlayer.stop();
     if (_stt.isListening) {
       _stt.stop();
     }
     notifyListeners();
-    // Restart wake word
-    if (_isWakeWordEnabled) {
+    // Restart Porcupine wake word listening
+    if (_isActive && _isWakeWordEnabled) {
       Future.delayed(const Duration(milliseconds: 500), () {
-        _startWakeWordListening();
+        _wakeWordService.startListening();
       });
     }
   }
@@ -436,9 +424,8 @@ class VoiceAssistantService extends ChangeNotifier {
 
   @override
   void dispose() {
-    _restartTimer?.cancel();
     _stt.stop();
-    _tts.stop();
+    _audioPlayer.dispose();
     super.dispose();
   }
 }

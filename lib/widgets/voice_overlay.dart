@@ -1,11 +1,13 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../services/voice_assistant_service.dart';
+import '../theme/design_tokens.dart';
 
-/// A global floating voice assistant overlay.
-/// Shows a mic FAB and expands into a glassmorphic panel with animations.
+/// A global voice assistant overlay that matches the Bubbles design system.
+/// Triggered by the "Hey Bubbles" wake word — slides up from the bottom
+/// with a glassmorphic panel showing state, waveforms, and response text.
 class VoiceOverlay extends StatefulWidget {
   final GlobalKey<NavigatorState>? navigatorKey;
 
@@ -21,23 +23,20 @@ class _VoiceOverlayState extends State<VoiceOverlay>
   late AnimationController _waveController;
   late Animation<double> _pulseAnimation;
 
-  // Draggable FAB position (null = not yet initialized, will default to bottom-right)
-  Offset? _fabOffset;
-
   @override
   void initState() {
     super.initState();
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1800),
     )..repeat(reverse: true);
 
     _waveController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1000),
     )..repeat();
 
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.15).animate(
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
@@ -53,12 +52,10 @@ class _VoiceOverlayState extends State<VoiceOverlay>
   Widget build(BuildContext context) {
     return Consumer<VoiceAssistantService>(
       builder: (context, assistant, _) {
-        // Don't show overlay on auth screens (login, signup, etc.)
-        if (!assistant.isActive) {
-          return const SizedBox.shrink();
-        }
+        // Don't show on auth screens
+        if (!assistant.isActive) return const SizedBox.shrink();
 
-        // Check for pending navigation
+        // Handle pending navigation
         final nav = assistant.consumePendingNavigation();
         if (nav != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -66,339 +63,312 @@ class _VoiceOverlayState extends State<VoiceOverlay>
           });
         }
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            // Initialize FAB position to bottom-right on first build
-            _fabOffset ??= Offset(
-              constraints.maxWidth - 24 - 60,  // 60 = FAB size
-              constraints.maxHeight - 24 - 60,
-            );
+        // Only render when overlay is visible
+        if (!assistant.isOverlayVisible) return const SizedBox.shrink();
 
-            return Stack(
-              children: [
-                // ── Overlay Panel ──
-                if (assistant.isOverlayVisible)
-                  Positioned.fill(
-                    child: GestureDetector(
-                      onTap: () => assistant.hideOverlay(),
-                      child: Container(color: Colors.black54),
-                    ),
-                  ),
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
-                if (assistant.isOverlayVisible)
-                  Positioned(
-                    bottom: 100,
-                    left: 24,
-                    right: 24,
-                    child: _buildOverlayPanel(context, assistant),
-                  ),
-
-                // ── Draggable Floating Mic Button ──
-                if (!assistant.isOverlayVisible)
-                  Positioned(
-                    left: _fabOffset!.dx,
-                    top: _fabOffset!.dy,
-                    child: GestureDetector(
-                      onPanUpdate: (details) {
-                        setState(() {
-                          final newDx = (_fabOffset!.dx + details.delta.dx)
-                              .clamp(0.0, constraints.maxWidth - 60);
-                          final newDy = (_fabOffset!.dy + details.delta.dy)
-                              .clamp(0.0, constraints.maxHeight - 60);
-                          _fabOffset = Offset(newDx, newDy);
-                        });
-                      },
-                      child: _buildMicFAB(context, assistant),
-                    ),
-                  ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ── Floating Mic Button ────────────────────────────────
-
-  Widget _buildMicFAB(BuildContext context, VoiceAssistantService assistant) {
-    final theme = Theme.of(context);
-    final isWakeActive = assistant.isWakeWordEnabled;
-
-    return AnimatedBuilder(
-      animation: _pulseAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: isWakeActive ? _pulseAnimation.value : 1.0,
-          child: child,
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.4),
-              blurRadius: 20,
-              spreadRadius: 2,
+        return Stack(
+          children: [
+            // ── Scrim ──
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: () => assistant.hideOverlay(),
+                child: AnimatedContainer(
+                  duration: AppDurations.normal,
+                  color: (isDark ? AppColors.backgroundDark : Colors.black)
+                      .withOpacity(0.6),
+                ),
+              ),
             ),
-            BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.2),
-              blurRadius: 40,
-              spreadRadius: 8,
+
+            // ── Panel ──
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildPanel(context, assistant, isDark),
             ),
           ],
-        ),
-        child: FloatingActionButton(
-          heroTag: 'voice_assistant_fab',
-          backgroundColor: theme.colorScheme.primary,
-          foregroundColor: theme.colorScheme.onPrimary,
-          elevation: 8,
-          onPressed: () => assistant.activateManually(),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const Icon(Icons.mic_rounded, size: 28),
-              if (isWakeActive)
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Colors.greenAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: theme.colorScheme.primary, width: 1.5),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  // ── Overlay Panel ──────────────────────────────────────
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // PANEL
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Widget _buildOverlayPanel(BuildContext context, VoiceAssistantService assistant) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 24),
+  Widget _buildPanel(
+      BuildContext context, VoiceAssistantService assistant, bool isDark) {
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        color: isDark
-            ? Colors.grey.shade900.withOpacity(0.92)
-            : Colors.white.withOpacity(0.92),
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  const Color(0xFF0F172A),
+                  const Color(0xFF1E293B),
+                  const Color(0xFF0F172A),
+                ]
+              : [
+                  Colors.white,
+                  const Color(0xFFF1F5F9),
+                  Colors.white,
+                ],
+        ),
         border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.3),
-          width: 1.5,
+          color: isDark
+              ? AppColors.primary.withOpacity(0.15)
+              : Colors.grey.shade200,
+          width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.primary.withOpacity(0.15),
-            blurRadius: 30,
-            spreadRadius: 5,
+            color: AppColors.primary.withOpacity(isDark ? 0.12 : 0.08),
+            blurRadius: 40,
+            spreadRadius: 0,
+            offset: const Offset(0, -8),
           ),
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
             blurRadius: 20,
-            offset: const Offset(0, 8),
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Status Header ──
-          _buildStatusHeader(theme, assistant),
-          const SizedBox(height: 20),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Status Chip ──
+            _buildStatusChip(assistant, isDark),
+            const SizedBox(height: 24),
 
-          // ── Visual Indicator ──
-          _buildVisualIndicator(theme, assistant),
-          const SizedBox(height: 20),
+            // ── Visual Indicator ──
+            _buildVisualIndicator(assistant, isDark),
+            const SizedBox(height: 24),
 
-          // ── Text Display ──
-          _buildTextDisplay(theme, assistant),
-          const SizedBox(height: 16),
+            // ── Text Display ──
+            _buildTextDisplay(assistant, isDark),
+            const SizedBox(height: 20),
 
-          // ── Voice Mode Badge ──
-          _buildVoiceModeBadge(theme, assistant),
-          const SizedBox(height: 12),
-
-          // ── Close Button ──
-          TextButton.icon(
-            onPressed: () => assistant.hideOverlay(),
-            icon: const Icon(Icons.close_rounded, size: 18),
-            label: const Text('Dismiss'),
-            style: TextButton.styleFrom(
-              foregroundColor: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
+            // ── Bottom Bar (voice mode + dismiss) ──
+            _buildBottomBar(assistant, isDark),
+          ],
+        ),
+      ),
       ),
     );
   }
 
-  // ── Status Header ──────────────────────────────────────
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // STATUS CHIP
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Widget _buildStatusHeader(ThemeData theme, VoiceAssistantService assistant) {
-    String statusText;
-    IconData statusIcon;
-    Color statusColor;
+  Widget _buildStatusChip(VoiceAssistantService assistant, bool isDark) {
+    String label;
+    Color accentColor;
+    IconData icon;
 
     switch (assistant.state) {
       case VoiceAssistantState.listening:
-        statusText = 'Listening...';
-        statusIcon = Icons.hearing_rounded;
-        statusColor = Colors.blueAccent;
+        label = 'LISTENING';
+        accentColor = AppColors.primary;
+        icon = Icons.hearing_rounded;
         break;
       case VoiceAssistantState.processing:
-        statusText = 'Processing...';
-        statusIcon = Icons.psychology_rounded;
-        statusColor = Colors.orangeAccent;
+        label = 'THINKING';
+        accentColor = AppColors.warning;
+        icon = Icons.psychology_rounded;
         break;
       case VoiceAssistantState.speaking:
-        statusText = 'Speaking...';
-        statusIcon = Icons.volume_up_rounded;
-        statusColor = Colors.greenAccent;
+        label = 'SPEAKING';
+        accentColor = AppColors.success;
+        icon = Icons.volume_up_rounded;
         break;
       default:
-        statusText = 'Ready';
-        statusIcon = Icons.mic_rounded;
-        statusColor = theme.colorScheme.primary;
+        label = 'READY';
+        accentColor = AppColors.primary;
+        icon = Icons.mic_rounded;
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(statusIcon, color: statusColor, size: 22)
-            .animate(onPlay: (c) => c.repeat())
-            .shimmer(duration: 1500.ms, color: statusColor.withOpacity(0.5)),
-        const SizedBox(width: 10),
-        Text(
-          statusText,
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: statusColor,
-            letterSpacing: 0.5,
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        color: accentColor.withOpacity(0.12),
+        border: Border.all(
+          color: accentColor.withOpacity(0.25),
+          width: 1,
         ),
-      ],
-    );
-  }
-
-  // ── Visual Indicator (Pulsing orb / wave bars) ─────────
-
-  Widget _buildVisualIndicator(ThemeData theme, VoiceAssistantService assistant) {
-    if (assistant.state == VoiceAssistantState.listening) {
-      return _buildPulsingOrb(theme);
-    } else if (assistant.state == VoiceAssistantState.processing) {
-      return _buildProcessingDots(theme);
-    } else if (assistant.state == VoiceAssistantState.speaking) {
-      return _buildSoundWaves(theme);
-    }
-    return _buildIdleOrb(theme);
-  }
-
-  Widget _buildPulsingOrb(ThemeData theme) {
-    return SizedBox(
-      height: 80,
-      width: 80,
-      child: Stack(
-        alignment: Alignment.center,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Outer pulse ring
+          // Animated pulse dot
           AnimatedBuilder(
             animation: _pulseAnimation,
             builder: (context, _) {
               return Container(
-                width: 80 * _pulseAnimation.value,
-                height: 80 * _pulseAnimation.value,
+                width: 8,
+                height: 8,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Colors.blueAccent.withOpacity(0.3),
-                    width: 2,
-                  ),
+                  color: accentColor,
+                  boxShadow: [
+                    BoxShadow(
+                      color: accentColor.withOpacity(0.5 * (_pulseAnimation.value - 1.0) / 0.2),
+                      blurRadius: 6,
+                      spreadRadius: 2 * (_pulseAnimation.value - 1.0) / 0.2,
+                    ),
+                  ],
                 ),
               );
             },
           ),
-          // Middle ring
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, _) {
-              final scale = 1.0 + (_pulseAnimation.value - 1.0) * 0.6;
-              return Container(
-                width: 55 * scale,
-                height: 55 * scale,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.blueAccent.withOpacity(0.15),
-                ),
-              );
-            },
-          ),
-          // Center orb
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [Colors.blueAccent, Colors.blue.shade700],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.blueAccent.withOpacity(0.5),
-                  blurRadius: 12,
-                ),
-              ],
+          const SizedBox(width: 8),
+          Icon(icon, color: accentColor, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: accentColor,
+              letterSpacing: 1.2,
             ),
-            child: const Icon(Icons.mic_rounded, color: Colors.white, size: 20),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildProcessingDots(ThemeData theme) {
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // VISUAL INDICATOR
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Widget _buildVisualIndicator(VoiceAssistantService assistant, bool isDark) {
+    switch (assistant.state) {
+      case VoiceAssistantState.listening:
+        return _buildListeningOrb(isDark);
+      case VoiceAssistantState.processing:
+        return _buildProcessingIndicator(isDark);
+      case VoiceAssistantState.speaking:
+        return _buildSpeakingWaves(isDark);
+      default:
+        return _buildIdleOrb(isDark);
+    }
+  }
+
+  /// Pulsing orb with concentric rings — listening state
+  Widget _buildListeningOrb(bool isDark) {
+    return SizedBox(
+      height: 90,
+      width: 90,
+      child: AnimatedBuilder(
+        animation: _pulseAnimation,
+        builder: (context, _) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer ring
+              Container(
+                width: 90 * _pulseAnimation.value,
+                height: 90 * _pulseAnimation.value,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.15),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+              // Middle ring
+              Container(
+                width: 65 * (1.0 + (_pulseAnimation.value - 1.0) * 0.6),
+                height: 65 * (1.0 + (_pulseAnimation.value - 1.0) * 0.6),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.primary.withOpacity(0.08),
+                ),
+              ),
+              // Center orb
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.4),
+                      blurRadius: 16,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.mic_rounded, color: Colors.white, size: 22),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  /// Sequenced dots — processing state
+  Widget _buildProcessingIndicator(bool isDark) {
     return SizedBox(
       height: 60,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: List.generate(5, (i) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.orangeAccent,
-              ),
-            )
-                .animate(
-                  onPlay: (c) => c.repeat(),
-                  delay: Duration(milliseconds: i * 150),
-                )
-                .scaleXY(begin: 0.5, end: 1.3, duration: 600.ms, curve: Curves.easeInOut)
-                .then()
-                .scaleXY(begin: 1.3, end: 0.5, duration: 600.ms, curve: Curves.easeInOut),
+          return AnimatedBuilder(
+            animation: _waveController,
+            builder: (context, _) {
+              final phase = (_waveController.value * 2 * pi) + (i * 1.2);
+              final scale = 0.6 + (sin(phase) + 1) * 0.35;
+              final opacity = 0.4 + (sin(phase) + 1) * 0.3;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Transform.scale(
+                  scale: scale,
+                  child: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.warning.withOpacity(opacity),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.warning.withOpacity(opacity * 0.4),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           );
         }),
       ),
     );
   }
 
-  Widget _buildSoundWaves(ThemeData theme) {
+  /// Waveform bars — speaking state
+  Widget _buildSpeakingWaves(bool isDark) {
     return SizedBox(
       height: 60,
       child: AnimatedBuilder(
@@ -406,23 +376,23 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         builder: (context, _) {
           return Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(9, (i) {
-              final phase = (_waveController.value * 2 * pi) + (i * 0.7);
-              final height = 15 + (sin(phase) * 18).abs();
+            children: List.generate(11, (i) {
+              final phase = (_waveController.value * 2 * pi) + (i * 0.6);
+              final height = 14.0 + (sin(phase) * 20).abs();
               return AnimatedContainer(
-                duration: const Duration(milliseconds: 100),
+                duration: const Duration(milliseconds: 80),
                 margin: const EdgeInsets.symmetric(horizontal: 2),
-                width: 5,
+                width: 4,
                 height: height,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                   gradient: LinearGradient(
-                    colors: [
-                      Colors.greenAccent,
-                      Colors.green.shade400,
-                    ],
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.success,
+                      AppColors.success.withOpacity(0.5),
+                    ],
                   ),
                 ),
               );
@@ -433,57 +403,87 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  Widget _buildIdleOrb(ThemeData theme) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: theme.colorScheme.primary.withOpacity(0.1),
-        border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.3),
-          width: 2,
-        ),
-      ),
-      child: Icon(
-        Icons.mic_none_rounded,
-        color: theme.colorScheme.primary,
-        size: 28,
-      ),
+  /// Idle orb — subtle waiting state
+  Widget _buildIdleOrb(bool isDark) {
+    return AnimatedBuilder(
+      animation: _pulseAnimation,
+      builder: (context, _) {
+        final glow = (_pulseAnimation.value - 1.0) / 0.2; // 0..1
+        return Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.primary.withOpacity(0.06 + glow * 0.04),
+            border: Border.all(
+              color: AppColors.primary.withOpacity(0.2 + glow * 0.1),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(glow * 0.15),
+                blurRadius: 12,
+              ),
+            ],
+          ),
+          child: Icon(
+            Icons.mic_none_rounded,
+            color: AppColors.primary.withOpacity(0.7),
+            size: 26,
+          ),
+        );
+      },
     );
   }
 
-  // ── Text Display ───────────────────────────────────────
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // TEXT DISPLAY
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Widget _buildTextDisplay(ThemeData theme, VoiceAssistantService assistant) {
-    String displayText = '';
-    if (assistant.state == VoiceAssistantState.listening) {
-      displayText = assistant.partialText.isNotEmpty
-          ? '"${assistant.partialText}"'
-          : 'Go ahead, I\'m listening...';
-    } else if (assistant.state == VoiceAssistantState.processing) {
-      displayText = '"${assistant.partialText}"';
-    } else if (assistant.state == VoiceAssistantState.speaking) {
-      displayText = assistant.lastResponse;
-    } else {
-      displayText = 'Tap the mic or say "Hey Bubbles"';
+  Widget _buildTextDisplay(VoiceAssistantService assistant, bool isDark) {
+    String displayText;
+    FontWeight weight = FontWeight.w500;
+    double fontSize = 14;
+    Color textColor;
+
+    switch (assistant.state) {
+      case VoiceAssistantState.listening:
+        displayText = assistant.partialText.isNotEmpty
+            ? '"${assistant.partialText}"'
+            : 'Go ahead, I\'m listening…';
+        textColor = isDark
+            ? const Color(0xFFCBD5E1)
+            : const Color(0xFF475569);
+        break;
+      case VoiceAssistantState.processing:
+        displayText = '"${assistant.partialText}"';
+        textColor = isDark
+            ? const Color(0xFFCBD5E1)
+            : const Color(0xFF475569);
+        break;
+      case VoiceAssistantState.speaking:
+        displayText = assistant.lastResponse;
+        weight = FontWeight.w500;
+        fontSize = 15;
+        textColor = isDark ? Colors.white : const Color(0xFF0F172A);
+        break;
+      default:
+        displayText = 'Say "Hey Bubbles" to begin';
+        textColor = isDark
+            ? AppColors.textSecondary
+            : AppColors.textMuted;
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
+      duration: AppDurations.normal,
       child: Text(
         displayText,
         key: ValueKey(displayText),
         textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: assistant.state == VoiceAssistantState.speaking ? 15 : 14,
-          fontWeight: assistant.state == VoiceAssistantState.speaking
-              ? FontWeight.w500
-              : FontWeight.normal,
-          color: theme.colorScheme.onSurface.withOpacity(0.85),
-          fontStyle: assistant.state == VoiceAssistantState.listening
-              ? FontStyle.italic
-              : FontStyle.normal,
+        style: GoogleFonts.manrope(
+          fontSize: fontSize,
+          fontWeight: weight,
+          color: textColor,
           height: 1.5,
         ),
         maxLines: 4,
@@ -492,9 +492,58 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // ── Voice Mode Badge ───────────────────────────────────
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // BOTTOM BAR
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  Widget _buildVoiceModeBadge(ThemeData theme, VoiceAssistantService assistant) {
+  Widget _buildBottomBar(VoiceAssistantService assistant, bool isDark) {
+    return Row(
+      children: [
+        // Voice mode badge
+        _buildVoiceModeBadge(assistant, isDark),
+        const Spacer(),
+        // Dismiss button
+        GestureDetector(
+          onTap: () => assistant.hideOverlay(),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              color: isDark
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.grey.shade100,
+              border: Border.all(
+                color: isDark
+                    ? Colors.white.withOpacity(0.08)
+                    : Colors.grey.shade200,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.close_rounded,
+                  size: 16,
+                  color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Dismiss',
+                  style: GoogleFonts.manrope(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVoiceModeBadge(VoiceAssistantService assistant, bool isDark) {
     final mode = assistant.voiceMode;
     IconData icon;
     String label;
@@ -502,38 +551,39 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     switch (mode) {
       case VoiceMode.male:
         icon = Icons.record_voice_over_rounded;
-        label = 'Male Voice';
+        label = 'Male';
         break;
       case VoiceMode.female:
         icon = Icons.record_voice_over_rounded;
-        label = 'Female Voice';
+        label = 'Female';
         break;
       case VoiceMode.neutral:
         icon = Icons.smart_toy_rounded;
-        label = 'Neutral (Jarvis)';
+        label = 'Jarvis';
         break;
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: theme.colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        color: AppColors.primary.withOpacity(0.08),
         border: Border.all(
-          color: theme.colorScheme.primary.withOpacity(0.2),
+          color: AppColors.primary.withOpacity(0.15),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
+          Icon(icon, size: 14, color: AppColors.primary),
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: theme.colorScheme.primary,
+            style: GoogleFonts.manrope(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+              letterSpacing: 0.5,
             ),
           ),
         ],
