@@ -1,11 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../theme/design_tokens.dart';
 import '../services/connection_service.dart';
 import '../services/auth_service.dart';
-import '../theme/design_tokens.dart';
 
 class AppDrawer extends StatelessWidget {
   final User? currentUser;
@@ -21,88 +22,98 @@ class AppDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final name = userData?['full_name'] ?? currentUser?.userMetadata?['full_name'] ?? 'Guest';
     final email = currentUser?.email ?? '';
     final photoUrl = userData?['avatar_url'] ?? currentUser?.userMetadata?['avatar_url'];
 
     return Drawer(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topRight: Radius.circular(AppRadius.xl),
-          bottomRight: Radius.circular(AppRadius.xl),
+          topRight: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
       child: Column(
         children: [
           Consumer<ConnectionService>(
-            builder: (context, conn, _) => _buildHeader(context, name, email, photoUrl, conn.status),
+            builder: (context, conn, _) => _buildHeader(context, name, email, photoUrl, conn.status, isDark),
           ),
 
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.md,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               children: [
-                _DrawerItem(
-                  icon: Icons.home_rounded,
-                  label: 'Home',
-                  onTap: () => Navigator.pop(context),
-                ),
-                const SizedBox(height: AppSpacing.xs),
+                _DrawerItem(icon: Icons.home_rounded, label: 'Home', isDark: isDark, onTap: () => Navigator.pop(context)),
+                const SizedBox(height: 4),
                 _DrawerItem(
                   icon: Icons.mic_rounded,
                   label: 'Live Wingman',
+                  isDark: isDark,
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/new-session');
                   },
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 4),
                 _DrawerItem(
-                  icon: Icons.chat_rounded,
+                  icon: Icons.forum_rounded,
                   label: 'Consultant',
+                  isDark: isDark,
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/consultant');
                   },
                 ),
-                const SizedBox(height: AppSpacing.md),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                  child: Divider(height: 1),
+                const SizedBox(height: 4),
+                _DrawerItem(
+                  icon: Icons.history_rounded,
+                  label: 'History',
+                  isDark: isDark,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/sessions');
+                  },
                 ),
-                const SizedBox(height: AppSpacing.md),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  child: Divider(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200, height: 1),
+                ),
                 Consumer<ConnectionService>(
                   builder: (context, conn, _) => _DrawerItem(
                     icon: Icons.link_rounded,
                     label: 'Connections',
-                    subtitle: conn.isConnected ? "Connected" : "Setup Server",
-                    trailing: conn.isConnected 
-                        ? const Icon(Icons.check_circle, color: Colors.green, size: 16) 
-                        : const Icon(Icons.warning, color: Colors.orange, size: 16),
+                    isDark: isDark,
+                    trailing: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: conn.isConnected ? AppColors.success : AppColors.warning,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.pushNamed(context, '/connections');
                     },
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 4),
                 _DrawerItem(
                   icon: Icons.settings_rounded,
                   label: 'Settings',
+                  isDark: isDark,
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/settings');
                   },
                 ),
-                const SizedBox(height: AppSpacing.xs),
+                const SizedBox(height: 4),
                 _DrawerItem(
                   icon: Icons.info_outline_rounded,
                   label: 'About',
+                  isDark: isDark,
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.pushNamed(context, '/about');
@@ -111,39 +122,40 @@ class AppDrawer extends StatelessWidget {
               ],
             ),
           ),
-          _buildFooter(context),
+          _buildFooter(context, isDark),
         ],
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, String email, String? photoUrl, ConnectionStatus status) {
-    final theme = Theme.of(context);
-    final foregroundColor = theme.colorScheme.onPrimary;
-    
+  Widget _buildHeader(BuildContext context, String name, String email, String? photoUrl, ConnectionStatus status, bool isDark) {
     Color statusColor;
     String statusText;
     switch (status) {
       case ConnectionStatus.connected:
-        statusColor = Colors.greenAccent;
+        statusColor = AppColors.success;
         statusText = "Online";
         break;
       case ConnectionStatus.connecting:
-        statusColor = Colors.orangeAccent;
+        statusColor = AppColors.warning;
         statusText = "Connecting...";
         break;
       default:
-        statusColor = Colors.redAccent;
+        statusColor = AppColors.error;
         statusText = "Offline";
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 60, AppSpacing.lg, AppSpacing.lg),
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+        ),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(AppRadius.xl),
-          bottomRight: Radius.circular(AppRadius.xl),
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
       child: Row(
@@ -153,20 +165,16 @@ class AppDrawer extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: foregroundColor, width: 2),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 2),
                 ),
                 child: CircleAvatar(
                   radius: 28,
                   backgroundImage: photoUrl != null ? CachedNetworkImageProvider(photoUrl) : null,
-                  backgroundColor: foregroundColor.withOpacity(0.2),
+                  backgroundColor: AppColors.primary.withOpacity(0.2),
                   child: photoUrl == null
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: foregroundColor,
-                          ),
+                          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white),
                         )
                       : null,
                 ),
@@ -180,49 +188,40 @@ class AppDrawer extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: statusColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: theme.colorScheme.primary, width: 2),
+                    border: Border.all(color: const Color(0xFF0F172A), width: 2),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: foregroundColor,
-                  ),
+                  style: GoogleFonts.manrope(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   email,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: foregroundColor.withOpacity(0.8),
-                  ),
+                  style: GoogleFonts.manrope(fontSize: 13, color: Colors.white60),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     statusText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: GoogleFonts.manrope(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -233,43 +232,28 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter(BuildContext context) {
+  Widget _buildFooter(BuildContext context, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.sm, AppSpacing.md, AppSpacing.xl),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onLogout,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(
-                color: Theme.of(context).colorScheme.error.withOpacity(0.2),
-                width: 1,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+      child: GestureDetector(
+        onTap: onLogout,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: AppColors.error.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.error.withOpacity(0.2)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Logout',
+                style: GoogleFonts.manrope(color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 15),
               ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.logout_rounded,
-                  color: Theme.of(context).colorScheme.error,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Logout',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
@@ -281,55 +265,38 @@ class _DrawerItem extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-  final String? subtitle;
+  final bool isDark;
   final Widget? trailing;
 
   const _DrawerItem({
     required this.icon,
     required this.label,
     required this.onTap,
-    this.subtitle,
+    required this.isDark,
     this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, color: theme.colorScheme.onSurfaceVariant, size: 24),
-              const SizedBox(width: AppSpacing.md),
+              Icon(icon, color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600, size: 22),
+              const SizedBox(width: 16),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w500,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    if (subtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
+                child: Text(
+                  label,
+                  style: GoogleFonts.manrope(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
                 ),
               ),
               if (trailing != null) trailing!,
