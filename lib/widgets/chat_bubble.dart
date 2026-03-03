@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
 
@@ -52,7 +52,7 @@ class ChatBubble extends StatelessWidget {
                   speakerLabel!,
                   style: GoogleFonts.manrope(
                     fontSize: 10,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                   ),
@@ -73,3 +73,4 @@ class ChatBubble extends StatelessWidget {
     );
   }
 }
+

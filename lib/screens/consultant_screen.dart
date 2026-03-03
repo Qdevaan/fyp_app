@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -221,18 +221,18 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(isDark ? 0.2 : 0.1),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.history, size: 14, color: AppColors.primary),
+                            Icon(Icons.history, size: 14, color: Theme.of(context).colorScheme.primary),
                             const SizedBox(width: 6),
                             Text(
                               'Using past sessions',
-                              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary),
+                              style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary),
                             ),
                           ],
                         ),
@@ -281,7 +281,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                         label: const Text("Load Previous Chat"),
                         style: ElevatedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          backgroundColor: AppColors.primary,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                         ),
@@ -299,9 +299,9 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                           width: 40,
                           height: 40,
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 8)],
+                            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), blurRadius: 8)],
                           ),
                           child: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
                         ),
@@ -365,7 +365,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                           Padding(
                             padding: const EdgeInsets.only(right: 4, bottom: 4),
                             child: IconButton(
-                              icon: Icon(Icons.mic, color: AppColors.primary, size: 22),
+                              icon: Icon(Icons.mic, color: Theme.of(context).colorScheme.primary, size: 22),
                               onPressed: () {},
                             ),
                           ),
@@ -382,11 +382,11 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: _loading ? (isDark ? AppColors.surfaceDark : Colors.grey.shade300) : AppColors.primary,
+                          color: _loading ? (isDark ? AppColors.surfaceDark : Colors.grey.shade300) : Theme.of(context).colorScheme.primary,
                           shape: BoxShape.circle,
                           boxShadow: _loading
                               ? null
-                              : [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 8)],
+                              : [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 8)],
                         ),
                         child: Icon(Icons.arrow_upward, color: Colors.white, size: 20),
                       ),
@@ -454,8 +454,8 @@ class _AiBubble extends StatelessWidget {
           height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF1E88E5)]),
-            boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 8)],
+            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)]),
+            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 8)],
           ),
           child: const Icon(Icons.smart_toy, color: Colors.white, size: 16),
         ),
@@ -507,7 +507,7 @@ class _TypingIndicator extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(colors: [AppColors.primary.withOpacity(0.5), const Color(0xFF1E88E5).withOpacity(0.5)]),
+              gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.5), const Color(0xFF1E88E5).withOpacity(0.5)]),
             ),
             child: const Icon(Icons.smart_toy, color: Colors.white, size: 16),
           ),

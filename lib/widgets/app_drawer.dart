@@ -1,4 +1,4 @@
-import 'package:cached_network_image/cached_network_image.dart';
+﻿import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -165,12 +165,12 @@ class AppDrawer extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary.withOpacity(0.5), width: 2),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 2),
                 ),
                 child: CircleAvatar(
                   radius: 28,
                   backgroundImage: photoUrl != null ? CachedNetworkImageProvider(photoUrl) : null,
-                  backgroundColor: AppColors.primary.withOpacity(0.2),
+                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                   child: photoUrl == null
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',

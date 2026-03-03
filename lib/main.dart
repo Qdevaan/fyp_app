@@ -10,6 +10,7 @@ import 'services/voice_assistant_service.dart';
 import 'services/wake_word_service.dart';
 import 'providers/theme_provider.dart';
 import 'widgets/voice_overlay.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/connections_screen.dart';
@@ -90,8 +91,8 @@ class BubblesApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'Bubbles',
             
-            // Theme Mode: Follows system settings (Light/Dark)
-            themeMode: ThemeMode.system,
+            // Theme Mode: Follows stored settings (System/Light/Dark)
+            themeMode: themeProvider.themeMode,
             
             // Light Theme Configuration
             theme: themeProvider.lightTheme.copyWith(
@@ -116,7 +117,7 @@ class BubblesApp extends StatelessWidget {
             ),
     
             // The AuthGate manages the root state (Login -> App)
-            home: const AuthGate(),
+            home: const SplashScreen(),
 
             // Global builder: adds VoiceOverlay on all routes except /settings
             builder: (context, child) {

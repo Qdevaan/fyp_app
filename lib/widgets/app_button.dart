@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
 
@@ -32,8 +32,8 @@ class AppButton extends StatelessWidget {
           height: 52,
           decoration: BoxDecoration(
             gradient: filled
-                ? const LinearGradient(
-                    colors: [AppColors.primary, Color(0xFF1E88E5)],
+                ? LinearGradient(
+                    colors: [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)],
                   )
                 : null,
             color: filled ? null : Colors.transparent,
@@ -46,7 +46,7 @@ class AppButton extends StatelessWidget {
             boxShadow: filled
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.25),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.25),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

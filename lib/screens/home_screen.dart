@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -62,222 +62,307 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      drawer: AppDrawer(
-        currentUser: user,
-        userData: _profile,
-        onLogout: _logout,
-      ),
+      // drawer: AppDrawer(
+      //   currentUser: user,
+      //   userData: _profile,
+      //   onLogout: _logout,
+      // ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : CustomScrollView(
-              slivers: [
-                // --- STICKY HEADER ---
-                SliverAppBar(
-                  floating: true,
-                  snap: true,
-                  pinned: false,
-                  backgroundColor: isDark
-                      ? AppColors.backgroundDark.withOpacity(0.8)
-                      : AppColors.backgroundLight.withOpacity(0.8),
-                  elevation: 0,
-                  leading: Builder(
-                    builder: (context) => Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: GestureDetector(
-                        onTap: () => Scaffold.of(context).openDrawer(),
-                        child: Consumer<ConnectionService>(
-                          builder: (context, conn, _) {
-                            return Stack(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
+          : SafeArea(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- FIXED HEADER ---
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Builder(
+                          builder: (context) => GestureDetector(
+                            onTap: () => Navigator.pushNamed(context, '/settings'), // Disabled drawer, go to settings instead
+                            child: Consumer<ConnectionService>(
+                              builder: (context, conn, _) {
+                                return Stack(
+                                  children: [
+                                    Container(
+                                      width: 44,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                          width: 2,
+                                        ),
+                                      ),
+                                      child: ClipOval(
+                                        child: avatarUrl != null
+                                            ? CachedNetworkImage(
+                                                imageUrl: avatarUrl,
+                                                fit: BoxFit.cover,
+                                                placeholder: (_, __) => Container(color: AppColors.surfaceDark),
+                                              )
+                                            : Container(
+                                                color: isDark ? AppColors.surfaceDark : Colors.grey.shade200,
+                                                child: Icon(Icons.person, color: isDark ? Colors.white54 : Colors.grey),
+                                              ),
+                                      ),
+                                    ),
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        width: 12,
+                                        height: 12,
+                                        decoration: BoxDecoration(
+                                          color: conn.isConnected ? AppColors.success : AppColors.error,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+                                            width: 2,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'Bubbles',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("Notifications coming soon!"),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          icon: Stack(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
+                                ),
+                                child: Icon(
+                                  Icons.notifications_outlined,
+                                  color: isDark ? Colors.white70 : Colors.grey.shade700,
+                                ),
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
                                   decoration: BoxDecoration(
+                                    color: AppColors.error,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: AppColors.primary.withOpacity(0.2),
+                                      color: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
                                       width: 2,
                                     ),
                                   ),
-                                  child: ClipOval(
-                                    child: avatarUrl != null
-                                        ? CachedNetworkImage(
-                                            imageUrl: avatarUrl,
-                                            fit: BoxFit.cover,
-                                            placeholder: (_, __) => Container(color: AppColors.surfaceDark),
-                                          )
-                                        : Container(
-                                            color: isDark ? AppColors.surfaceDark : Colors.grey.shade200,
-                                            child: Icon(Icons.person, color: isDark ? Colors.white54 : Colors.grey),
-                                          ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  right: 0,
-                                  child: Container(
-                                    width: 12,
-                                    height: 12,
-                                    decoration: BoxDecoration(
-                                      color: conn.isConnected ? AppColors.success : AppColors.error,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-                                        width: 2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                  title: Text(
-                    'Bubbles',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 18,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
-                    ),
-                  ),
-                  actions: [
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: IconButton(
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Notifications coming soon!"),
-                              behavior: SnackBarBehavior.floating,
-                            ),
-                          );
-                        },
-                        icon: Stack(
-                          children: [
-                            Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
-                              ),
-                              child: Icon(
-                                Icons.notifications_outlined,
-                                color: isDark ? Colors.white70 : Colors.grey.shade700,
-                              ),
-                            ),
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: Container(
-                                width: 8,
-                                height: 8,
-                                decoration: BoxDecoration(
-                                  color: AppColors.error,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
-                                    width: 1,
-                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // --- GREETING ---
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _getGreeting(),
-                          style: GoogleFonts.manrope(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            height: 1.2,
-                          ),
-                        ),
-                        ShaderMask(
-                          shaderCallback: (bounds) => const LinearGradient(
-                            colors: [AppColors.primary, Color(0xFF93C5FD)],
-                          ).createShader(bounds),
-                          child: Text(
-                            '$firstName.',
-                            style: GoogleFonts.manrope(
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1.3,
-                            ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
 
-                // --- HERO CARD: LIVE WINGMAN ---
+                  // --- SCROLLABLE CONTENT ---
+                  Expanded(
+                    child: CustomScrollView(
+                      slivers: [
+                        // --- GREETING ---
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _getGreeting(),
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w800,
+                                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                    height: 1.2,
+                                  ),
+                                ),
+                                ShaderMask(
+                                  shaderCallback: (bounds) => LinearGradient(
+                                    colors: [Theme.of(context).colorScheme.primary, const Color(0xFF93C5FD)],
+                                  ).createShader(bounds),
+                                  child: Text(
+                                    '$firstName.',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        // --- HERO CARD: LIVE WINGMAN ---
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/new-session'),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.15),
-                              blurRadius: 20,
-                              spreadRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          _PulseDot(),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'STATUS: ACTIVE',
+                    child: Consumer<ConnectionService>(
+                      builder: (context, connectionService, child) {
+                        final isConnected = connectionService.isConnected;
+                        return GestureDetector(
+                          onTap: () {
+                            if (isConnected) {
+                              Navigator.pushNamed(context, '/new-session');
+                            } else {
+                              showDialog(
+                                context: context,
+                                builder: (ctx) {
+                                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                                  return AlertDialog(
+                                    backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                      side: BorderSide(
+                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    title: Row(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          child: const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 20),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Text(
+                                            'Not Connected',
                                             style: GoogleFonts.manrope(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w700,
-                                              color: AppColors.primary,
-                                              letterSpacing: 1.2,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w800,
+                                              color: isDark ? Colors.white : const Color(0xFF0F172A),
                                             ),
                                           ),
-                                        ],
+                                        ),
+                                      ],
+                                    ),
+                                    content: Text(
+                                      'You are not connected to the server. Would you like to connect now?',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                        height: 1.5,
                                       ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'Live Wingman',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.pop(ctx),
+                                        child: Text(
+                                          'Cancel',
+                                          style: GoogleFonts.manrope(
+                                            fontWeight: FontWeight.w700,
+                                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                          ),
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(ctx);
+                                          Navigator.pushNamed(context, '/connections');
+                                        },
+                                        style: TextButton.styleFrom(
+                                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'Connect',
+                                          style: GoogleFonts.manrope(
+                                            fontWeight: FontWeight.w700,
+                                            color: Theme.of(context).colorScheme.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                  blurRadius: 20,
+                                  spreadRadius: 0,
+                                ),
+                              ],
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              if (isConnected) _PulseDot() else Icon(Icons.circle, color: Colors.redAccent, size: 8),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                isConnected ? 'STATUS: ACTIVE' : 'STATUS: DISCONNECTED',
+                                                style: GoogleFonts.manrope(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: isConnected ? Theme.of(context).colorScheme.primary : Colors.redAccent,
+                                                  letterSpacing: 1.2,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Live Wingman',
                                         style: GoogleFonts.manrope(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w700,
@@ -313,11 +398,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                     child: Container(
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: AppColors.primary,
+                                        color: Theme.of(context).colorScheme.primary,
                                         borderRadius: BorderRadius.circular(AppRadius.md),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.primary.withOpacity(0.2),
+                                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                                             blurRadius: 12,
                                           ),
                                         ],
@@ -359,9 +444,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
+              ),
+            ),
 
                 // --- QUICK ACTIONS ---
                 SliverToBoxAdapter(
@@ -431,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     child: _InsightCard(
-                      accentColor: AppColors.primary,
+                      accentColor: Theme.of(context).colorScheme.primary,
                       title: 'Session Analysis',
                       badge: 'Active',
                       description: 'Start a session to get personalized insights and conversation tips.',
@@ -456,6 +543,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SliverToBoxAdapter(child: SizedBox(height: 30)),
               ],
             ),
+          ),
+        ],
+      ),
+    ),
     );
   }
 }
@@ -501,7 +592,7 @@ class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixi
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -510,8 +601,8 @@ class _PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixi
           Container(
             width: 10,
             height: 10,
-            decoration: const BoxDecoration(
-              color: AppColors.primary,
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
           ),

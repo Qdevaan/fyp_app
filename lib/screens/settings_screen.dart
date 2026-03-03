@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../theme/design_tokens.dart';
 import '../services/auth_service.dart';
@@ -68,7 +69,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: GoogleFonts.manrope(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -117,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             style: GoogleFonts.manrope(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                           onTap: () => _showComingSoon(context, 'Subscription'),
@@ -136,11 +137,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             isDark: isDark,
                             iconBg: const Color(0xFF38BDF8).withOpacity(0.2),
                             iconColor: const Color(0xFF38BDF8),
-                            icon: Icons.dark_mode_outlined,
-                            title: 'Appearance',
+                            icon: Icons.brightness_medium_outlined,
+                            title: 'Theme Mode',
                             trailing: Text(
-                              isDark ? 'Dark' : 'Light',
+                              themeProvider.themeMode == ThemeMode.system
+                                  ? 'System'
+                                  : themeProvider.themeMode == ThemeMode.dark
+                                      ? 'Dark'
+                                      : 'Light',
                               style: GoogleFonts.manrope(fontSize: 13, color: AppColors.textMuted),
+                            ),
+                            onTap: () => _showThemeModePicker(context, themeProvider),
+                          ),
+                        ),
+                        _TileDivider(isDark: isDark),
+                        Consumer<ThemeProvider>(
+                          builder: (context, themeProvider, _) => _SettingsTile(
+                            isDark: isDark,
+                            iconBg: themeProvider.seedColor.withOpacity(0.2),
+                            iconColor: themeProvider.seedColor,
+                            icon: Icons.color_lens_outlined,
+                            title: 'Accent Color',
+                            trailing: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: themeProvider.seedColor,
+                                shape: BoxShape.circle,
+                              ),
                             ),
                             onTap: () => _showColorPicker(context, themeProvider),
                           ),
@@ -171,8 +195,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           children: [
                             _ToggleTile(
                               isDark: isDark,
-                              iconBg: AppColors.primary.withOpacity(0.2),
-                              iconColor: AppColors.primary,
+                              iconBg: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              iconColor: Theme.of(context).colorScheme.primary,
                               icon: Icons.hearing_rounded,
                               title: '"Hey Bubbles" Wake Word',
                               value: voice.isWakeWordEnabled,
@@ -297,6 +321,134 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showThemeModePicker(BuildContext context, ThemeProvider themeProvider) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.palette_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Select Theme Mode',
+                  style: GoogleFonts.manrope(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildThemeOption(
+                context, 
+                themeProvider, 
+                title: 'System Default', 
+                icon: Icons.brightness_auto, 
+                mode: ThemeMode.system,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildThemeOption(
+                context, 
+                themeProvider, 
+                title: 'Light', 
+                icon: Icons.light_mode, 
+                mode: ThemeMode.light,
+                isDark: isDark,
+              ),
+              const SizedBox(height: 8),
+              _buildThemeOption(
+                context, 
+                themeProvider, 
+                title: 'Dark', 
+                icon: Icons.dark_mode, 
+                mode: ThemeMode.dark,
+                isDark: isDark,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'Close',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildThemeOption(BuildContext context, ThemeProvider themeProvider, {required String title, required IconData icon, required ThemeMode mode, required bool isDark}) {
+    final isSelected = themeProvider.themeMode == mode;
+    return GestureDetector(
+      onTap: () {
+        themeProvider.setThemeMode(mode);
+        Navigator.pop(context);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Theme.of(context).colorScheme.primary.withOpacity(0.3) : (isDark ? Colors.white10 : Colors.black12),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? Theme.of(context).colorScheme.primary : (isDark ? Colors.white70 : Colors.black87),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title,
+                style: GoogleFonts.manrope(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? Theme.of(context).colorScheme.primary : (isDark ? Colors.white : Colors.black87),
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 20),
           ],
         ),
       ),
@@ -466,28 +618,82 @@ class _TileDivider extends StatelessWidget {
   }
 }
 
-class _ProfileTile extends StatelessWidget {
+class _ProfileTile extends StatefulWidget {
   final bool isDark;
   const _ProfileTile({required this.isDark});
 
   @override
+  State<_ProfileTile> createState() => _ProfileTileState();
+}
+
+class _ProfileTileState extends State<_ProfileTile> {
+  Map<String, dynamic>? _profile;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final profile = await AuthService.instance.getProfile();
+    if (mounted) {
+      setState(() {
+        _profile = profile;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = AuthService.instance.currentUser;
-    final name = user?.userMetadata?['full_name'] ?? 'User';
+    final name = _profile?['full_name'] ?? user?.userMetadata?['full_name'] ?? 'User';
     final email = user?.email ?? '';
+    final avatarUrl = _profile?['avatar_url'] ?? user?.userMetadata?['avatar_url'];
 
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/profile-completion'),
+      onTap: () async {
+        await Navigator.pushNamed(context, '/profile-completion');
+        _loadProfile();
+      },
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.primary.withOpacity(0.2),
-              child: Text(
-                name.isNotEmpty ? name[0].toUpperCase() : '?',
-                style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              ),
+              child: ClipOval(
+                child: avatarUrl != null
+                    ? CachedNetworkImage(
+                        imageUrl: avatarUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (_, __) => const Center(
+                          child: SizedBox(
+                            width: 20, 
+                            height: 20, 
+                            child: CircularProgressIndicator(strokeWidth: 2)
+                          )
+                        ),
+                        errorWidget: (_, __, ___) => Icon(
+                          Icons.person,
+                          color: widget.isDark ? Colors.white54 : Colors.grey,
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : '?',
+                          style: GoogleFonts.manrope(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
               ),
             ),
             const SizedBox(width: 14),
@@ -495,13 +701,30 @@ class _ProfileTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: GoogleFonts.manrope(fontSize: 17, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF0F172A))),
+                  Text(
+                    name, 
+                    style: GoogleFonts.manrope(
+                      fontSize: 17, 
+                      fontWeight: FontWeight.w700, 
+                      color: widget.isDark ? Colors.white : const Color(0xFF0F172A)
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   const SizedBox(height: 2),
-                  Text(email, style: GoogleFonts.manrope(fontSize: 13, color: AppColors.textMuted)),
+                  Text(
+                    email, 
+                    style: GoogleFonts.manrope(
+                      fontSize: 13, 
+                      color: AppColors.textMuted
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
+            Icon(Icons.chevron_right, color: widget.isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
           ],
         ),
       ),
@@ -617,10 +840,11 @@ class _ToggleTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeColor: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
     );
   }
 }
+

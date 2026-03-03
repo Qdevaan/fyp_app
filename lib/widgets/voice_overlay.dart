@@ -1,4 +1,4 @@
-import 'dart:math';
+﻿import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -6,7 +6,7 @@ import '../services/voice_assistant_service.dart';
 import '../theme/design_tokens.dart';
 
 /// A global voice assistant overlay that matches the Bubbles design system.
-/// Triggered by the "Hey Bubbles" wake word — slides up from the bottom
+/// Triggered by the "Hey Bubbles" wake word â€” slides up from the bottom
 /// with a glassmorphic panel showing state, waveforms, and response text.
 class VoiceOverlay extends StatefulWidget {
   final GlobalKey<NavigatorState>? navigatorKey;
@@ -70,7 +70,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
 
         return Stack(
           children: [
-            // ── Scrim ──
+            // â”€â”€ Scrim â”€â”€
             Positioned.fill(
               child: GestureDetector(
                 onTap: () => assistant.hideOverlay(),
@@ -82,7 +82,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
               ),
             ),
 
-            // ── Panel ──
+            // â”€â”€ Panel â”€â”€
             Positioned(
               bottom: 0,
               left: 0,
@@ -95,9 +95,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
   // PANEL
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 
   Widget _buildPanel(
       BuildContext context, VoiceAssistantService assistant, bool isDark) {
@@ -124,13 +124,13 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         ),
         border: Border.all(
           color: isDark
-              ? AppColors.primary.withOpacity(0.15)
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
               : Colors.grey.shade200,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(isDark ? 0.12 : 0.08),
+            color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.12 : 0.08),
             blurRadius: 40,
             spreadRadius: 0,
             offset: const Offset(0, -8),
@@ -147,19 +147,19 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // ── Status Chip ──
+            // â”€â”€ Status Chip â”€â”€
             _buildStatusChip(assistant, isDark),
             const SizedBox(height: 24),
 
-            // ── Visual Indicator ──
+            // â”€â”€ Visual Indicator â”€â”€
             _buildVisualIndicator(assistant, isDark),
             const SizedBox(height: 24),
 
-            // ── Text Display ──
+            // â”€â”€ Text Display â”€â”€
             _buildTextDisplay(assistant, isDark),
             const SizedBox(height: 20),
 
-            // ── Bottom Bar (voice mode + dismiss) ──
+            // â”€â”€ Bottom Bar (voice mode + dismiss) â”€â”€
             _buildBottomBar(assistant, isDark),
           ],
         ),
@@ -168,9 +168,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
   // STATUS CHIP
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 
   Widget _buildStatusChip(VoiceAssistantService assistant, bool isDark) {
     String label;
@@ -180,7 +180,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     switch (assistant.state) {
       case VoiceAssistantState.listening:
         label = 'LISTENING';
-        accentColor = AppColors.primary;
+        accentColor = Theme.of(context).colorScheme.primary;
         icon = Icons.hearing_rounded;
         break;
       case VoiceAssistantState.processing:
@@ -195,7 +195,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         break;
       default:
         label = 'READY';
-        accentColor = AppColors.primary;
+        accentColor = Theme.of(context).colorScheme.primary;
         icon = Icons.mic_rounded;
     }
 
@@ -250,9 +250,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
   // VISUAL INDICATOR
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 
   Widget _buildVisualIndicator(VoiceAssistantService assistant, bool isDark) {
     switch (assistant.state) {
@@ -267,7 +267,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     }
   }
 
-  /// Pulsing orb with concentric rings — listening state
+  /// Pulsing orb with concentric rings â€” listening state
   Widget _buildListeningOrb(bool isDark) {
     return SizedBox(
       height: 90,
@@ -285,7 +285,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.primary.withOpacity(0.15),
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                     width: 1.5,
                   ),
                 ),
@@ -296,7 +296,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                 height: 65 * (1.0 + (_pulseAnimation.value - 1.0) * 0.6),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primary.withOpacity(0.08),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
                 ),
               ),
               // Center orb
@@ -305,14 +305,14 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                 height: 44,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(
+                  gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.primaryDark],
+                    colors: [Theme.of(context).colorScheme.primary, AppColors.primaryDark],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
                       blurRadius: 16,
                       spreadRadius: 2,
                     ),
@@ -327,7 +327,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  /// Sequenced dots — processing state
+  /// Sequenced dots â€” processing state
   Widget _buildProcessingIndicator(bool isDark) {
     return SizedBox(
       height: 60,
@@ -367,7 +367,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  /// Waveform bars — speaking state
+  /// Waveform bars â€” speaking state
   Widget _buildSpeakingWaves(bool isDark) {
     return SizedBox(
       height: 60,
@@ -403,7 +403,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  /// Idle orb — subtle waiting state
+  /// Idle orb â€” subtle waiting state
   Widget _buildIdleOrb(bool isDark) {
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -414,21 +414,21 @@ class _VoiceOverlayState extends State<VoiceOverlay>
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.primary.withOpacity(0.06 + glow * 0.04),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.06 + glow * 0.04),
             border: Border.all(
-              color: AppColors.primary.withOpacity(0.2 + glow * 0.1),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.2 + glow * 0.1),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(glow * 0.15),
+                color: Theme.of(context).colorScheme.primary.withOpacity(glow * 0.15),
                 blurRadius: 12,
               ),
             ],
           ),
           child: Icon(
             Icons.mic_none_rounded,
-            color: AppColors.primary.withOpacity(0.7),
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
             size: 26,
           ),
         );
@@ -436,9 +436,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
   // TEXT DISPLAY
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 
   Widget _buildTextDisplay(VoiceAssistantService assistant, bool isDark) {
     String displayText;
@@ -450,7 +450,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
       case VoiceAssistantState.listening:
         displayText = assistant.partialText.isNotEmpty
             ? '"${assistant.partialText}"'
-            : 'Go ahead, I\'m listening…';
+            : 'Go ahead, I\'m listeningâ€¦';
         textColor = isDark
             ? const Color(0xFFCBD5E1)
             : const Color(0xFF475569);
@@ -492,9 +492,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
   // BOTTOM BAR
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
 
   Widget _buildBottomBar(VoiceAssistantService assistant, bool isDark) {
     return Row(
@@ -567,22 +567,22 @@ class _VoiceOverlayState extends State<VoiceOverlay>
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        color: AppColors.primary.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
         border: Border.all(
-          color: AppColors.primary.withOpacity(0.15),
+          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.primary),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(
             label,
             style: GoogleFonts.manrope(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               letterSpacing: 0.5,
             ),
           ),
@@ -591,3 +591,4 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
@@ -99,10 +99,10 @@ class _FilterChip extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : (isDark ? AppColors.surfaceDark : Colors.white),
+          color: selected ? Theme.of(context).colorScheme.primary : (isDark ? AppColors.surfaceDark : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppColors.primary : (isDark ? const Color(0xFF334155) : Colors.grey.shade300),
+            color: selected ? Theme.of(context).colorScheme.primary : (isDark ? const Color(0xFF334155) : Colors.grey.shade300),
           ),
         ),
         child: Text(
@@ -241,10 +241,10 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.mic, color: AppColors.primary, size: 22),
+                        child: Icon(Icons.mic, color: Theme.of(context).colorScheme.primary, size: 22),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -263,10 +263,10 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.15),
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
-                                  child: Text('Wingman', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                                  child: Text('Wingman', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.primary)),
                                 ),
                                 const SizedBox(width: 8),
                                 Text(formattedDate, style: GoogleFonts.manrope(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
@@ -397,7 +397,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                           const SizedBox(height: 4),
                           Text(question, style: GoogleFonts.manrope(fontSize: 14, color: isDark ? Colors.white : Colors.black87)),
                           const SizedBox(height: 12),
-                          Text("AI Answer:", style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: AppColors.primary, fontSize: 13)),
+                          Text("AI Answer:", style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
                           const SizedBox(height: 4),
                           Text(answer, style: GoogleFonts.manrope(fontSize: 14, color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade800)),
                         ],

@@ -1,11 +1,16 @@
+﻿import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/theme_provider.dart';
 import '../theme/design_tokens.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../widgets/social_button.dart';
+import '../widgets/app_logo.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,21 +26,85 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
 
-  bool _loading = false;
+  bool _isEmailLoading = false;
+  bool _isGoogleLoading = false;
+  late final StreamSubscription<AuthState> _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
+        if (!_isEmailLoading && mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSubscription.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
   }
 
+  Future<void> _showThemeSelectionDialog() async {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Select Theme',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.brightness_auto),
+              title: Text('System Default', style: GoogleFonts.manrope()),
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.system);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.light_mode),
+              title: Text('Light', style: GoogleFonts.manrope()),
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.light);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.dark_mode),
+              title: Text('Dark', style: GoogleFonts.manrope()),
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.dark);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _loginWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _loading = true);
+    setState(() => _isEmailLoading = true);
     try {
       await _authService.signInWithEmail(_emailCtrl.text.trim(), _passCtrl.text);
+      if (mounted) {
+        await _showThemeSelectionDialog();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -45,21 +114,24 @@ class _LoginScreenState extends State<LoginScreen> {
             behavior: SnackBarBehavior.floating,
           ),
         );
-        setState(() => _loading = false);
+        setState(() => _isEmailLoading = false);
       }
     }
   }
 
   Future<void> _loginWithGoogle() async {
-    setState(() => _loading = true);
+    setState(() => _isGoogleLoading = true);
     try {
       await _authService.signInWithGoogle();
+      // Delay stopping the loading state to wait for deep link return
+      await Future.delayed(const Duration(seconds: 4));
+      if (mounted) setState(() => _isGoogleLoading = false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Google Sign in failed: $e')),
         );
-        setState(() => _loading = false);
+        setState(() => _isGoogleLoading = false);
       }
     }
   }
@@ -80,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withOpacity(0.15),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
               ),
             ),
           ),
@@ -108,29 +180,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 60),
 
-                    // Header — Logo + Title
+                    // Header â€” Logo + Title
                     Column(
                       children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(18),
-                            gradient: const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [AppColors.primary, Color(0xFF1E88E5)],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withOpacity(0.2),
-                                blurRadius: 16,
-                                offset: const Offset(0, 6),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(Icons.smart_toy, color: Colors.white, size: 36),
-                        ),
+                        const AppLogo(size: 80),
                         const SizedBox(height: 16),
                         Text(
                           'Bubbles',
@@ -192,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -217,7 +270,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: 'Log In',
                       icon: Icons.arrow_forward,
                       onTap: _loginWithEmail,
-                      loading: _loading,
+                      loading: _isEmailLoading,
                       filled: true,
                     ),
 
@@ -256,7 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: 'Continue with Google',
                       imagePath: 'assets/logos/google_logo.png',
                       onTap: _loginWithGoogle,
-                      loading: _loading,
+                      loading: _isGoogleLoading,
                     ),
 
                     const SizedBox(height: 28),
@@ -279,7 +332,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.manrope(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
@@ -303,7 +356,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    AppColors.primary.withOpacity(0.5),
+                    Theme.of(context).colorScheme.primary.withOpacity(0.5),
                     Colors.transparent,
                   ],
                 ),
