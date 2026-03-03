@@ -5,9 +5,13 @@ import '../theme/design_tokens.dart';
 
 class ThemeProvider extends ChangeNotifier {
   Color _seedColor = AppColors.primary;
+  ThemeMode _themeMode = ThemeMode.system;
+
   static const String _colorKey = 'theme_seed_color';
+  static const String _themeModeKey = 'theme_mode_pref';
 
   Color get seedColor => _seedColor;
+  ThemeMode get themeMode => _themeMode;
 
   ThemeProvider() {
     _loadTheme();
@@ -18,8 +22,12 @@ class ThemeProvider extends ChangeNotifier {
     final int? colorValue = prefs.getInt(_colorKey);
     if (colorValue != null) {
       _seedColor = Color(colorValue);
-      notifyListeners();
     }
+    final int? modeValue = prefs.getInt(_themeModeKey);
+    if (modeValue != null) {
+      _themeMode = ThemeMode.values[modeValue];
+    }
+    notifyListeners();
   }
 
   Future<void> setThemeColor(Color color) async {
@@ -27,6 +35,13 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_colorKey, color.value);
+  }
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_themeModeKey, mode.index);
   }
 
   TextTheme get _manropeTextTheme => GoogleFonts.manropeTextTheme();

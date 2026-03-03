@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -210,7 +210,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
             height: 280,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary.withOpacity(_isSessionActive ? 0.08 : 0.12),
+              color: Theme.of(context).colorScheme.primary.withOpacity(_isSessionActive ? 0.08 : 0.12),
             ),
           ),
         ),
@@ -297,13 +297,13 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
                         height: 140,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
-                            colors: [AppColors.primary, Color(0xFF1E88E5)],
+                            colors: [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)],
                           ),
                           boxShadow: [
-                            BoxShadow(color: AppColors.primary.withOpacity(0.35), blurRadius: 30, spreadRadius: 5),
+                            BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.35), blurRadius: 30, spreadRadius: 5),
                           ],
                         ),
                         child: Column(
@@ -394,7 +394,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.graphic_eq, size: 52, color: AppColors.primary.withOpacity(0.4)),
+                      Icon(Icons.graphic_eq, size: 52, color: Theme.of(context).colorScheme.primary.withOpacity(0.4)),
                       const SizedBox(height: 10),
                       Text("Listening...", style: GoogleFonts.manrope(color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B), fontSize: 16)),
                     ],
@@ -428,21 +428,21 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(isDark ? 0.1 : 0.05),
+                  color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.1 : 0.05),
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.15)),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.15)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.auto_awesome, size: 14, color: AppColors.primary),
+                        Icon(Icons.auto_awesome, size: 14, color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 6),
                         Text(
                           'AI INSIGHT',
                           style: GoogleFonts.manrope(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w800,
                             fontSize: 11,
                             letterSpacing: 1.2,
@@ -467,7 +467,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
               if (_isSaving)
                 Column(
                   children: [
-                    CircularProgressIndicator(color: AppColors.primary),
+                    CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
                     const SizedBox(height: 10),
                     Text("Saving Memories...", style: GoogleFonts.manrope(color: AppColors.textMuted)),
                   ],
@@ -536,7 +536,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
         sections.add(_buildSectionCard("CLARIFICATION", clarificationMatch.group(1)!.trim(), AppColors.warning.withOpacity(0.15), AppColors.warning, Icons.help_outline, isDark));
       }
       if (apologyMatch != null && apologyMatch.group(1)!.trim().isNotEmpty) {
-        sections.add(_buildSectionCard("CONFIRMATION", apologyMatch.group(1)!.trim(), AppColors.primary.withOpacity(0.15), AppColors.primary, Icons.info_outline, isDark));
+        sections.add(_buildSectionCard("CONFIRMATION", apologyMatch.group(1)!.trim(), Theme.of(context).colorScheme.primary.withOpacity(0.15), Theme.of(context).colorScheme.primary, Icons.info_outline, isDark));
       }
       return Column(crossAxisAlignment: CrossAxisAlignment.start, children: sections);
     }

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -35,11 +35,11 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     if (mounted) {
       if (service.isConnected) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Connected to Brain!"), backgroundColor: Colors.green),
+          const SnackBar(content: Text("âœ… Connected to Brain!"), backgroundColor: Colors.green),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("❌ Connection Failed. Check URL."), backgroundColor: Colors.red),
+          const SnackBar(content: Text("âŒ Connection Failed. Check URL."), backgroundColor: Colors.red),
         );
       }
     }
@@ -193,10 +193,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                       child: Container(
                         height: 52,
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [AppColors.primary, Color(0xFF1E88E5)]),
+                          gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)]),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           boxShadow: [
-                            BoxShadow(color: AppColors.primary.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4)),
+                            BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 12, offset: const Offset(0, 4)),
                           ],
                         ),
                         child: Row(
@@ -273,12 +273,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                               : null,
                           gradient: connectionService.status == ConnectionStatus.connecting
                               ? null
-                              : const LinearGradient(colors: [AppColors.primary, Color(0xFF1E88E5)]),
+                              : LinearGradient(colors: [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)]),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Center(
                           child: connectionService.status == ConnectionStatus.connecting
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary))
                               : Text(
                                   'Save & Test Connection',
                                   style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
