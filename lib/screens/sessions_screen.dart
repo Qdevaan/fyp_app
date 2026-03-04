@@ -4,10 +4,9 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/design_tokens.dart';
-import '../widgets/app_logo.dart';
 import '../widgets/chat_bubble.dart';
 
-enum _SortOrder { newestFirst, oldestFirst, aToZ, zToA }
+enum _SortOrder { newestFirst, oldestFirst }
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -19,15 +18,7 @@ class SessionsScreen extends StatefulWidget {
 class _SessionsScreenState extends State<SessionsScreen> {
   int _selectedFilter = 0; // 0=All, 1=Wingman, 2=Consultant
   _SortOrder _sortOrder = _SortOrder.newestFirst;
-  bool _showSearch = false;
-  final _searchController = TextEditingController();
-  String _searchQuery = '';
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   void _openSortSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
@@ -60,8 +51,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
                   ...[
                     (_SortOrder.newestFirst, Icons.arrow_downward_rounded, 'Newest first'),
                     (_SortOrder.oldestFirst, Icons.arrow_upward_rounded,   'Oldest first'),
-                    (_SortOrder.aToZ,        Icons.sort_by_alpha_rounded,   'A → Z'),
-                    (_SortOrder.zToA,        Icons.sort_by_alpha_rounded,   'Z → A'),
                   ].map((rec) {
                     final (order, icon, label) = rec;
                     final selected = _sortOrder == order;
@@ -116,23 +105,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       ),
                     ),
                   ),
-                  // Search toggle
-                  IconButton(
-                    tooltip: 'Search',
-                    onPressed: () {
-                      setState(() {
-                        _showSearch = !_showSearch;
-                        if (!_showSearch) {
-                          _searchController.clear();
-                          _searchQuery = '';
-                        }
-                      });
-                    },
-                    icon: Icon(
-                      _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
-                      color: _showSearch ? primary : (isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
-                    ),
-                  ),
                   // Sort
                   IconButton(
                     tooltip: 'Sort',
@@ -146,54 +118,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
                   ),
                 ],
               ),
-            ),
-
-            // --- Search Bar (animated) ---
-            AnimatedSize(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeInOut,
-              child: _showSearch
-                  ? Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                      child: Container(
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(22),
-                        ),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 14),
-                            Icon(Icons.search_rounded, size: 18, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: _searchController,
-                                autofocus: true,
-                                onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
-                                style: GoogleFonts.manrope(fontSize: 14, color: isDark ? Colors.white : const Color(0xFF0F172A)),
-                                decoration: InputDecoration(
-                                  hintText: 'Search sessions…',
-                                  hintStyle: GoogleFonts.manrope(fontSize: 14, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                              ),
-                            ),
-                            if (_searchQuery.isNotEmpty)
-                              GestureDetector(
-                                onTap: () { _searchController.clear(); setState(() => _searchQuery = ''); },
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 10),
-                                  child: Icon(Icons.close_rounded, size: 18, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : const SizedBox.shrink(),
             ),
 
             // --- Filter Chips ---
@@ -214,10 +138,10 @@ class _SessionsScreenState extends State<SessionsScreen> {
             // --- Content ---
             Expanded(
               child: _selectedFilter == 2
-                  ? ConsultantHistoryList(searchQuery: _searchQuery, sortOrder: _sortOrder)
+                  ? ConsultantHistoryList(searchQuery: '', sortOrder: _sortOrder)
                   : _selectedFilter == 1
-                      ? LiveSessionsList(searchQuery: _searchQuery, sortOrder: _sortOrder)
-                      : _CombinedList(searchQuery: _searchQuery, sortOrder: _sortOrder),
+                      ? LiveSessionsList(searchQuery: '', sortOrder: _sortOrder)
+                      : _CombinedList(searchQuery: '', sortOrder: _sortOrder),
             ),
           ],
         ),
@@ -331,7 +255,9 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
           .stream(primaryKey: ['id'])
           .eq('user_id', userId)
           .order('created_at', ascending: false)
-          .map((data) => List<Map<String, dynamic>>.from(data));
+          .map((data) => List<Map<String, dynamic>>.from(data)
+              .where((s) => s['mode'] == 'live_wingman')
+              .toList());
     } else {
       _sessionsStream = const Stream.empty();
     }
@@ -364,15 +290,11 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
             sessions.sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
           case _SortOrder.oldestFirst:
             sessions.sort((a, b) => (a['created_at'] as String).compareTo(b['created_at'] as String));
-          case _SortOrder.aToZ:
-            sessions.sort((a, b) => (a['title'] ?? '').toString().compareTo((b['title'] ?? '').toString()));
-          case _SortOrder.zToA:
-            sessions.sort((a, b) => (b['title'] ?? '').toString().compareTo((a['title'] ?? '').toString()));
         }
 
         if (sessions.isEmpty) {
           return _buildEmptyState(
-            widget.searchQuery.isNotEmpty ? 'No results for "${widget.searchQuery}"' : 'No live sessions yet',
+            'No live sessions yet',
             Icons.mic_off,
           );
         }
@@ -472,21 +394,22 @@ class ConsultantHistoryList extends StatefulWidget {
 
 class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
   final _supabase = Supabase.instance.client;
-  late final Future<List<Map<String, dynamic>>> _logsFuture;
+  late final Future<List<Map<String, dynamic>>> _sessionsFuture;
 
   @override
   void initState() {
     super.initState();
     final userId = _supabase.auth.currentUser?.id;
     if (userId != null) {
-      _logsFuture = _supabase
-          .from('consultant_logs')
+      _sessionsFuture = _supabase
+          .from('sessions')
           .select()
           .eq('user_id', userId)
+          .eq('mode', 'consultant')
           .order('created_at', ascending: false)
           .then((data) => List<Map<String, dynamic>>.from(data));
     } else {
-      _logsFuture = Future.value([]);
+      _sessionsFuture = Future.value([]);
     }
   }
 
@@ -495,38 +418,33 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _logsFuture,
+      future: _sessionsFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        var logs = snapshot.data ?? [];
+        var sessions = snapshot.data ?? [];
 
         // Apply search
         if (widget.searchQuery.isNotEmpty) {
-          logs = logs.where((l) {
-            final q = (l['question'] ?? '').toString().toLowerCase();
-            final a = (l['answer'] ?? '').toString().toLowerCase();
-            return q.contains(widget.searchQuery) || a.contains(widget.searchQuery);
+          sessions = sessions.where((s) {
+            final title = (s['title'] ?? '').toString().toLowerCase();
+            return title.contains(widget.searchQuery);
           }).toList();
         }
 
         // Apply sort
-        logs = List.from(logs);
+        sessions = List.from(sessions);
         switch (widget.sortOrder) {
           case _SortOrder.newestFirst:
-            logs.sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
+            sessions.sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
           case _SortOrder.oldestFirst:
-            logs.sort((a, b) => (a['created_at'] as String).compareTo(b['created_at'] as String));
-          case _SortOrder.aToZ:
-            logs.sort((a, b) => (a['question'] ?? '').toString().compareTo((b['question'] ?? '').toString()));
-          case _SortOrder.zToA:
-            logs.sort((a, b) => (b['question'] ?? '').toString().compareTo((a['question'] ?? '').toString()));
+            sessions.sort((a, b) => (a['created_at'] as String).compareTo(b['created_at'] as String));
         }
 
-        if (logs.isEmpty) {
+        if (sessions.isEmpty) {
           return _buildEmptyState(
-            widget.searchQuery.isNotEmpty ? 'No results for "${widget.searchQuery}"' : 'No consultant chats yet',
+            'No consultant chats yet',
             Icons.chat_bubble_outline,
           );
         }
@@ -535,67 +453,74 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
           shrinkWrap: widget.shrinkwrap,
           physics: widget.shrinkwrap ? const NeverScrollableScrollPhysics() : null,
           padding: widget.shrinkwrap ? EdgeInsets.zero : const EdgeInsets.all(16),
-          itemCount: logs.length,
+          itemCount: sessions.length,
           itemBuilder: (context, index) {
-            final log = logs[index];
-            final date = DateTime.parse(log['created_at']).toLocal();
+            final session = sessions[index];
+            final date = DateTime.parse(session['created_at']).toLocal();
             final formattedDate = DateFormat('MMM d, h:mm a').format(date);
-            final question = log['question'] ?? "Unknown Question";
-            final answer = log['answer'] ?? "";
+            final title = session['title'] ?? 'Consultant Chat';
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
-                ),
-                child: ExpansionTile(
-                  shape: const Border(),
-                  collapsedShape: const Border(),
-                  leading: AppLogo(size: 42),
-                  title: Text(
-                    question,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w600, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ConsultantDetailPage(sessionId: session['id'], title: title),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.surfaceDark : Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
                   ),
-                  subtitle: Row(
+                  child: Row(
                     children: [
                       Container(
-                        margin: const EdgeInsets.only(top: 4),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        width: 42,
+                        height: 42,
                         decoration: BoxDecoration(
                           color: Colors.purple.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text('Consultant', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.purple)),
+                        child: const Icon(Icons.psychology_outlined, color: Colors.purple, size: 22),
                       ),
-                      const SizedBox(width: 8),
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(formattedDate, style: GoogleFonts.manrope(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              title,
+                              style: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text('Consultant', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.purple)),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(formattedDate, style: GoogleFonts.manrope(fontSize: 12, color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
+                      Icon(Icons.chevron_right, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400, size: 20),
                     ],
                   ),
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text("Question:", style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade600, fontSize: 13)),
-                          const SizedBox(height: 4),
-                          Text(question, style: GoogleFonts.manrope(fontSize: 14, color: isDark ? Colors.white : Colors.black87)),
-                          const SizedBox(height: 12),
-                          Text("AI Answer:", style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary, fontSize: 13)),
-                          const SizedBox(height: 4),
-                          Text(answer, style: GoogleFonts.manrope(fontSize: 14, color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade800)),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ),
             );
@@ -629,6 +554,127 @@ Widget _buildEmptyState(String message, IconData icon) {
       );
     },
   );
+}
+
+// --- SUB-SCREEN: CONSULTANT SESSION DETAIL ---
+class ConsultantDetailPage extends StatefulWidget {
+  final String sessionId;
+  final String title;
+
+  const ConsultantDetailPage({super.key, required this.sessionId, required this.title});
+
+  @override
+  State<ConsultantDetailPage> createState() => _ConsultantDetailPageState();
+}
+
+class _ConsultantDetailPageState extends State<ConsultantDetailPage> {
+  late final Future<List<Map<String, dynamic>>> _logsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _logsFuture = Supabase.instance.client
+        .from('consultant_logs')
+        .select()
+        .eq('session_id', widget.sessionId)
+        .order('created_at', ascending: true)
+        .then((data) => List<Map<String, dynamic>>.from(data));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        widget.title,
+                        style: GoogleFonts.manrope(fontSize: 17, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _logsFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final logs = snapshot.data ?? [];
+
+                  if (logs.isEmpty) {
+                    return Center(
+                      child: Text("No messages found.", style: GoogleFonts.manrope(color: AppColors.textMuted)),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: logs.length,
+                    itemBuilder: (context, index) {
+                      final log = logs[index];
+                      final question = log['question']?.toString() ?? '';
+                      final answer = log['answer']?.toString() ?? '';
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (question.isNotEmpty) ...
+                            [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  ChatBubble(text: question, isUser: true),
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 4, bottom: 8),
+                                    child: Text('You', style: GoogleFonts.manrope(fontSize: 10, color: AppColors.textMuted)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          if (answer.isNotEmpty) ...
+                            [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ChatBubble(text: answer, isUser: false, speakerLabel: 'Consultant AI'),
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 4, bottom: 8),
+                                    child: Text('Consultant AI', style: GoogleFonts.manrope(fontSize: 10, color: AppColors.textMuted)),
+                                  ),
+                                ],
+                              ),
+                            ],
+                        ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // --- SUB-SCREEN: LIVE SESSION DETAIL ---
