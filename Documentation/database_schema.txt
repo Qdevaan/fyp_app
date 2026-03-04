@@ -1,0 +1,477 @@
+﻿================================================================================
+  BUBBLES AI ASSISTANT — SUPABASE SCHEMA (EXECUTED)
+  Date: March 4, 2026
+  Status: LIVE — this script was executed against the production Supabase project
+  RLS: DISABLED — all tables are fully open (no policies). Add RLS later.
+================================================================================
+
+Copy-paste this entire block into the Supabase SQL editor to rebuild from scratch.
+All existing tables are dropped first. RLS is intentionally OFF on every table.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FULL SCHEMA SQL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- ═══════════════════════════════════════════════════════════════
+-- 1. ENABLE EXTENSIONS
+-- ═══════════════════════════════════════════════════════════════
+create extension if not exists "uuid-ossp" schema extensions;
+create extension if not exists "vector"   schema extensions;
+create extension if not exists "pg_trgm"  schema extensions;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 2. DROP EVERYTHING — children first, parents last
+-- ═══════════════════════════════════════════════════════════════
+drop table if exists public.voice_enrollments  cascade;
+drop table if exists public.audio_sessions     cascade;
+drop table if exists public.events             cascade;
+drop table if exists public.highlights         cascade;
+drop table if exists public.entity_relations   cascade;
+drop table if exists public.entity_attributes  cascade;
+drop table if exists public.entities           cascade;
+drop table if exists public.knowledge_graphs   cascade;
+drop table if exists public.memory             cascade;
+drop table if exists public.consultant_logs    cascade;
+drop table if exists public.session_logs       cascade;
+drop table if exists public.sessions           cascade;
+drop table if exists public.profiles           cascade;
+
+drop function if exists public.match_memory(extensions.vector, float, int, uuid) cascade;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 3. CREATE TABLES
+-- ═══════════════════════════════════════════════════════════════
+
+-- ─────────────────────────────────────────
+-- [TABLE 1] profiles
+-- 1:1 with auth.users. Stores display info, avatar, demographics.
+-- ─────────────────────────────────────────
+create table public.profiles (
+    id          uuid        not null primary key references auth.users (id) on delete cascade,
+    full_name   text,
+    avatar_url  text,
+    dob         date,
+    gender      text,
+    country     text,
+    created_at  timestamptz not null default timezone('utc', now()),
+    updated_at  timestamptz
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 2] sessions
+-- Top-level record for each live wingman or consultant session.
+-- mode:   'live_wingman' | 'consultant'
+-- status: 'active' | 'completed'
+-- ─────────────────────────────────────────
+create table public.sessions (
+    id          uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id     uuid        not null references auth.users (id) on delete cascade,
+    mode        text        not null default 'consultant'
+                            check (mode in ('live_wingman', 'consultant')),
+    status      text        not null default 'active'
+                            check (status in ('active', 'completed')),
+    title       text                 default 'New Conversation',
+    summary     text,
+    created_at  timestamptz not null default timezone('utc', now()),
+    ended_at    timestamptz
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 3] session_logs
+-- Full conversation transcript. role: 'user' | 'others' | 'llm' | 'system'
+-- Realtime-enabled so Flutter receives new rows instantly during live sessions.
+-- ─────────────────────────────────────────
+create table public.session_logs (
+    id              uuid        not null default extensions.uuid_generate_v4() primary key,
+    session_id      uuid        not null references public.sessions (id) on delete cascade,
+    role            text        not null check (role in ('user', 'others', 'llm', 'system')),
+    content         text        not null,
+    speaker_label   text,
+    confidence      float,
+    created_at      timestamptz not null default timezone('utc', now())
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 4] consultant_logs
+-- Lightweight Q&A log for consultant mode history (drawer).
+-- session_id groups messages into a single chat thread.
+-- ─────────────────────────────────────────
+create table public.consultant_logs (
+    id          uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id     uuid        not null references auth.users (id) on delete cascade,
+    session_id  uuid                 references public.sessions (id) on delete set null,
+    question    text,
+    answer      text,
+    created_at  timestamptz not null default timezone('utc', now())
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 5] memory
+-- Long-term vector memory. embedding: 384-dim MiniLM-L6-v2.
+-- memory_type: 'fact' | 'summary' | 'event' | 'preference'
+-- ─────────────────────────────────────────
+create table public.memory (
+    id          uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id     uuid        not null references auth.users (id) on delete cascade,
+    session_id  uuid                 references public.sessions (id) on delete set null,
+    content     text        not null,
+    memory_type text                 default 'fact'
+                            check (memory_type in ('fact', 'summary', 'event', 'preference')),
+    embedding   extensions.vector(384),
+    created_at  timestamptz not null default timezone('utc', now())
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 6] knowledge_graphs
+-- Serialised NetworkX graph as JSONB. One record per user.
+-- node_count: generated from the nodes array (NULL = no graph yet).
+-- ─────────────────────────────────────────
+create table public.knowledge_graphs (
+    user_id     uuid        not null primary key references auth.users (id) on delete cascade,
+    graph_data  jsonb,
+    node_count  int         generated always as (jsonb_array_length(graph_data->'nodes')) stored,
+    updated_at  timestamptz          default now()
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 7] entities
+-- Named entity registry. One row per unique entity per user.
+-- canonical_name: lowercase normalised deduplication key.
+-- entity_type: 'person' | 'place' | 'organization' | 'event' | 'object' | 'concept'
+-- ─────────────────────────────────────────
+create table public.entities (
+    id              uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id         uuid        not null references auth.users (id) on delete cascade,
+    canonical_name  text        not null,
+    display_name    text        not null,
+    entity_type     text        not null default 'person'
+                                check (entity_type in ('person','place','organization','event','object','concept')),
+    description     text,
+    first_seen_at   timestamptz not null default timezone('utc', now()),
+    last_seen_at    timestamptz not null default timezone('utc', now()),
+    mention_count   int         not null default 1,
+    created_at      timestamptz not null default timezone('utc', now()),
+    constraint entities_user_canonical_unique unique (user_id, canonical_name)
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 8] entity_attributes
+-- Key-value facts per entity. One value per key (unique).
+-- ─────────────────────────────────────────
+create table public.entity_attributes (
+    id              uuid        not null default extensions.uuid_generate_v4() primary key,
+    entity_id       uuid        not null references public.entities (id) on delete cascade,
+    attribute_key   text        not null,
+    attribute_value text        not null,
+    source_session  uuid                 references public.sessions (id) on delete set null,
+    confidence      float                default 1.0,
+    created_at      timestamptz not null default timezone('utc', now()),
+    updated_at      timestamptz not null default timezone('utc', now()),
+    constraint entity_attr_unique unique (entity_id, attribute_key)
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 9] entity_relations
+-- Directed edges: (source) --[relation]--> (target)
+-- ─────────────────────────────────────────
+create table public.entity_relations (
+    id              uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id         uuid        not null references auth.users (id) on delete cascade,
+    source_id       uuid        not null references public.entities (id) on delete cascade,
+    target_id       uuid        not null references public.entities (id) on delete cascade,
+    relation        text        not null,
+    weight          float                default 1.0,
+    source_session  uuid                 references public.sessions (id) on delete set null,
+    is_verified     bool                 default false,
+    created_at      timestamptz not null default timezone('utc', now()),
+    updated_at      timestamptz not null default timezone('utc', now()),
+    constraint entity_relations_unique unique (source_id, target_id, relation)
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 10] highlights
+-- Home-screen flags: conflicts, important facts, suggestions, warnings.
+-- highlight_type: 'conflict' | 'important' | 'suggestion' | 'warning'
+-- Realtime-enabled.
+-- ─────────────────────────────────────────
+create table public.highlights (
+    id              uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id         uuid        not null references auth.users (id) on delete cascade,
+    session_id      uuid                 references public.sessions (id) on delete set null,
+    highlight_type  text        not null default 'important'
+                                check (highlight_type in ('conflict','important','suggestion','warning')),
+    title           text        not null,
+    body            text        not null,
+    related_entity  uuid                 references public.entities (id) on delete set null,
+    is_read         bool        not null default false,
+    is_resolved     bool        not null default false,
+    is_dismissed    bool        not null default false,
+    created_at      timestamptz not null default timezone('utc', now())
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 11] events
+-- Calendar items and deadlines extracted from conversations.
+-- Realtime-enabled.
+-- ─────────────────────────────────────────
+create table public.events (
+    id              uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id         uuid        not null references auth.users (id) on delete cascade,
+    session_id      uuid                 references public.sessions (id) on delete set null,
+    title           text        not null,
+    description     text,
+    due_at          timestamptz,
+    due_text        text,
+    related_entity  uuid                 references public.entities (id) on delete set null,
+    is_completed    bool        not null default false,
+    created_at      timestamptz not null default timezone('utc', now())
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 12] audio_sessions
+-- Device-side audio recording metadata. Audio binary never leaves the device.
+-- ─────────────────────────────────────────
+create table public.audio_sessions (
+    id                uuid        not null default extensions.uuid_generate_v4() primary key,
+    session_id        uuid        not null references public.sessions (id) on delete cascade,
+    user_id           uuid        not null references auth.users (id) on delete cascade,
+    local_path        text        not null,
+    file_name         text        not null,
+    format            text                 default 'aac'
+                                 check (format in ('aac', 'm4a', 'wav', 'mp3')),
+    duration_seconds  float,
+    file_size_bytes   bigint,
+    device_id         text,
+    recorded_at       timestamptz not null default timezone('utc', now()),
+    is_available      bool        not null default true
+);
+
+-- ─────────────────────────────────────────
+-- [TABLE 13] voice_enrollments
+-- Speaker fingerprint. One row per user.
+-- embedding: 192-dim speaker identity vector.
+-- ─────────────────────────────────────────
+create table public.voice_enrollments (
+    id              uuid        not null default extensions.uuid_generate_v4() primary key,
+    user_id         uuid        not null unique references auth.users (id) on delete cascade,
+    embedding       extensions.vector(192),
+    model_version   text                 default 'v1',
+    enrolled_at     timestamptz not null default timezone('utc', now()),
+    updated_at      timestamptz not null default timezone('utc', now())
+);
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 4. FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════
+
+-- Vector similarity search over long-term memory.
+-- Called by the server before every LLM prompt to inject relevant past facts.
+create or replace function public.match_memory(
+    query_embedding  extensions.vector(384),
+    match_threshold  float,
+    match_count      int,
+    p_user_id        uuid
+)
+returns table (id uuid, content text, similarity float)
+language sql stable
+as $$
+    select  id,
+            content,
+            1 - (embedding <=> query_embedding) as similarity
+    from    public.memory
+    where   user_id = p_user_id
+      and   1 - (embedding <=> query_embedding) > match_threshold
+    order   by embedding <=> query_embedding
+    limit   match_count;
+$$;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 5. INDEXES
+-- ═══════════════════════════════════════════════════════════════
+
+-- HNSW index for approximate nearest-neighbour search on memory embeddings
+create index idx_memory_embedding         on public.memory            using hnsw (embedding vector_cosine_ops);
+-- Common access patterns
+create index idx_sessions_user_id         on public.sessions          (user_id);
+create index idx_sessions_status          on public.sessions          (user_id, status);
+create index idx_session_logs_session     on public.session_logs      (session_id, created_at);
+create index idx_consultant_logs_session  on public.consultant_logs   (session_id, created_at);
+create index idx_consultant_logs_user     on public.consultant_logs   (user_id, created_at);
+create index idx_entities_canonical       on public.entities          (user_id, canonical_name);
+create index idx_entities_user            on public.entities          (user_id);
+create index idx_entity_attr_entity       on public.entity_attributes (entity_id);
+create index idx_highlights_user          on public.highlights        (user_id, is_dismissed, created_at);
+create index idx_events_user_due          on public.events            (user_id, is_completed, due_at);
+create index idx_entity_rel_source        on public.entity_relations  (source_id);
+create index idx_entity_rel_target        on public.entity_relations  (target_id);
+create index idx_audio_sessions_session   on public.audio_sessions    (session_id);
+create index idx_memory_user              on public.memory            (user_id, created_at);
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 6. ROW LEVEL SECURITY — DISABLED
+-- RLS is explicitly turned OFF on every table so the Python server
+-- (using the service-role key) and the Flutter client can read/write
+-- without hitting policy errors during development.
+-- Re-enable and add policies before going to production.
+-- ═══════════════════════════════════════════════════════════════
+
+alter table public.profiles          disable row level security;
+alter table public.sessions          disable row level security;
+alter table public.session_logs      disable row level security;
+alter table public.consultant_logs   disable row level security;
+alter table public.memory            disable row level security;
+alter table public.knowledge_graphs  disable row level security;
+alter table public.entities          disable row level security;
+alter table public.entity_attributes disable row level security;
+alter table public.entity_relations  disable row level security;
+alter table public.highlights        disable row level security;
+alter table public.events            disable row level security;
+alter table public.audio_sessions    disable row level security;
+alter table public.voice_enrollments disable row level security;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- 7. REALTIME REPLICATION
+-- Flutter subscribes to these tables for live UI updates.
+--   session_logs : new transcript turns in the live wingman screen
+--   highlights   : new flags on the home screen
+--   events       : new deadlines on the home screen
+-- ═══════════════════════════════════════════════════════════════
+
+alter publication supabase_realtime add table public.session_logs;
+alter publication supabase_realtime add table public.highlights;
+alter publication supabase_realtime add table public.events;
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TABLE INVENTORY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  #   Table                Realtime   RLS    Purpose
+  --- -------------------- ---------- ------ -------------------------------------------
+   1  profiles             no         OFF    User display name, avatar, demographics
+   2  sessions             no         OFF    Session metadata, mode, status, summary
+   3  session_logs         YES        OFF    Full conversation transcript per session
+   4  consultant_logs      no         OFF    Consultant mode Q&A chat history (drawer)
+   5  memory               no         OFF    Long-term vector memory (MiniLM embeddings)
+   6  knowledge_graphs     no         OFF    Serialised NetworkX graph JSONB per user
+   7  entities             no         OFF    Named entity registry (person/place/org/etc)
+   8  entity_attributes    no         OFF    Key-value facts per entity
+   9  entity_relations     no         OFF    Graph edges: source --[relation]--> target
+  10  highlights           YES        OFF    Conflict flags and important facts
+  11  events               YES        OFF    Deadlines and calendar items
+  12  audio_sessions       no         OFF    Device audio recording metadata only
+  13  voice_enrollments    no         OFF    Speaker fingerprint for diarization mapping
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ENTITY RELATIONSHIP DIAGRAM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  auth.users (1)
+    |
+    +-- profiles            (1:1)
+    +-- voice_enrollments   (1:1)
+    +-- knowledge_graphs    (1:1)
+    +-- sessions            (1:N)
+    |     +-- session_logs       (1:N)
+    |     +-- consultant_logs    (1:N)
+    |     +-- audio_sessions     (1:N)
+    +-- memory              (1:N)
+    +-- entities            (1:N)
+    |     +-- entity_attributes  (1:N)
+    |     +-- entity_relations   (N:N  source_id / target_id both -> entities)
+    +-- highlights          (1:N)
+    +-- events              (1:N)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FLUTTER REALTIME SUBSCRIPTION PATTERN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  // Live transcript -- subscribe in the active wingman session screen
+  supabase.from('session_logs')
+    .stream(primaryKey: ['id'])
+    .eq('session_id', currentSessionId)
+    .order('created_at')
+    .listen((rows) { /* rebuild transcript list */ });
+
+  // Home screen highlights -- subscribe once on login
+  supabase.from('highlights')
+    .stream(primaryKey: ['id'])
+    .eq('user_id', currentUserId)
+    .eq('is_dismissed', false)
+    .order('created_at', ascending: false)
+    .listen((rows) { /* update badge / card list */ });
+
+  // Home screen events -- subscribe once on login
+  supabase.from('events')
+    .stream(primaryKey: ['id'])
+    .eq('user_id', currentUserId)
+    .eq('is_completed', false)
+    .order('due_at')
+    .listen((rows) { /* update upcoming events list */ });
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RLS disabled
+  All 13 tables have RLS turned OFF. The server uses the Supabase service-role
+  key (bypasses RLS anyway) and the Flutter client uses the anon key with full
+  access during development. Before going to production, re-enable RLS and
+  restore the policies from the commented template below:
+
+  -- Re-enable when ready:
+  -- alter table public.profiles          enable row level security;
+  -- alter table public.sessions          enable row level security;
+  -- alter table public.session_logs      enable row level security;
+  -- alter table public.consultant_logs   enable row level security;
+  -- alter table public.memory            enable row level security;
+  -- alter table public.knowledge_graphs  enable row level security;
+  -- alter table public.entities          enable row level security;
+  -- alter table public.entity_attributes enable row level security;
+  -- alter table public.entity_relations  enable row level security;
+  -- alter table public.highlights        enable row level security;
+  -- alter table public.events            enable row level security;
+  -- alter table public.audio_sessions    enable row level security;
+  -- alter table public.voice_enrollments enable row level security;
+  --
+  -- create policy "Own Profile"    on public.profiles          for all using (auth.uid() = id);
+  -- create policy "Own Sessions"   on public.sessions          for all using (auth.uid() = user_id);
+  -- create policy "Own Logs"       on public.session_logs      for all using (exists (select 1 from public.sessions s where s.id = session_logs.session_id and s.user_id = auth.uid()));
+  -- create policy "Own Consultant" on public.consultant_logs   for all using (auth.uid() = user_id);
+  -- create policy "Own Memory"     on public.memory            for all using (auth.uid() = user_id);
+  -- create policy "Own KG"         on public.knowledge_graphs  for all using (auth.uid() = user_id);
+  -- create policy "Own Entities"   on public.entities          for all using (auth.uid() = user_id);
+  -- create policy "Own Attributes" on public.entity_attributes for all using (exists (select 1 from public.entities e where e.id = entity_attributes.entity_id and e.user_id = auth.uid()));
+  -- create policy "Own Relations"  on public.entity_relations  for all using (auth.uid() = user_id);
+  -- create policy "Own Highlights" on public.highlights        for all using (auth.uid() = user_id);
+  -- create policy "Own Events"     on public.events            for all using (auth.uid() = user_id);
+  -- create policy "Own Audio"      on public.audio_sessions    for all using (auth.uid() = user_id);
+  -- create policy "Own Voice"      on public.voice_enrollments for all using (auth.uid() = user_id);
+
+highlights.is_resolved
+  Added alongside is_dismissed and is_read. The home screen query filters
+  .eq('is_resolved', false) to show only open highlights.
+
+knowledge_graphs.node_count
+  Generated column calls jsonb_array_length(graph_data->'nodes').
+  Returns NULL when graph_data is NULL (new user, no graph yet).
+
+match_memory RPC
+  Called on the server with the Supabase auth UUID (not the LiveKit identity).
+
+entity_attributes unique constraint
+  Only one value per (entity_id, attribute_key) pair. Use UPSERT with
+  on conflict do update to overwrite stale values.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

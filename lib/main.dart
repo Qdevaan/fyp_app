@@ -22,6 +22,7 @@ import 'screens/sessions_screen.dart';
 import 'screens/new_session_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/entity_screen.dart';
 
 
 Future<void> main() async {
@@ -137,6 +138,7 @@ class BubblesApp extends StatelessWidget {
               '/sessions': (context) => const SessionsScreen(),
               '/about': (context) => const AboutScreen(),
               '/settings': (context) => const SettingsScreen(),
+              '/entities': (context) => const EntityScreen(),
             },
           );
         },
