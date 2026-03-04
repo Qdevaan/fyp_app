@@ -184,6 +184,8 @@ class VoiceAssistantService extends ChangeNotifier {
     await prefs.setBool(_wakeWordKey, enabled);
 
     if (enabled && _isActive) {
+      // Ensure Porcupine is initialised before trying to start
+      await _wakeWordService.init();
       await _wakeWordService.startListening();
     } else {
       await _wakeWordService.stopListening();

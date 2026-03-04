@@ -604,67 +604,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Select Voice Mode', style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 20),
-            Row(
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          // Track selected mode locally so cards update immediately on tap
+          VoiceMode selectedMode = voice.voiceMode;
+
+          Widget buildCard({required VoiceMode mode, required IconData icon, required String label, required Color color}) {
+            final isDark = Theme.of(ctx).brightness == Brightness.dark;
+            final isSelected = selectedMode == mode;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setSheetState(() => selectedMode = mode);
+                  voice.setVoiceMode(mode);
+                  Future.delayed(const Duration(milliseconds: 180), () {
+                    if (Navigator.canPop(ctx)) Navigator.pop(ctx);
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: isSelected ? color.withOpacity(0.15) : (isDark ? AppColors.surfaceDarkHighlight : Colors.grey.shade100),
+                    border: Border.all(
+                      color: isSelected ? color : (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade300),
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icon, color: isSelected ? color : (isDark ? Colors.white54 : Colors.grey), size: 30),
+                      const SizedBox(height: 6),
+                      Text(label, style: GoogleFonts.manrope(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: isSelected ? color : (isDark ? Colors.white54 : Colors.grey))),
+                      if (isSelected) Padding(padding: const EdgeInsets.only(top: 4), child: Icon(Icons.check_circle_rounded, color: color, size: 16)),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }
+
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _buildVoiceModeCard(ctx, voice, mode: VoiceMode.male, icon: Icons.man_rounded, label: 'Male', color: Colors.blueAccent),
-                const SizedBox(width: 10),
-                _buildVoiceModeCard(ctx, voice, mode: VoiceMode.female, icon: Icons.woman_rounded, label: 'Female', color: Colors.pinkAccent),
-                const SizedBox(width: 10),
-                _buildVoiceModeCard(ctx, voice, mode: VoiceMode.neutral, icon: Icons.smart_toy_rounded, label: 'Jarvis', color: Colors.tealAccent.shade700),
+                Text('Select Voice Mode', style: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    buildCard(mode: VoiceMode.male, icon: Icons.man_rounded, label: 'Male', color: Colors.blueAccent),
+                    const SizedBox(width: 10),
+                    buildCard(mode: VoiceMode.female, icon: Icons.woman_rounded, label: 'Female', color: Colors.pinkAccent),
+                    const SizedBox(width: 10),
+                    buildCard(mode: VoiceMode.neutral, icon: Icons.smart_toy_rounded, label: 'Jarvis', color: Colors.tealAccent.shade700),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVoiceModeCard(
-    BuildContext context,
-    VoiceAssistantService voice, {
-    required VoiceMode mode,
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isSelected = voice.voiceMode == mode;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          voice.setVoiceMode(mode);
-          Navigator.pop(context);
+          );
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            color: isSelected ? color.withOpacity(0.15) : (isDark ? AppColors.surfaceDarkHighlight : Colors.grey.shade100),
-            border: Border.all(
-              color: isSelected ? color : (isDark ? Colors.white.withOpacity(0.1) : Colors.grey.shade300),
-              width: isSelected ? 2 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: isSelected ? color : (isDark ? Colors.white54 : Colors.grey), size: 30),
-              const SizedBox(height: 6),
-              Text(label, style: GoogleFonts.manrope(fontSize: 13, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, color: isSelected ? color : (isDark ? Colors.white54 : Colors.grey))),
-              if (isSelected) Padding(padding: const EdgeInsets.only(top: 4), child: Icon(Icons.check_circle_rounded, color: color, size: 16)),
-            ],
-          ),
-        ),
       ),
     );
   }
