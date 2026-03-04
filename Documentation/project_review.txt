@@ -1,0 +1,299 @@
+================================================================================
+  BUBBLES AI ASSISTANT — PROJECT REVIEW
+  Date: March 4, 2026
+  Reviewer: GitHub Copilot (Claude Sonnet 4.6)
+  Scope: Full codebase — Flutter client, Python server, Supabase schema
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE GOOD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. FLUTTER SERVICE ARCHITECTURE
+   Clean service-layer separation in Flutter:
+     ConnectionService → ApiService → LiveKitService
+   Proper ProxyProvider chaining is used throughout. The
+   previous!..updateApiService(api) trick in main.dart avoids
+   recreating the LiveKit connection on every Provider rebuild —
+   this shows genuine understanding of Flutter's Provider lifecycle,
+   not just copy-pasted boilerplate.
+
+2. PRODUCTION-QUALITY DATABASE SCHEMA
+   The Supabase schema is well above typical FYP standard:
+   - HNSW index on memory embeddings (vector_cosine_ops) for
+     approximate nearest-neighbour search at scale.
+   - Generated column for knowledge_graphs.node_count using
+     jsonb_array_length — no manual sync needed.
+   - Proper foreign keys with ON DELETE CASCADE everywhere.
+   - Realtime replication only on the 3 tables that actually need
+     it (session_logs, highlights, events) — not lazily on all tables.
+   - Vector similarity search isolated in a dedicated match_memory
+     RPC with threshold + count parameters.
+
+3. DUAL-MODEL LLM STRATEGY
+   Using two separate Groq models is the correct architectural call:
+   - llama-3.3-70b-versatile for Consultant (accuracy > speed)
+   - llama-3.1-8b-instant for Wingman (latency > accuracy)
+   Most student projects either use one model for everything or
+   pick the wrong one for each task.
+
+4. ASYNC-SAFE EMBEDDING
+   VectorService.save_memory() correctly offloads the synchronous
+   SentenceTransformer.encode() call to a thread pool via
+   asyncio.to_thread(). Blocking FastAPI's event loop with a CPU-
+   bound transformer is a very common mistake — it was avoided here.
+
+5. REALTIME WINGMAN SUGGESTION PATTERN
+   The fire-and-forget HTTP call + Supabase Realtime response pattern
+   in new_session_screen.dart is architecturally sound:
+   - Client sends transcript via HTTP (no waiting)
+   - Server processes and inserts an 'llm' row into session_logs
+   - Client receives the suggestion via Realtime subscription
+   This decouples the HTTP request lifecycle from the LLM response
+   time and keeps the UI responsive.
+
+6. COMPLETE VOICE PIPELINE
+   The Wake Word → STT → LLM → TTS pipeline is fully implemented
+   end-to-end using real production services:
+   - Porcupine (wake word, on-device, no round-trip)
+   - speech_to_text (command capture)
+   - Groq LLM (inference)
+   - Deepgram Aura (neural TTS with multiple voice modes)
+   Each stage hands off cleanly to the next via callbacks and state
+   enums (VoiceAssistantState).
+
+7. KNOWLEDGE GRAPH + VECTOR MEMORY HYBRID
+   Using both a NetworkX graph (short-term, structural relationships)
+   and a vector store (long-term, semantic similarity) is a
+   sophisticated memory architecture. The graph does keyword-match
+   context retrieval while the vector store handles semantic recall —
+   they complement each other well.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE BAD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. HARDCODED SECRETS IN SOURCE CODE
+   secrets.txt contains every live API key in plaintext and is
+   tracked by git (visible in the repository). Worse, new_server.py
+   hardcodes SUPABASE_KEY and SUPABASE_SERVICE_KEY as default
+   fallback values in the Settings class:
+
+     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "eyJhbGci...")
+     SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "sb_secret_...")
+
+   Even if environment variables are set in production, the raw keys
+   are permanently baked into git history.
+
+2. .ENV FILE SHIPPED INSIDE THE APK
+   The .env file is listed as a Flutter asset in pubspec.yaml:
+     assets:
+       - .env
+   This means every API key is bundled inside the compiled Android
+   APK. The .env can be trivially extracted from any release build
+   using apktool or even a zip extractor. Any user who installs the
+   app can read all server credentials.
+
+3. NO REAL STATE MANAGEMENT STRATEGY
+   ThemeProvider is the only entry in lib/providers/. All business
+   logic lives in ChangeNotifier services, making them do double
+   duty. Complex screens (home_screen.dart, new_session_screen.dart)
+   own UI state as local StatefulWidget fields, duplicating data
+   that already exists in services. This creates sync bugs as
+   the app grows.
+
+4. IN-MEMORY SERVER STATE IS NOT RESTART-SAFE
+   Two module-level dicts in new_server.py:
+     LIVE_SESSIONS: Dict[str, str] = {}
+     TURN_COUNTERS: Dict[str, int] = {}
+   Any server restart (crash, redeploy, Colab timeout) silently
+   orphans all active sessions. The client continues sending
+   transcripts to a session_id the server no longer knows about.
+   With multiple uvicorn workers these dicts would also diverge
+   across processes.
+
+5. ONE-FILE 1657-LINE SERVER MONOLITH
+   new_server.py contains everything in a single file:
+   DB clients, LLM prompts, embedding logic, LiveKit agent workers,
+   ngrok tunneling, Pydantic models, and all FastAPI route handlers.
+   There is also a server.py alongside it with no clear indication
+   of which is canonical, which is deployed, or what the difference
+   is between them.
+
+6. SUPABASE RLS IS COMPLETELY DISABLED
+   All 13 tables have ALTER TABLE ... DISABLE ROW LEVEL SECURITY.
+   The schema notes this is intentional for development, and the
+   policies are written and commented out ready to enable — but
+   combined with the anon key being in the shipped APK (see #2),
+   any user of the app currently has full read/write access to every
+   other user's data via the Supabase REST API.
+
+7. DEAD DEPENDENCY — flutter_tts
+   pubspec.yaml still lists flutter_tts: ^4.2.0 but all TTS was
+   replaced by Deepgram Aura (via AudioPlayer + HTTP). flutter_tts
+   adds unnecessary build weight, increases platform permissions
+   footprint, and is never called anywhere in the current codebase.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+THE UGLY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. THE SERVICE-ROLE KEY IS PUBLICLY ACCESSIBLE
+   The SUPABASE_SERVICE_KEY (the key that bypasses ALL row-level
+   security) is hardcoded in new_server.py as a fallback and stored
+   in secrets.txt which is committed to the repository. Combined with
+   the public Supabase URL, anyone with access to the repo or the APK
+   can perform full admin-level reads, writes, and deletes against
+   the production database with zero authentication right now.
+
+   Affected tables (all 13):
+     profiles, sessions, session_logs, consultant_logs, memory,
+     knowledge_graphs, entities, entity_attributes, entity_relations,
+     highlights, events, audio_sessions, voice_enrollments
+
+2. CORE UI FEATURES ARE STUBBED OR COMMENTED OUT
+   The drawer is commented out in home_screen.dart:
+     // drawer: AppDrawer(...)
+
+   The notification bell shows a SnackBar:
+     content: Text("Notifications coming soon!")
+
+   The highlights table has realtime replication, is_read, is_resolved,
+   and is_dismissed flags — the entire backend for push notifications
+   is implemented. The Flutter side has zero UI for it.
+
+3. AMBIGUOUS SERVER STATE: server.py vs new_server.py
+   Two Python server files coexist in /server/ with no README, no
+   comments explaining the distinction, and requirements.txt that
+   could apply to either. It is not clear from the code which one
+   runs in production, which is being actively developed, or whether
+   server.py is safe to delete.
+
+4. NO TIMEOUT OR RECOVERY ON REALTIME DROP DURING LIVE SESSION
+   If the Supabase Realtime channel drops mid-session (network
+   change, server restart), _currentSuggestion stays as "Thinking..."
+   indefinitely. There is no:
+   - Channel reconnection logic
+   - Timeout fallback to polling
+   - User-visible error state
+   The user has no way to know the session is broken without
+   manually stopping it.
+
+5. GRAPH CONTEXT SEARCH IS SUBSTRING MATCHING
+   GraphService.find_context() uses simple Python string containment:
+     if str(node).lower() in text_lower or text_lower in str(node).lower()
+   For a knowledge graph that is meant to capture nuanced entity
+   relationships, this will miss most relevant nodes (synonyms,
+   partial names, abbreviations) and produce false positives on
+   short common words. The vector store next to it uses proper
+   semantic similarity — the graph should too.
+
+6. VOICE ENROLLMENT SENDS AUDIO TO SERVER BUT RESULT IS NEVER VALIDATED
+   api_service.dart enrollVoice() fires the multipart POST and
+   checks only statusCode == 200. The speaker embedding is stored
+   in voice_enrollments, but there is no UI feedback confirming
+   enrollment quality, no re-enrollment flow if the embedding is
+   poor, and no way for the user to see or reset their enrollment.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+IMPROVEMENTS — PRIORITY ORDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  PRIORITY   WHAT                              HOW
+  ---------  --------------------------------  --------------------------------
+  CRITICAL   Rotate and purge all secrets      Run: git filter-repo
+                                               --invert-paths --path secrets.txt
+                                               Rotate every key in Deepgram,
+                                               LiveKit, Groq, Ngrok, Supabase.
+                                               Never use os.getenv("KEY", "raw")
+
+  CRITICAL   Remove .env from Flutter assets   Use --dart-define at build time
+                                               or platform keystore/secrets.
+                                               Remove the assets: - .env line
+                                               from pubspec.yaml.
+
+  CRITICAL   Enable Supabase RLS               The policies are already written
+                                               in database_schema.txt, just
+                                               uncomment and execute them.
+
+  HIGH       Persist LIVE_SESSIONS to DB       Store session state in Supabase
+                                               sessions table (already exists).
+                                               Look up session_id by user_id
+                                               on each request instead of
+                                               relying on the in-memory dict.
+
+  HIGH       Resolve server.py ambiguity       Delete server.py if unused.
+                                               Add a one-paragraph README.md
+                                               inside /server/ explaining how
+                                               to run new_server.py.
+
+  MEDIUM     Split new_server.py into modules  Suggested structure:
+                                               server/
+                                                 main.py          (FastAPI app + startup)
+                                                 config.py        (Settings class)
+                                                 services/
+                                                   graph.py       (GraphService)
+                                                   vector.py      (VectorService)
+                                                   session.py     (SessionService)
+                                                   brain.py       (BrainService / LLM)
+                                                 routes/
+                                                   wingman.py
+                                                   consultant.py
+                                                   enrollment.py
+                                                 livekit_agent.py
+
+  MEDIUM     Remove flutter_tts from pubspec   Delete the flutter_tts line,
+                                               run: flutter pub get
+
+  MEDIUM     Implement highlights UI           Wire the existing Supabase
+                                               Realtime subscription pattern
+                                               (already in database_schema.txt)
+                                               to a notification badge and
+                                               card list on the home screen.
+                                               Re-enable AppDrawer.
+
+  MEDIUM     Add Realtime drop recovery        After subscribing, set a
+                                               30-second Timer. If no 'llm'
+                                               row arrives, show an error
+                                               state and offer a Retry button
+                                               that falls back to polling.
+
+  LOW        Replace graph keyword search      Use the existing SentenceTransformer
+             with semantic node matching       to embed graph node names and
+                                               do cosine similarity against
+                                               the query instead of substring
+                                               matching.
+
+  LOW        Add voice enrollment validation   After /enroll returns 200,
+                                               query voice_enrollments to
+                                               confirm the embedding was saved,
+                                               show a quality indicator, and
+                                               offer a re-record option.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUMMARY SCORES  (out of 5)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Area                        Score   Notes
+  --------------------------  ------  ----------------------------------------
+  Feature Ambition              5/5   Dual-mode AI, voice pipeline, KG + vector
+                                      memory, realtime — this is a serious app.
+  Database Design               5/5   Clean schema, right indexes, good RLS
+                                      policies (just not enabled yet).
+  Flutter Architecture          3/5   Service layer is good; state management
+                                      and screen-level code needs refactoring.
+  Server Architecture           2/5   Works, but monolithic and fragile due to
+                                      in-memory state and no module separation.
+  Security                      1/5   All credentials exposed. Must be fixed
+                                      before any external demo or submission.
+  Code Completeness             3/5   Core features work; notifications, drawer,
+                                      and enrollment UX are incomplete.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

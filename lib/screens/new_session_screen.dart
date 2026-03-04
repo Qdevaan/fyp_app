@@ -29,6 +29,11 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
   String? _sessionId;
   RealtimeChannel? _realtimeChannel;
 
+  // Realtime drop detection
+  Timer? _realtimeTimeoutTimer;
+  bool _realtimeLost = false;
+  String? _lastTranscriptForRetry;
+
   final List<Map<String, dynamic>> _sessionLogs = [];
   String _currentSuggestion = "Tap Start to begin your Wingman session...";
 
@@ -54,6 +59,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
     deepgram.removeListener(_onDeepgramUpdate);
     deepgram.disconnect();
     _realtimeChannel?.unsubscribe();
+    _realtimeTimeoutTimer?.cancel();
     _scrollController.dispose();
     _pulseController.dispose();
     _blobController.dispose();
@@ -81,7 +87,12 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
             final role = record['role'] as String?;
             final content = record['content'] as String?;
             if (role == 'llm' && content != null && content.isNotEmpty) {
-              setState(() => _currentSuggestion = content);
+              // Response received — cancel the timeout and clear any lost state
+              _realtimeTimeoutTimer?.cancel();
+              setState(() {
+                _currentSuggestion = content;
+                _realtimeLost = false;
+              });
             }
           },
         )
@@ -120,18 +131,51 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
 
     if (_sessionId != null) {
       // Fire-and-forget: Realtime will update suggestion when server responds (Phase 3.11)
+      setState(() {
+        _currentSuggestion = "Thinking...";
+        _realtimeLost = false;
+        _lastTranscriptForRetry = transcript;
+      });
+
       api.sendTranscriptToWingman(
         user.id,
         transcript,
         sessionId: _sessionId,
         speakerRole: 'others',
       );
+
+      // Start a 30-second watchdog — if no LLM row arrives, show a recovery UI
+      _realtimeTimeoutTimer?.cancel();
+      _realtimeTimeoutTimer = Timer(const Duration(seconds: 30), () {
+        if (mounted && _currentSuggestion == "Thinking...") {
+          setState(() => _realtimeLost = true);
+        }
+      });
     } else {
       // Fallback: await HTTP response
       final advice = await api.sendTranscriptToWingman(user.id, transcript);
       if (advice != null && mounted) {
         setState(() => _currentSuggestion = advice);
       }
+    }
+  }
+
+  /// Retries the last wingman request by falling back to HTTP polling.
+  Future<void> _retryWingman() async {
+    if (_lastTranscriptForRetry == null) return;
+    final api = Provider.of<ApiService>(context, listen: false);
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _realtimeLost = false;
+      _currentSuggestion = "Retrying...";
+    });
+
+    // Poll directly via HTTP (bypasses Realtime)
+    final advice = await api.sendTranscriptToWingman(user.id, _lastTranscriptForRetry!);
+    if (mounted) {
+      setState(() => _currentSuggestion = advice ?? "No response from server.");
     }
   }
 
@@ -204,9 +248,12 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
   Future<void> _endSessionAndSave() async {
     setState(() => _isSessionActive = false);
 
-    // Tear down Realtime subscription
+    // Tear down Realtime subscription and timeout watchdog
     _realtimeChannel?.unsubscribe();
     _realtimeChannel = null;
+    _realtimeTimeoutTimer?.cancel();
+    _realtimeTimeoutTimer = null;
+    _realtimeLost = false;
 
     final user = AuthService.instance.currentUser;
     if (user != null) {
@@ -666,6 +713,38 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
   }
 
   Widget _buildAdviceContent(bool isDark) {
+    // Realtime connection was lost — show error state with retry
+    if (_realtimeLost) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.error.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.error.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud_off_rounded, color: AppColors.error, size: 18),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Live updates stopped. Tap Retry to fetch response via HTTP.',
+                style: GoogleFonts.manrope(fontSize: 12, color: AppColors.error, height: 1.4),
+              ),
+            ),
+            TextButton(
+              onPressed: _retryWingman,
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.error,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              ),
+              child: Text('Retry', style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 13)),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_currentSuggestion.contains("**Context-Based Advice:**")) {
       List<Widget> sections = [];
 
