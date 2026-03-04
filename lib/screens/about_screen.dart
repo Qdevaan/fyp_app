@@ -9,7 +9,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const String appVersion = "1.0.0";
+    const String appVersion = "1.0.4";
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -131,11 +131,18 @@ class AboutScreen extends StatelessWidget {
                               ),
                             ),
                             child: Text(
-                              'Version $appVersion',
+                              'Bubbles v$appVersion',
                               style: theme.textTheme.labelMedium?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.bold,
                               ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            'Made with AI Love',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
                             ),
                           ),
                         ],

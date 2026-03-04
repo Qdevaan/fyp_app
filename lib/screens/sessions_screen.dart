@@ -4,7 +4,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/design_tokens.dart';
+import '../widgets/app_logo.dart';
 import '../widgets/chat_bubble.dart';
+
+enum _SortOrder { newestFirst, oldestFirst, aToZ, zToA }
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -15,10 +18,78 @@ class SessionsScreen extends StatefulWidget {
 
 class _SessionsScreenState extends State<SessionsScreen> {
   int _selectedFilter = 0; // 0=All, 1=Wingman, 2=Consultant
+  _SortOrder _sortOrder = _SortOrder.newestFirst;
+  bool _showSearch = false;
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _openSortSheet(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (ctx, setModal) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF475569) : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Sort by', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, color: isDark ? Colors.white : const Color(0xFF0F172A))),
+                  const SizedBox(height: 12),
+                  ...[
+                    (_SortOrder.newestFirst, Icons.arrow_downward_rounded, 'Newest first'),
+                    (_SortOrder.oldestFirst, Icons.arrow_upward_rounded,   'Oldest first'),
+                    (_SortOrder.aToZ,        Icons.sort_by_alpha_rounded,   'A → Z'),
+                    (_SortOrder.zToA,        Icons.sort_by_alpha_rounded,   'Z → A'),
+                  ].map((rec) {
+                    final (order, icon, label) = rec;
+                    final selected = _sortOrder == order;
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Icon(icon, color: selected ? Theme.of(context).colorScheme.primary : (isDark ? const Color(0xFF94A3B8) : Colors.grey.shade500), size: 20),
+                      title: Text(label, style: GoogleFonts.manrope(fontSize: 14, fontWeight: selected ? FontWeight.w700 : FontWeight.w500, color: selected ? Theme.of(context).colorScheme.primary : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155)))),
+                      trailing: selected ? Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 20) : null,
+                      onTap: () {
+                        setState(() => _sortOrder = order);
+                        setModal(() {});
+                        Navigator.pop(ctx);
+                      },
+                    );
+                  }),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       body: SafeArea(
@@ -26,7 +97,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
           children: [
             // --- Header ---
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
               child: Row(
                 children: [
                   IconButton(
@@ -45,12 +116,84 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       ),
                     ),
                   ),
+                  // Search toggle
                   IconButton(
-                    onPressed: () {},
-                    icon: Icon(Icons.filter_list, color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
+                    tooltip: 'Search',
+                    onPressed: () {
+                      setState(() {
+                        _showSearch = !_showSearch;
+                        if (!_showSearch) {
+                          _searchController.clear();
+                          _searchQuery = '';
+                        }
+                      });
+                    },
+                    icon: Icon(
+                      _showSearch ? Icons.search_off_rounded : Icons.search_rounded,
+                      color: _showSearch ? primary : (isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
+                    ),
+                  ),
+                  // Sort
+                  IconButton(
+                    tooltip: 'Sort',
+                    onPressed: () => _openSortSheet(context, isDark),
+                    icon: Icon(
+                      Icons.sort_rounded,
+                      color: _sortOrder != _SortOrder.newestFirst
+                          ? primary
+                          : (isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
+                    ),
                   ),
                 ],
               ),
+            ),
+
+            // --- Search Bar (animated) ---
+            AnimatedSize(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              child: _showSearch
+                  ? Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                      child: Container(
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(22),
+                        ),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 14),
+                            Icon(Icons.search_rounded, size: 18, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                controller: _searchController,
+                                autofocus: true,
+                                onChanged: (v) => setState(() => _searchQuery = v.trim().toLowerCase()),
+                                style: GoogleFonts.manrope(fontSize: 14, color: isDark ? Colors.white : const Color(0xFF0F172A)),
+                                decoration: InputDecoration(
+                                  hintText: 'Search sessions…',
+                                  hintStyle: GoogleFonts.manrope(fontSize: 14, color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                                  border: InputBorder.none,
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                ),
+                              ),
+                            ),
+                            if (_searchQuery.isNotEmpty)
+                              GestureDetector(
+                                onTap: () { _searchController.clear(); setState(() => _searchQuery = ''); },
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 10),
+                                  child: Icon(Icons.close_rounded, size: 18, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
 
             // --- Filter Chips ---
@@ -66,15 +209,15 @@ class _SessionsScreenState extends State<SessionsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
 
             // --- Content ---
             Expanded(
               child: _selectedFilter == 2
-                  ? const ConsultantHistoryList()
+                  ? ConsultantHistoryList(searchQuery: _searchQuery, sortOrder: _sortOrder)
                   : _selectedFilter == 1
-                      ? const LiveSessionsList()
-                      : const _CombinedList(),
+                      ? LiveSessionsList(searchQuery: _searchQuery, sortOrder: _sortOrder)
+                      : _CombinedList(searchQuery: _searchQuery, sortOrder: _sortOrder),
             ),
           ],
         ),
@@ -120,20 +263,22 @@ class _FilterChip extends StatelessWidget {
 
 // Combined list showing both types
 class _CombinedList extends StatelessWidget {
-  const _CombinedList();
+  final String searchQuery;
+  final _SortOrder sortOrder;
+  const _CombinedList({required this.searchQuery, required this.sortOrder});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      children: const [
-        _SectionHeader(title: 'Live Sessions'),
-        SizedBox(height: 4),
-        LiveSessionsList(shrinkwrap: true),
-        SizedBox(height: 20),
-        _SectionHeader(title: 'Consultant Chats'),
-        SizedBox(height: 4),
-        ConsultantHistoryList(shrinkwrap: true),
+      children: [
+        const _SectionHeader(title: 'Live Sessions'),
+        const SizedBox(height: 4),
+        LiveSessionsList(shrinkwrap: true, searchQuery: searchQuery, sortOrder: sortOrder),
+        const SizedBox(height: 20),
+        const _SectionHeader(title: 'Consultant Chats'),
+        const SizedBox(height: 4),
+        ConsultantHistoryList(shrinkwrap: true, searchQuery: searchQuery, sortOrder: sortOrder),
       ],
     );
   }
@@ -164,7 +309,9 @@ class _SectionHeader extends StatelessWidget {
 // --- TAB 1: LIVE SESSIONS LIST ---
 class LiveSessionsList extends StatefulWidget {
   final bool shrinkwrap;
-  const LiveSessionsList({super.key, this.shrinkwrap = false});
+  final String searchQuery;
+  final _SortOrder sortOrder;
+  const LiveSessionsList({super.key, this.shrinkwrap = false, this.searchQuery = '', this.sortOrder = _SortOrder.newestFirst});
 
   @override
   State<LiveSessionsList> createState() => _LiveSessionsListState();
@@ -200,10 +347,34 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final sessions = snapshot.data ?? [];
+        var sessions = snapshot.data ?? [];
+
+        // Apply search
+        if (widget.searchQuery.isNotEmpty) {
+          sessions = sessions.where((s) {
+            final title = (s['title'] ?? '').toString().toLowerCase();
+            return title.contains(widget.searchQuery);
+          }).toList();
+        }
+
+        // Apply sort
+        sessions = List.from(sessions);
+        switch (widget.sortOrder) {
+          case _SortOrder.newestFirst:
+            sessions.sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
+          case _SortOrder.oldestFirst:
+            sessions.sort((a, b) => (a['created_at'] as String).compareTo(b['created_at'] as String));
+          case _SortOrder.aToZ:
+            sessions.sort((a, b) => (a['title'] ?? '').toString().compareTo((b['title'] ?? '').toString()));
+          case _SortOrder.zToA:
+            sessions.sort((a, b) => (b['title'] ?? '').toString().compareTo((a['title'] ?? '').toString()));
+        }
 
         if (sessions.isEmpty) {
-          return _buildEmptyState("No live sessions yet", Icons.mic_off);
+          return _buildEmptyState(
+            widget.searchQuery.isNotEmpty ? 'No results for "${widget.searchQuery}"' : 'No live sessions yet',
+            Icons.mic_off,
+          );
         }
 
         return ListView.builder(
@@ -291,7 +462,9 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
 // --- TAB 2: CONSULTANT HISTORY LIST ---
 class ConsultantHistoryList extends StatefulWidget {
   final bool shrinkwrap;
-  const ConsultantHistoryList({super.key, this.shrinkwrap = false});
+  final String searchQuery;
+  final _SortOrder sortOrder;
+  const ConsultantHistoryList({super.key, this.shrinkwrap = false, this.searchQuery = '', this.sortOrder = _SortOrder.newestFirst});
 
   @override
   State<ConsultantHistoryList> createState() => _ConsultantHistoryListState();
@@ -327,10 +500,35 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
-        final logs = snapshot.data ?? [];
+        var logs = snapshot.data ?? [];
+
+        // Apply search
+        if (widget.searchQuery.isNotEmpty) {
+          logs = logs.where((l) {
+            final q = (l['question'] ?? '').toString().toLowerCase();
+            final a = (l['answer'] ?? '').toString().toLowerCase();
+            return q.contains(widget.searchQuery) || a.contains(widget.searchQuery);
+          }).toList();
+        }
+
+        // Apply sort
+        logs = List.from(logs);
+        switch (widget.sortOrder) {
+          case _SortOrder.newestFirst:
+            logs.sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
+          case _SortOrder.oldestFirst:
+            logs.sort((a, b) => (a['created_at'] as String).compareTo(b['created_at'] as String));
+          case _SortOrder.aToZ:
+            logs.sort((a, b) => (a['question'] ?? '').toString().compareTo((b['question'] ?? '').toString()));
+          case _SortOrder.zToA:
+            logs.sort((a, b) => (b['question'] ?? '').toString().compareTo((a['question'] ?? '').toString()));
+        }
 
         if (logs.isEmpty) {
-          return _buildEmptyState("No consultant chats yet", Icons.chat_bubble_outline);
+          return _buildEmptyState(
+            widget.searchQuery.isNotEmpty ? 'No results for "${widget.searchQuery}"' : 'No consultant chats yet',
+            Icons.chat_bubble_outline,
+          );
         }
 
         return ListView.builder(
@@ -354,15 +552,9 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                   border: Border.all(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200),
                 ),
                 child: ExpansionTile(
-                  leading: Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: Colors.purple.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.smart_toy, color: Colors.purple, size: 22),
-                  ),
+                  shape: const Border(),
+                  collapsedShape: const Border(),
+                  leading: AppLogo(size: 42),
                   title: Text(
                     question,
                     maxLines: 1,
