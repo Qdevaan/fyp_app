@@ -1,0 +1,423 @@
+================================================================================
+  BUBBLES AI ASSISTANT — SYSTEM DESIGN ANALYSIS
+  Date: March 4, 2026
+  Branch: drastic-changes
+================================================================================
+
+This document reviews the full system concept, evaluates what is well-designed,
+flags what needs significant work, and provides actionable recommendations.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1 — WHAT IS ALREADY GOOD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1.1  DUAL-MODE ARCHITECTURE (Live Wingman vs Consultant)
+------------------------------------------------------------
+This is the strongest design decision in the whole system.
+- Live Wingman uses a small, fast LLM (llama-3.1-8b-instant via Groq) and is
+  designed for minimal-latency streaming responses. This is correct.
+- Consultant mode uses a more capable model (llama-3.3-70b-versatile) that can
+  take time to synthesise context before answering. Also correct.
+- Having two separate API endpoints, two separate prompting strategies, and
+  separate session types per mode is the right call. Do not collapse them into
+  one generic endpoint.
+
+1.2  KNOWLEDGE GRAPH (NetworkX + Supabase JSONB)
+------------------------------------------------------------
+- Using NetworkX in-memory during a live session and flushing to Supabase as
+  JSONB is a solid lightweight approach for an FYP-scale system.
+- The graph_service.find_context() method does keyword-based node matching which
+  is fast enough for real-time use. Good pragmatic trade-off.
+- Saving and reloading the graph per user (load_graph / save_graph) is correct.
+  The graph preserves entity relationships across sessions.
+
+1.3  VECTOR MEMORY (SentenceTransformer + Supabase pgvector)
+------------------------------------------------------------
+- Using all-MiniLM-L6-v2 for embeddings is a good choice: small, fast, and
+  accurate enough for conversational memory retrieval.
+- The match_memory RPC with threshold (0.5) and match_count (3) is appropriate.
+  It avoids flooding the LLM context window with too many memories.
+- Saving to the `memory` table asynchronously (asyncio.to_thread) is correct
+  and prevents blocking the live pipeline.
+
+1.4  AUDIO PIPELINE DESIGN
+------------------------------------------------------------
+- Using Deepgram for STT is the right choice for low-latency transcription.
+- The decision to store audio locally on the mobile device only, while syncing
+  text/metadata to Supabase, is both privacy-conscious and bandwidth-efficient.
+- Wake word integration (Porcupine) with a custom "Hey Bubbles" keyword is a
+  good UX touch for hands-free activation.
+- Deepgram Aura TTS for responses is a good pairing — consistent voice, low
+  latency, controllable voice model.
+
+1.5  SESSION LOGGING
+------------------------------------------------------------
+- The session_logs table with a role field (user / others / llm) is well-
+  conceived. The LLM response being part of the live transcript ("LLM Responded:
+  with this") is the right mental model and the schema supports it.
+- Batch log flushing (log_batch_messages) to avoid per-word DB writes is
+  correct for live mode performance.
+
+1.6  TECH STACK CHOICES
+------------------------------------------------------------
+- Flutter for cross-platform mobile: correct for solo/small team FYP.
+- FastAPI + ngrok for rapid iteration without cloud deployment: correct.
+- Groq for LLM inference: correct — extremely fast, free tier is generous.
+- Supabase for auth + DB + vectors: correct — pgvector, RLS, and realtime in one.
+- LiveKit for real-time audio transport: correct for the architecture you are
+  targeting, though it adds complexity.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2 — CRITICAL ISSUES THAT NEED TO BE FIXED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2.1  SPEAKER DIARIZATION — "USER vs OTHERS" IS NOT IMPLEMENTED
+------------------------------------------------------------
+STATUS: The biggest unresolved gap in the whole system.
+
+The design says "user: said this / others: said this" but nothing in the current
+code actually distinguishes WHO is speaking. The current pipeline takes an audio
+chunk, transcribes it, and labels it with whatever role it assumes. There is no
+actual speaker separation happening.
+
+What you need:
+  a) Deepgram's diarize=true parameter — assigns speaker IDs (Speaker 0, 1...)
+     to each word in the transcription. This is already part of the Deepgram API.
+  b) A "user enrollment" voice fingerprint to map Speaker 0 → "user" and
+     all others → "others". You have an /enroll endpoint stub but no actual
+     speaker identification logic that feeds into role assignment.
+  c) During live wingman, only "others" speech should trigger LLM suggestions.
+     Currently this logic is missing or presumed without speaker separation.
+
+Without this, the entire "live wingman" concept cannot work as intended.
+
+2.2  ENTITY EXTRACTION IS NOT PERSISTENT — NO entity TABLE IN DB
+------------------------------------------------------------
+STATUS: Critical schema gap.
+
+The server extracts entities from LLM output and adds edges to NetworkX, but
+there is no dedicated `entities` table. Entities only live inside the opaque
+JSONB blob in `knowledge_graphs`. This means:
+  - You cannot query "what do I know about Samrin?" directly from SQL.
+  - You cannot display, edit, or delete individual entities in the Flutter app
+    without deserialising the entire graph.
+  - The connections_screen.dart has no structured data to work with.
+  - Supabase RLS cannot be applied per-entity.
+  - Cross-session entity deduplication is not possible.
+
+Fix: Create dedicated `entities`, `entity_attributes`, and `entity_relations`
+tables (see schema document for full definitions). The JSONB graph can still
+exist as a cache but structured tables must be the source of truth.
+
+2.3  NO CONFLICT / CONTRADICTION DETECTION
+------------------------------------------------------------
+STATUS: Important feature, zero implementation.
+
+The design says "highlight anything that goes against my previously saved data".
+There is currently no mechanism that:
+  - Compares newly extracted facts against existing graph edges.
+  - Flags when a new statement contradicts a stored relationship.
+  - Surfaces these conflicts to the user in the UI.
+
+This requires a dedicated conflict-checking step in the pipeline:
+  Post extraction → compare new (source, relation, target) triples against
+  existing graph edges for the same source node → if the relation value
+  differs, flag it as a conflict → store in a `highlights` table → surface on
+  home screen.
+
+2.4  LLM RESPONSE IS NOT SAVED IN session_logs CONSISTENTLY
+------------------------------------------------------------
+STATUS: Partially implemented — needs enforcement.
+
+The design specifies the transcript should read:
+  Others: said this
+  LLM Responded: with this
+  User: said this
+
+Looking at log_batch_messages and log_message, the role field is set from
+speaker/role keys but there is no enforced "llm" role being written every time
+the Groq API returns a response. Some code paths log it, others silently skip it
+(e.g. the "if session_id not in LIVE_SESSIONS.values()" guard blocks logging
+for newly created or fallback sessions).
+
+Fix: Every Groq API response in every mode must be written to session_logs with
+role = "llm" immediately after the response is received, not batched.
+
+2.5  knowledge_graphs.user_id IS TEXT, NOT UUID
+------------------------------------------------------------
+STATUS: Type mismatch bug.
+
+The `memory` and `sessions` tables use UUID references to auth.users. But
+`knowledge_graphs.user_id` is TEXT with no foreign key. This means:
+  - A typo or case difference creates a dangling graph record.
+  - You cannot JOIN across tables using user_id consistently.
+  - The LiveKit agent passes user_id as a string identity token which may not
+    match the Supabase auth UUID.
+
+Fix: Alter knowledge_graphs.user_id to UUID type with a foreign key to
+auth.users. Add a mapping layer in the LiveKit agent that resolves the LiveKit
+room participant identity to the Supabase user UUID.
+
+2.6  NO AUDIO SESSION METADATA TABLE
+------------------------------------------------------------
+STATUS: Schema gap.
+
+Audio is stored locally on device. But there is no record in Supabase that says:
+  "Session X has audio stored at local path Y, recorded at time Z, duration D."
+Without this:
+  - You cannot show audio playback links in the session history UI.
+  - You cannot know if an audio file for a session exists on the current device.
+  - You cannot manage storage (delete old recordings, etc.).
+
+Fix: Add an `audio_sessions` table with session_id, local_path, duration_seconds,
+recorded_at, device_id. This table is device-local but optionally mirrored to
+Supabase for the metadata row (excluding the actual audio binary).
+
+2.7  NO EVENTS / HIGHLIGHTS TABLE
+------------------------------------------------------------
+STATUS: Missing entirely.
+
+The design specifies:
+  "important specific events on the home screen"
+  "highlight anything that goes against previously saved data"
+
+There is no `events` table and no `highlights` table. The home screen currently
+has no structured data source for these widgets.
+
+Fix: Add `events` (extracted calendar items: who, what, when) and `highlights`
+(conflict flags, important facts to surface) tables. See schema document.
+
+2.8  CONSULTANT MODE SESSIONS NOT SEPARATED FROM LIVE SESSIONS
+------------------------------------------------------------
+STATUS: Ambiguous — likely to cause data mixing.
+
+The `sessions` table has no `mode` column. Both live wingman sessions and
+consultant chat sessions are inserted into the same table with only the title
+differentiating them. This makes it impossible to:
+  - Show only live sessions in one screen and only consultant sessions in another.
+  - Apply different retention/summarisation policies per mode.
+  - Query "all wingman sessions from last week" in SQL.
+
+Fix: Add a `mode` column (ENUM: 'live_wingman', 'consultant') to the sessions
+table. Add a `status` column (ENUM: 'active', 'completed') so you know if a
+session is still recording.
+
+2.9  NO REAL-TIME PUSH TO FLUTTER DURING LIVE SESSION
+------------------------------------------------------------
+STATUS: Architectural gap for the live wingman use case.
+
+Currently the Flutter app sends audio chunks to the server and polls/awaits
+the HTTP response. This works but creates a request-response cycle latency.
+The LLM suggestion arrives only after the full round-trip completes.
+
+For a true "whisper in the ear" experience you need Supabase Realtime or a
+WebSocket channel from the FastAPI server to Flutter so that:
+  - Transcription appears word by word as it is recognised.
+  - LLM suggestions are streamed (token by token) to the UI.
+  - The user sees the suggestion appearing as the other person is still talking.
+
+Fix: Add Supabase Realtime subscription in Flutter to the session_logs table
+(filtered by session_id) so new rows instantly appear in the UI without polling.
+On the server, insert to session_logs as each turn completes and let Supabase
+push the update. For LLM streaming, use Groq's streaming API and either
+accumulate-then-insert or insert partial chunks with a "streaming" role.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3 — DESIGN CONCERNS (NON-CRITICAL BUT IMPORTANT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3.1  LATENCY BUDGET FOR LIVE WINGMAN
+------------------------------------------------------------
+Your target is "minimal delay, real-time help". Let's map the current pipeline:
+
+  Audio chunk recorded (1-2s chunk)
+  → Upload to server (ngrok tunnel adds ~100-300ms)
+  → Deepgram STT (~100-200ms)
+  → Graph context lookup (~10ms)
+  → Vector memory search (~50-200ms)
+  → Groq LLM 8b-instant (~300-800ms for full response)
+  → Response sent back to Flutter
+  → TTS synthesis (Deepgram Aura, ~200-400ms)
+  → Audio playback
+
+Total realistic latency: 1.0 to 2.5 seconds from end of speech to start of
+audio response. This is acceptable for a between-turn suggestion but NOT fast
+enough for mid-sentence whispers. Set expectations accordingly in the UI.
+
+The biggest optimisation available: run vector memory search in parallel with
+the Deepgram STT call (start the embedding as soon as the speaker stops), not
+sequentially. The current pipeline does these sequentially.
+
+3.2  CONTEXT WINDOW MANAGEMENT
+------------------------------------------------------------
+The current prompt assembly concatenates: graph context + vector memories +
+last N session logs + current transcript. As sessions grow long, this will
+exceed the context window of the 8b model (approximately 8k tokens) and start
+truncating silently.
+
+You need a rolling window strategy:
+  - Keep only the last 10-15 session_log entries in the live prompt.
+  - Use vector similarity to select the most relevant memories, not all of them.
+  - Summarise the session periodically (every 20 turns) and replace the log
+    window with the summary. You already have a `summary` column on sessions —
+    use it actively, not just at session end.
+
+3.3  ENTITY DEDUPLICATION
+------------------------------------------------------------
+If the user has multiple conversations, "Samrin" might be added as a node
+multiple times with slightly different spellings ("samrin", "Samrin", "SAMRIN").
+The current graph does a case-insensitive node name check but entity attributes
+table has no deduplication logic.
+
+Recommendation: Normalise entity names to lowercase on insertion. Add a
+`canonical_name` field. Use the LLM to resolve "does this new entity match an
+existing one?" when a new entity is first encountered.
+
+3.4  SESSION SUMMARISATION IS NOT TRIGGERED AUTOMATICALLY
+------------------------------------------------------------
+The `summary` column exists on sessions but there is no scheduled or
+trigger-based summarisation. The session ends (user closes the app) and the
+summary is never generated.
+
+Fix: Add a /end_session endpoint that the Flutter app calls when the user exits
+a live session. This endpoint should: stop recording, flush the graph, generate
+a summary using Groq, update the sessions row, and save key facts to memory.
+
+3.5  CONSULTANT MODE MEMORY INJECTION
+------------------------------------------------------------
+The consultant mode should inject ALL of:
+  a) Relevant vector memories
+  b) Relevant knowledge graph facts
+  c) Recent session summaries (not raw logs)
+  d) Entity attributes for any named entity found in the question
+
+Currently the consultant endpoint probably only uses one or two of these.
+All four must be assembled into the system prompt for the "Jarvis" experience
+to work as described.
+
+3.6  EDITABLE ENTITY CONNECTIONS IN-APP
+------------------------------------------------------------
+The connections_screen.dart exists but has no structured data source since
+entities are buried inside JSONB. Without the structured `entities` and
+`entity_relations` tables, this screen cannot be built properly. This is a
+blocker for the in-app knowledge graph editor feature.
+
+3.7  NO OFFLINE FALLBACK
+------------------------------------------------------------
+The entire system requires a live ngrok tunnel to the server. If the tunnel is
+down, the app fails silently (returns empty transcripts / empty suggestions).
+For a demo, this is fragile. Consider:
+  - Showing a "Server offline" banner in the UI clearly.
+  - Allowing local STT (on-device) as a fallback so transcription still works.
+  - Caching the last N LLM responses locally for review.
+
+3.8  SECRETS IN CODE
+------------------------------------------------------------
+secrets.txt is listed at the top-level of the repo. Ensure this is in .gitignore
+and never committed. The .env.example in server/ is good practice — make sure
+the actual .env is also gitignored.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4 — FEATURE COMPLETENESS CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Feature                                         Status
+──────────────────────────────────────────────  ──────────────────────────────
+Audio capture from mobile mic                   ✅ Implemented
+Local audio storage                             ✅ Implemented (path_provider)
+Audio transcription via Deepgram                ✅ Implemented
+Speaker diarization (user vs others)            ❌ NOT IMPLEMENTED
+Session transcript saved locally                ⚠️  Via session_logs, no local cache
+Session transcript saved to Supabase            ✅ Implemented
+Continuous two-party transcription format       ❌ NOT IMPLEMENTED (no diarization)
+Entity extraction from transcript               ✅ Implemented (LLM-based)
+Entities saved to structured DB table           ❌ NOT IMPLEMENTED (only in JSONB)
+Entity attributes (who is Samrin, etc.)         ❌ NOT IMPLEMENTED
+Relationship graph construction                 ✅ Implemented (NetworkX + JSONB)
+Editable entity connections in app              ❌ NOT IMPLEMENTED (no schema)
+Knowledge graph saved to Supabase               ✅ Implemented (JSONB blob)
+Vector memory search                            ✅ Implemented
+Conflict / contradiction detection             ❌ NOT IMPLEMENTED
+Important events extracted and displayed        ❌ NOT IMPLEMENTED
+LLM suggestion in live wingman                  ✅ Implemented
+LLM response logged in session transcript       ⚠️  Partially — some code paths skip
+Real-time LLM streaming to Flutter UI           ❌ NOT IMPLEMENTED (polling only)
+Session summary generation                      ⚠️  Column exists, not auto-triggered
+Home screen event/highlight display             ❌ NOT IMPLEMENTED
+Consultant mode: text input                     ✅ Implemented
+Consultant mode: voice input                    ✅ Implemented
+Consultant mode: aware of past sessions         ⚠️  Partially (vector only, no summaries)
+Consultant mode: aware of knowledge graph       ⚠️  Partially (JSONB lookup only)
+Consultant mode: entity-specific queries        ❌ NOT IMPLEMENTED (no entity table)
+Wake word activation ("Hey Bubbles")            ✅ Implemented
+TTS response via Deepgram Aura                  ✅ Implemented
+User profile management                         ✅ Implemented
+Auth (Supabase)                                 ✅ Implemented
+Dark/light theme                                ✅ Implemented
+Supabase Realtime push to Flutter               ❌ NOT IMPLEMENTED
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 — RECOMMENDED IMPLEMENTATION PRIORITY ORDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PHASE 1 — Foundation (do these before building new features)
+  1. Add `mode` and `status` columns to sessions table.
+  2. Add `entities`, `entity_attributes`, `entity_relations`, `highlights`,
+     `events`, `audio_sessions` tables to Supabase (see schema doc).
+  3. Fix knowledge_graphs.user_id to UUID with FK.
+  4. Enforce LLM response logging in all code paths (role = 'llm').
+  5. Wire /end_session endpoint with summary generation.
+
+PHASE 2 — Core Live Wingman Features
+  6. Implement speaker diarization using Deepgram diarize=true.
+  7. Map speaker IDs to user/others using enrolled voice fingerprint.
+  8. Populate structured entities + entity_relations tables on extraction.
+  9. Implement conflict detection logic post-extraction.
+  10. Save detected conflicts to `highlights` table.
+
+PHASE 3 — Real-Time UX
+  11. Add Supabase Realtime subscription in Flutter (session_logs by session_id).
+  12. Surface new transcript turns in live wingman UI without polling.
+  13. Stream Groq responses token-by-token (server-sent events or WebSocket).
+  14. Build home screen event/highlight widgets backed by events + highlights tables.
+
+PHASE 4 — Consultant Enhancement
+  15. Build entity detail screen backed by entities + entity_attributes tables.
+  16. Build connection editor backed by entity_relations table.
+  17. Inject session summaries + entity facts into consultant prompt.
+  18. Add "ask about entity" natural language → SQL/graph lookup pipeline.
+
+PHASE 5 — Polish and Resilience
+  19. Offline STT fallback.
+  20. Rolling context window / mid-session summarisation.
+  21. Entity name deduplication / canonicalisation.
+  22. "Server offline" UI state with local cache of last session.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6 — SUMMARY VERDICT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The vision is excellent and well-scoped for an FYP. The tech stack choices are
+all sound. The existing code has working foundations for: auth, sessions, live
+audio processing, LLM suggestion, vector memory, and knowledge graph storage.
+
+The critical blockers are:
+  1. Speaker diarization — without this the core "user vs others" feature
+     does not exist and the live wingman cannot target its suggestions correctly.
+  2. Structured entity tables — without these the app cannot display, edit,
+     or query named entities, making most of the "awareness" features non-functional.
+  3. Supabase Realtime — without this the live UI is just polling, not live.
+  4. Conflict detection — this is one of the most differentiating features of
+     the system and has zero implementation currently.
+
+Fix those four things and the rest of the system is buildable on top of a solid
+foundation. The architecture is sound — execution needs to catch up.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

@@ -8,7 +8,9 @@ import '../theme/design_tokens.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/deepgram_service.dart';
+import '../services/connection_service.dart';
 import '../widgets/chat_bubble.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class NewSessionScreen extends StatefulWidget {
   const NewSessionScreen({super.key});
@@ -22,6 +24,10 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
   bool _isSessionActive = false;
   bool _isSaving = false;
   bool _swapSpeakers = false;
+
+  // Realtime session tracking (Phase 3.11-12)
+  String? _sessionId;
+  RealtimeChannel? _realtimeChannel;
 
   final List<Map<String, dynamic>> _sessionLogs = [];
   String _currentSuggestion = "Tap Start to begin your Wingman session...";
@@ -47,10 +53,39 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
     final deepgram = Provider.of<DeepgramService>(context, listen: false);
     deepgram.removeListener(_onDeepgramUpdate);
     deepgram.disconnect();
+    _realtimeChannel?.unsubscribe();
     _scrollController.dispose();
     _pulseController.dispose();
     _blobController.dispose();
     super.dispose();
+  }
+
+  /// Subscribes to session_logs Realtime for this session.
+  /// Updates the suggestion box whenever the server inserts an 'llm' row (Phase 3.11-12).
+  void _subscribeToLiveSuggestions(String sessionId) {
+    _realtimeChannel?.unsubscribe();
+    _realtimeChannel = Supabase.instance.client
+        .channel('live_session_$sessionId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'session_logs',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'session_id',
+            value: sessionId,
+          ),
+          callback: (PostgresChangePayload payload) {
+            if (!mounted) return;
+            final record = payload.newRecord;
+            final role = record['role'] as String?;
+            final content = record['content'] as String?;
+            if (role == 'llm' && content != null && content.isNotEmpty) {
+              setState(() => _currentSuggestion = content);
+            }
+          },
+        )
+        .subscribe();
   }
 
   void _onDeepgramUpdate() {
@@ -78,11 +113,25 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
     final user = AuthService.instance.currentUser;
     if (user == null) return;
 
-    setState(() => _currentSuggestion = "Thinking...");
+    // Show thinking only if no Realtime subscription (no sessionId)
+    if (_sessionId == null) {
+      setState(() => _currentSuggestion = "Thinking...");
+    }
 
-    final advice = await api.sendTranscriptToWingman(user.id, transcript);
-    if (advice != null && mounted) {
-      setState(() => _currentSuggestion = advice);
+    if (_sessionId != null) {
+      // Fire-and-forget: Realtime will update suggestion when server responds (Phase 3.11)
+      api.sendTranscriptToWingman(
+        user.id,
+        transcript,
+        sessionId: _sessionId,
+        speakerRole: 'others',
+      );
+    } else {
+      // Fallback: await HTTP response
+      final advice = await api.sendTranscriptToWingman(user.id, transcript);
+      if (advice != null && mounted) {
+        setState(() => _currentSuggestion = advice);
+      }
     }
   }
 
@@ -125,7 +174,17 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
         _isSessionActive = true;
         _sessionLogs.clear();
         _currentSuggestion = "Connecting to Deepgram...";
+        _sessionId = null;
       });
+
+      // Create a server-side session record upfront for Realtime (Phase 3.11)
+      final api = Provider.of<ApiService>(context, listen: false);
+      final sid = await api.createLiveSession(user.id);
+      if (sid != null) {
+        _sessionId = sid;
+        _subscribeToLiveSuggestions(sid);
+        debugPrint('🎙️ Live session created: $sid');
+      }
 
       await deepgram.connect();
 
@@ -145,13 +204,29 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
   Future<void> _endSessionAndSave() async {
     setState(() => _isSessionActive = false);
 
+    // Tear down Realtime subscription
+    _realtimeChannel?.unsubscribe();
+    _realtimeChannel = null;
+
     final user = AuthService.instance.currentUser;
-    if (user != null && _sessionLogs.isNotEmpty) {
+    if (user != null) {
       setState(() => _isSaving = true);
       try {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Saving Session to Memory...")));
         final api = Provider.of<ApiService>(context, listen: false);
-        bool success = await api.saveSession(user.id, _sessionLogs);
+
+        bool success = false;
+        if (_sessionId != null) {
+          // Preferred path: server ends the session (generates summary, marks completed)
+          await api.endLiveSession(_sessionId!, user.id);
+          success = true;
+        } else if (_sessionLogs.isNotEmpty) {
+          // Fallback: no prior session_id, save all logs at once
+          success = await api.saveSession(user.id, _sessionLogs);
+        } else {
+          success = true; // nothing to save
+        }
+
         if (mounted) {
           if (success) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Session Saved!"), backgroundColor: Colors.green));
@@ -165,6 +240,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Save Error: $e")));
       } finally {
         if (mounted) setState(() => _isSaving = false);
+        _sessionId = null;
       }
     } else {
       if (mounted) Navigator.pop(context);
@@ -271,64 +347,132 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
         ),
 
         Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // System Readiness
-              _CheckItem(icon: Icons.mic, label: 'Microphone', status: 'Ready', color: AppColors.success, isDark: isDark),
-              const SizedBox(height: 12),
-              _CheckItem(icon: Icons.wifi, label: 'Network', status: 'Connected', color: AppColors.success, isDark: isDark),
-              const SizedBox(height: 12),
-              _CheckItem(icon: Icons.bluetooth, label: 'Bluetooth', status: 'Optional', color: AppColors.warning, isDark: isDark),
+          child: Consumer<ConnectionService>(
+            builder: (context, conn, _) {
+              final isServerOnline = conn.isConnected;
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // System Readiness checks
+                  _CheckItem(icon: Icons.mic, label: 'Microphone', status: 'Ready', color: AppColors.success, isDark: isDark),
+                  const SizedBox(height: 12),
+                  _CheckItem(
+                    icon: Icons.wifi,
+                    label: 'Server',
+                    status: isServerOnline ? 'Connected' : 'Offline',
+                    color: isServerOnline ? AppColors.success : AppColors.error,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(height: 12),
+                  _CheckItem(icon: Icons.bluetooth, label: 'Bluetooth', status: 'Optional', color: AppColors.warning, isDark: isDark),
 
-              const SizedBox(height: 40),
+                  const SizedBox(height: 20),
 
-              // START Button
-              GestureDetector(
-                onTap: _toggleSession,
-                child: AnimatedBuilder(
-                  animation: _pulseController,
-                  builder: (_, child) {
-                    final scale = 1.0 + sin(_pulseController.value * 2 * pi) * 0.03;
-                    return Transform.scale(
-                      scale: scale,
+                  // Server offline warning banner (3.7)
+                  if (!isServerOnline) ...[  
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Container(
-                        width: 140,
-                        height: 140,
+                        padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)],
-                          ),
-                          boxShadow: [
-                            BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.35), blurRadius: 30, spreadRadius: 5),
-                          ],
+                          color: AppColors.error.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.error.withOpacity(0.4)),
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        child: Row(
                           children: [
-                            const Icon(Icons.mic, color: Colors.white, size: 36),
-                            const SizedBox(height: 4),
-                            Text('START', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 2)),
+                            const Icon(Icons.cloud_off, color: AppColors.error, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Server Offline',
+                                    style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.error),
+                                  ),
+                                  Text(
+                                    'Set your server URL in Connections to enable sessions.',
+                                    style: GoogleFonts.manrope(fontSize: 12, color: AppColors.error.withOpacity(0.8)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pushNamed(context, '/connections'),
+                              child: Text('Fix', style: GoogleFonts.manrope(color: AppColors.error, fontWeight: FontWeight.w700)),
+                            ),
                           ],
                         ),
                       ),
-                    );
-                  },
-                ),
-              ),
+                    ),
+                    const SizedBox(height: 20),
+                  ] else
+                    const SizedBox(height: 20),
 
-              const SizedBox(height: 24),
-              Text(
-                'Tap to start listening',
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-                ),
-              ),
-            ],
+                  // START Button — greyed out when offline
+                  GestureDetector(
+                    onTap: isServerOnline ? _toggleSession : () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Server is offline. Connect to the server first.'),
+                          backgroundColor: AppColors.error,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                    child: AnimatedBuilder(
+                      animation: _pulseController,
+                      builder: (_, child) {
+                        final scale = isServerOnline
+                            ? 1.0 + sin(_pulseController.value * 2 * pi) * 0.03
+                            : 1.0;
+                        return Transform.scale(
+                          scale: scale,
+                          child: Opacity(
+                            opacity: isServerOnline ? 1.0 : 0.4,
+                            child: Container(
+                              width: 140,
+                              height: 140,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: isServerOnline
+                                      ? [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)]
+                                      : [Colors.grey.shade500, Colors.grey.shade700],
+                                ),
+                                boxShadow: isServerOnline
+                                    ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.35), blurRadius: 30, spreadRadius: 5)]
+                                    : [],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(isServerOnline ? Icons.mic : Icons.cloud_off, color: Colors.white, size: 36),
+                                  const SizedBox(height: 4),
+                                  Text(isServerOnline ? 'START' : 'OFFLINE', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 2)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  Text(
+                    isServerOnline ? 'Tap to start listening' : 'Connect to server to begin',
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ],

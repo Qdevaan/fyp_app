@@ -2,6 +2,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/design_tokens.dart';
 import '../services/auth_service.dart';
@@ -20,10 +21,17 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, dynamic>? _profile;
   bool _loading = true;
 
+  // Live insights loaded from Supabase
+  List<Map<String, dynamic>> _events = [];
+  List<Map<String, dynamic>> _highlights = [];
+  bool _insightsLoaded = false;
+  final _supabase = Supabase.instance.client;
+
   @override
   void initState() {
     super.initState();
     _loadProfile();
+    _loadInsights();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<VoiceAssistantService>(context, listen: false).activate();
     });
@@ -51,6 +59,38 @@ class _HomeScreenState extends State<HomeScreen> {
     if (hour < 12) return 'Good Morning,';
     if (hour < 17) return 'Good Afternoon,';
     return 'Good Evening,';
+  }
+
+  Future<void> _loadInsights() async {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+    try {
+      final eventsRes = await _supabase
+          .from('events')
+          .select('title, due_text, description, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false)
+          .limit(5);
+
+      final highlightsRes = await _supabase
+          .from('highlights')
+          .select('title, body, highlight_type, created_at')
+          .eq('user_id', user.id)
+          .eq('is_resolved', false)
+          .order('created_at', ascending: false)
+          .limit(5);
+
+      if (mounted) {
+        setState(() {
+          _events = List<Map<String, dynamic>>.from(eventsRes);
+          _highlights = List<Map<String, dynamic>>.from(highlightsRes);
+          _insightsLoaded = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading insights: $e');
+      if (mounted) setState(() => _insightsLoaded = true);
+    }
   }
 
   @override
@@ -499,45 +539,114 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.hub_rounded,
+                            iconColor: const Color(0xFFA78BFA),
+                            iconBg: const Color(0xFFA78BFA).withOpacity(0.2),
+                            title: 'Knowledge',
+                            subtitle: 'People & entities',
+                            onTap: () => Navigator.pushNamed(context, '/entities'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _QuickActionCard(
+                            icon: Icons.settings_input_component_rounded,
+                            iconColor: const Color(0xFF60A5FA),
+                            iconBg: const Color(0xFF60A5FA).withOpacity(0.2),
+                            title: 'Server',
+                            subtitle: 'Connect & scan',
+                            onTap: () => Navigator.pushNamed(context, '/connections'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
                 // --- RECENT INSIGHTS ---
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                    child: Text(
-                      'Recent Insights',
-                      style: GoogleFonts.manrope(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recent Insights',
+                          style: GoogleFonts.manrope(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        if (_insightsLoaded && (_events.isNotEmpty || _highlights.isNotEmpty))
+                          GestureDetector(
+                            onTap: _loadInsights,
+                            child: Icon(Icons.refresh, size: 18,
+                                color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Show skeleton / empty state while loading
+                if (!_insightsLoaded)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    ),
+                  )
+                else if (_events.isEmpty && _highlights.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: _InsightCard(
+                        accentColor: Theme.of(context).colorScheme.primary,
+                        title: 'No insights yet',
+                        badge: 'Waiting',
+                        description: 'Start a Wingman session to generate personalized insights, events, and highlights.',
+                        isDark: isDark,
                       ),
                     ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: _InsightCard(
-                      accentColor: Theme.of(context).colorScheme.primary,
-                      title: 'Session Analysis',
-                      badge: 'Active',
-                      description: 'Start a session to get personalized insights and conversation tips.',
-                      isDark: isDark,
+                  )
+                else ...[
+                  // Events
+                  ..._events.map((ev) => SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: _InsightCard(
+                        accentColor: const Color(0xFFF59E0B),
+                        title: ev['title'] as String? ?? 'Event',
+                        badge: ev['due_text'] as String? ?? 'Event',
+                        description: ev['description'] as String? ?? '',
+                        isDark: isDark,
+                        icon: Icons.event_rounded,
+                      ),
                     ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: _InsightCard(
-                      accentColor: Colors.purple,
-                      title: 'Profile Check',
-                      badge: 'Ready',
-                      description: 'Complete your profile to unlock better AI recommendations.',
-                      isDark: isDark,
+                  )),
+                  // Highlights / conflicts
+                  ..._highlights.map((hl) => SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: _InsightCard(
+                        accentColor: const Color(0xFFEF4444),
+                        title: hl['title'] as String? ?? 'Highlight',
+                        badge: hl['highlight_type'] as String? ?? 'Note',
+                        description: hl['body'] as String? ?? '',
+                        isDark: isDark,
+                        icon: Icons.warning_amber_rounded,
+                      ),
                     ),
-                  ),
-                ),
+                  )),
+                ],
 
                 // Bottom padding
                 const SliverToBoxAdapter(child: SizedBox(height: 30)),
@@ -686,6 +795,7 @@ class _InsightCard extends StatelessWidget {
   final String badge;
   final String description;
   final bool isDark;
+  final IconData? icon;
 
   const _InsightCard({
     required this.accentColor,
@@ -693,6 +803,7 @@ class _InsightCard extends StatelessWidget {
     required this.badge,
     required this.description,
     required this.isDark,
+    this.icon,
   });
 
   @override
@@ -712,13 +823,18 @@ class _InsightCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                ),
+              Row(
+                children: [
+                  if (icon != null) ...[Icon(icon, size: 16, color: accentColor), const SizedBox(width: 6)],
+                  Text(
+                    title,
+                    style: GoogleFonts.manrope(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
               ),
               Text(
                 badge,
