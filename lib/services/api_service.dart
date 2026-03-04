@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'connection_service.dart';
 
 class ApiService {
@@ -27,15 +28,16 @@ class ApiService {
   }
 
   // --- 1. VOICE ENROLLMENT ---
-  /// Uploads audio to enroll the user's voice signature
-  Future<void> enrollVoice({
+  /// Uploads audio to enroll the user's voice signature.
+  /// Returns the enrolled_at timestamp string if successful, throws otherwise.
+  Future<String> enrollVoice({
     required String userId,
     required String userName,
     required String audioPath,
   }) async {
     if (_baseUrl.isEmpty) throw Exception('Server URL not set.');
 
-    final uri = Uri.parse('$_baseUrl/enroll'); // Updated endpoint for Colab
+    final uri = Uri.parse('$_baseUrl/enroll');
 
     try {
       final request = http.MultipartRequest('POST', uri);
@@ -50,8 +52,31 @@ class ApiService {
       if (response.statusCode != 200) {
         throw Exception('Server error ${response.statusCode}: ${response.body}');
       }
+
+      // Confirm the embedding was actually persisted in Supabase
+      final status = await checkEnrollmentStatus(userId);
+      if (status == null) {
+        throw Exception('Enrollment uploaded but embedding not found in database.');
+      }
+      return status;
     } catch (e) {
       throw Exception('Enrollment failed: $e');
+    }
+  }
+
+  /// Queries voice_enrollments to verify the embedding row exists.
+  /// Returns the enrolled_at timestamp string, or null if not enrolled.
+  Future<String?> checkEnrollmentStatus(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('voice_enrollments')
+          .select('enrolled_at')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return res?['enrolled_at'] as String?;
+    } catch (e) {
+      debugPrint('checkEnrollmentStatus error: $e');
+      return null;
     }
   }
 

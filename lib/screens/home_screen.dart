@@ -25,6 +25,8 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _events = [];
   List<Map<String, dynamic>> _highlights = [];
   bool _insightsLoaded = false;
+  int _unreadNotifications = 0;
+  RealtimeChannel? _highlightsChannel;
   final _supabase = Supabase.instance.client;
 
   @override
@@ -32,9 +34,175 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _loadProfile();
     _loadInsights();
+    _subscribeToHighlights();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<VoiceAssistantService>(context, listen: false).activate();
     });
+  }
+
+  @override
+  void dispose() {
+    _highlightsChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  void _subscribeToHighlights() {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+    _highlightsChannel = _supabase
+        .channel('home_highlights_${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'highlights',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (payload) {
+            if (!mounted) return;
+            final record = Map<String, dynamic>.from(payload.newRecord);
+            setState(() {
+              _highlights.insert(0, record);
+              _unreadNotifications++;
+            });
+          },
+        )
+        .subscribe();
+  }
+
+  void _showNotificationsPanel(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    setState(() => _unreadNotifications = 0);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.92,
+        minChildSize: 0.35,
+        builder: (_, scrollController) => Container(
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Handle
+              Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 4),
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+                child: Row(
+                  children: [
+                    Text(
+                      'Notifications',
+                      style: GoogleFonts.manrope(
+                        fontSize: 20, fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (_highlights.isNotEmpty || _events.isNotEmpty)
+                      TextButton(
+                        onPressed: () async {
+                          final user = AuthService.instance.currentUser;
+                          if (user == null) return;
+                          await _supabase
+                              .from('highlights')
+                              .update({'is_dismissed': true})
+                              .eq('user_id', user.id)
+                              .eq('is_dismissed', false);
+                          if (mounted) {
+                            setState(() => _highlights.clear());
+                            Navigator.pop(ctx);
+                          }
+                        },
+                        child: Text(
+                          'Clear all',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13, fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              // Content
+              Expanded(
+                child: (_highlights.isEmpty && _events.isEmpty)
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.notifications_none_rounded,
+                                size: 52,
+                                color: isDark ? Colors.white24 : Colors.grey.shade300),
+                            const SizedBox(height: 12),
+                            Text(
+                              'No notifications yet',
+                              style: GoogleFonts.manrope(
+                                fontSize: 15,
+                                color: isDark ? const Color(0xFF64748B) : Colors.grey.shade500,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Insights from your sessions will appear here.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: isDark ? const Color(0xFF475569) : Colors.grey.shade400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          if (_highlights.isNotEmpty) ...
+                            _highlights.map((hl) => _NotificationCard(
+                              isDark: isDark,
+                              accentColor: const Color(0xFFEF4444),
+                              icon: Icons.warning_amber_rounded,
+                              title: hl['title'] as String? ?? 'Highlight',
+                              body: hl['body'] as String? ?? '',
+                              badge: hl['highlight_type'] as String? ?? 'Note',
+                              createdAt: hl['created_at'] as String?,
+                            )),
+                          if (_events.isNotEmpty) ...
+                            _events.map((ev) => _NotificationCard(
+                              isDark: isDark,
+                              accentColor: const Color(0xFFF59E0B),
+                              icon: Icons.event_rounded,
+                              title: ev['title'] as String? ?? 'Event',
+                              body: ev['description'] as String? ?? '',
+                              badge: ev['due_text'] as String? ?? 'Event',
+                              createdAt: ev['created_at'] as String?,
+                            )),
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadProfile() async {
@@ -121,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         Builder(
                           builder: (context) => GestureDetector(
-                            onTap: () => Navigator.pushNamed(context, '/settings'), // Disabled drawer, go to settings instead
+                            onTap: () => Navigator.pushNamed(context, '/settings'),
                             child: Consumer<ConnectionService>(
                               builder: (context, conn, _) {
                                 return Stack(
@@ -179,16 +347,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             color: isDark ? Colors.white : const Color(0xFF0F172A),
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Notifications coming soon!"),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                          icon: Stack(
+                        GestureDetector(
+                          onTap: () => _showNotificationsPanel(context),
+                          child: Stack(
                             children: [
                               Container(
                                 width: 40,
@@ -202,22 +363,31 @@ class _HomeScreenState extends State<HomeScreen> {
                                   color: isDark ? Colors.white70 : Colors.grey.shade700,
                                 ),
                               ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.error,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
-                                      width: 2,
+                              if (_unreadNotifications > 0 || _highlights.isNotEmpty)
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Container(
+                                    width: _unreadNotifications > 9 ? 16 : 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: AppColors.error,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
+                                        width: 2,
+                                      ),
                                     ),
+                                    child: _unreadNotifications > 0
+                                        ? Center(
+                                            child: Text(
+                                              '$_unreadNotifications',
+                                              style: const TextStyle(fontSize: 6, color: Colors.white, fontWeight: FontWeight.w800),
+                                            ),
+                                          )
+                                        : null,
                                   ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -853,6 +1023,109 @@ class _InsightCard extends StatelessWidget {
               fontSize: 13,
               color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
               height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Notification Card (used inside the notifications bottom sheet) ---
+class _NotificationCard extends StatelessWidget {
+  final Color accentColor;
+  final IconData icon;
+  final String title;
+  final String body;
+  final String badge;
+  final String? createdAt;
+  final bool isDark;
+
+  const _NotificationCard({
+    required this.accentColor,
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.badge,
+    required this.isDark,
+    this.createdAt,
+  });
+
+  String _formatTime(String? iso) {
+    if (iso == null) return '';
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      final now = DateTime.now();
+      final diff = now.difference(dt);
+      if (diff.inMinutes < 1) return 'just now';
+      if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+      if (diff.inHours < 24) return '${diff.inHours}h ago';
+      return '${diff.inDays}d ago';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(14),
+        border: Border(left: BorderSide(color: accentColor, width: 4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 15, color: accentColor),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.manrope(
+                    fontSize: 14, fontWeight: FontWeight.w700,
+                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  ),
+                ),
+              ),
+              Text(
+                _formatTime(createdAt),
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400,
+                ),
+              ),
+            ],
+          ),
+          if (body.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              body,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                height: 1.4,
+              ),
+            ),
+          ],
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(
+              color: accentColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              badge,
+              style: GoogleFonts.manrope(
+                fontSize: 11, fontWeight: FontWeight.w700, color: accentColor,
+              ),
             ),
           ),
         ],

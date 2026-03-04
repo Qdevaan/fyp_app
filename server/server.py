@@ -29,6 +29,7 @@ from supabase.lib.client_options import ClientOptions
 
 # FIX: Import torch explicitly BEFORE sentence_transformers
 import torch
+import numpy as np
 from sentence_transformers import SentenceTransformer
 
 # LiveKit (VERSION 0.7.2 COMPATIBLE IMPORTS)
@@ -103,6 +104,7 @@ class GraphService:
     """Manages specific Knowledge Graphs for EACH connected user."""
     def __init__(self):
         self.active_graphs: Dict[str, nx.Graph] = {}
+        self.model = None  # Set to vector_svc.model after both services are initialized
         try:
             options = ClientOptions(postgrest_client_timeout=10)
             options.storage = None # Ensure storage attribute exists
@@ -146,27 +148,58 @@ class GraphService:
         except Exception as e:
             print(f"❌ Graph Service Error saving graph for {user_id}: {e}")
 
-    def find_context(self, user_id: str, text: str, top_k: int = 5) -> str:
-        """Finds relevant facts from the in-memory graph."""
-        if user_id not in self.active_graphs:
-            return "No known graph facts."
-        G = self.active_graphs[user_id]
+    def _keyword_nodes(self, G: nx.Graph, text: str) -> set:
+        """Fallback: simple substring keyword matching for graph nodes."""
         text_lower = text.lower()
-        facts = []
         nodes_found = set()
-
-        # Simple keyword matching for graph nodes
         for node in G.nodes():
             if str(node).lower() in text_lower or text_lower in str(node).lower():
                 nodes_found.add(node)
+        return nodes_found
 
-        # Collect facts related to the found nodes
+    def find_context(self, user_id: str, text: str, top_k: int = 5) -> str:
+        """Finds relevant facts from the in-memory graph using semantic similarity."""
+        if user_id not in self.active_graphs:
+            return "No known graph facts."
+        G = self.active_graphs[user_id]
+        if len(G.nodes()) == 0:
+            return "No known graph facts."
+
+        nodes_found: set = set()
+
+        if self.model is not None:
+            try:
+                node_names = [str(n) for n in G.nodes()]
+                query_vec = self.model.encode(text, convert_to_numpy=True)
+                node_vecs = self.model.encode(node_names, convert_to_numpy=True)
+
+                q_norm_val = np.linalg.norm(query_vec)
+                q_unit = query_vec / (q_norm_val + 1e-10)
+                norms = np.linalg.norm(node_vecs, axis=1, keepdims=True)
+                node_units = node_vecs / (norms + 1e-10)
+
+                scores = node_units @ q_unit
+                threshold = 0.3
+                nodes_found = {
+                    node for score, node in zip(scores, G.nodes())
+                    if score >= threshold
+                }
+                if not nodes_found:
+                    ranked = sorted(zip(scores, G.nodes()), reverse=True)
+                    nodes_found = {node for _, node in ranked[:3]}
+            except Exception as e:
+                print(f"⚠️ GraphService: Semantic search failed, falling back to keyword: {e}")
+                nodes_found = self._keyword_nodes(G, text)
+        else:
+            nodes_found = self._keyword_nodes(G, text)
+
+        facts = []
         for u, v, data in G.edges(data=True):
             if u in nodes_found or v in nodes_found:
                 rel = data.get('relation', 'related to')
                 facts.append(f"Fact: {u} {rel} {v}")
 
-        context_str = "\n".join(list(set(facts)))
+        context_str = "\n".join(list(set(facts))[:top_k])
         return context_str if context_str else "No known graph facts."
 
     def update_local_graph(self, user_id: str, updates: List[dict]):
@@ -389,6 +422,8 @@ class BrainService:
 # Initialize Services
 graph_svc = GraphService()
 vector_svc = VectorService()
+# Share the already-loaded SentenceTransformer model to avoid loading it twice
+graph_svc.model = vector_svc.model
 brain_svc = BrainService()
 session_svc = SessionService()
 

@@ -183,7 +183,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     }
 
     setState(() {
-      _messages.add({"role": "user", "text": text});
+      _messages.add({"role": "user", "text": text, "time": _nowTime()});
       _loading = true;
       _controller.clear();
     });
@@ -208,17 +208,18 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
         },
       );
 
+      final aiTime = _nowTime();
       await for (final token in stream) {
         if (!mounted) break;
         buf.write(token);
         if (firstToken) {
           setState(() {
             _loading = false;
-            _messages.add({"role": "ai", "text": buf.toString(), "streaming": "true"});
+            _messages.add({"role": "ai", "text": buf.toString(), "streaming": "true", "time": aiTime});
           });
           firstToken = false;
         } else {
-          setState(() => _messages.last = {"role": "ai", "text": buf.toString(), "streaming": "true"});
+          setState(() => _messages.last = {"role": "ai", "text": buf.toString(), "streaming": "true", "time": aiTime});
         }
         _scrollToBottom();
       }
@@ -226,7 +227,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
       if (mounted) {
         setState(() {
           if (_messages.isNotEmpty && _messages.last['streaming'] == 'true') {
-            _messages.last = {"role": "ai", "text": buf.toString()};
+            _messages.last = {"role": "ai", "text": buf.toString(), "time": _messages.last['time'] ?? _nowTime()};
           }
           _loading = false;
         });
@@ -235,9 +236,9 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
       if (mounted) {
         setState(() {
           if (firstToken) {
-            _messages.add({"role": "ai", "text": "Error connecting to consultant: $e"});
+            _messages.add({"role": "ai", "text": "Error connecting to consultant: $e", "time": _nowTime()});
           } else {
-            _messages.last = {"role": "ai", "text": buf.isEmpty ? "Error: $e" : buf.toString()};
+            _messages.last = {"role": "ai", "text": buf.isEmpty ? "Error: $e" : buf.toString(), "time": _messages.last['time'] ?? _nowTime()};
           }
           _loading = false;
         });
@@ -256,6 +257,16 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
         );
       }
     });
+  }
+
+  // ── Current time helper ──────────────────────
+  String _nowTime() {
+    final dt = DateTime.now();
+    final h = dt.hour;
+    final m = dt.minute.toString().padLeft(2, '0');
+    final period = h >= 12 ? 'PM' : 'AM';
+    final hour12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
+    return '$hour12:$m $period';
   }
 
   // ── Helpers ────────────────────────────────
@@ -411,57 +422,41 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
             // ── TOP BAR ──────────────────────────────
             Container(
               decoration: BoxDecoration(
-                color: isDark ? AppColors.backgroundDark.withOpacity(0.95) : AppColors.backgroundLight.withOpacity(0.95),
-                border: Border(bottom: BorderSide(color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade200)),
+                color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
+                border: Border(bottom: BorderSide(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                )),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
                 child: Row(
                   children: [
-                    // Back
+                    // Drawer / menu button
                     IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(Icons.arrow_back, color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
+                      onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                      icon: Icon(Icons.menu_rounded,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                     ),
                     // Title
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Text(
-                            _currentSessionId == null ? 'New Chat' : 'Consultant AI',
-                            style: GoogleFonts.manrope(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w700,
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
-                            ),
-                          ),
-                          if (_currentSessionId != null)
-                            Text(
-                              'Session active',
-                              style: GoogleFonts.manrope(
-                                fontSize: 11,
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                        ],
+                      child: Text(
+                        'Consultant',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.manrope(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        ),
                       ),
                     ),
-                    // Chat history
-                    IconButton(
-                      tooltip: 'Chat history',
-                      onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                      icon: Icon(Icons.history, color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
-                    ),
-                    // New chat
+                    // New chat / options
                     IconButton(
                       tooltip: 'New chat',
                       onPressed: _loading ? null : _newChat,
-                      icon: Icon(Icons.edit_square,
+                      icon: Icon(Icons.add_comment_outlined,
                           color: _loading
                               ? (isDark ? const Color(0xFF334155) : Colors.grey.shade300)
-                              : Theme.of(context).colorScheme.primary,
+                              : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
                           size: 22),
                     ),
                   ],
@@ -477,7 +472,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                       ? const Center(child: CircularProgressIndicator())
                       : ListView.builder(
                           controller: _scrollController,
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
                           itemCount: _messages.length + (_loading ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (_loading && index == _messages.length) {
@@ -486,13 +481,18 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                             final msg = _messages[index];
                             final isUser = msg['role'] == "user";
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.only(bottom: 24),
                               child: isUser
-                                  ? _UserBubble(text: msg['text']!, isDark: isDark)
+                                  ? _UserBubble(
+                                      text: msg['text']!,
+                                      isDark: isDark,
+                                      time: msg['time'],
+                                    )
                                   : _AiBubble(
                                       text: msg['text']!,
                                       isDark: isDark,
                                       streaming: msg['streaming'] == 'true',
+                                      time: msg['time'],
                                     ),
                             );
                           },
@@ -523,10 +523,12 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
 
             // ── INPUT AREA ────────────────────────────
             Container(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 20),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.backgroundDark.withOpacity(0.95) : AppColors.backgroundLight.withOpacity(0.95),
-                border: Border(top: BorderSide(color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade200)),
+                color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+                border: Border(top: BorderSide(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                )),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -534,9 +536,8 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isDark ? AppColors.bubbleDark : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey.shade200),
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(28),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
@@ -546,21 +547,31 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                               controller: _controller,
                               maxLines: 4,
                               minLines: 1,
-                              style: GoogleFonts.manrope(fontSize: 15, color: isDark ? Colors.white : Colors.black87),
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              ),
                               decoration: InputDecoration(
-                                hintText: 'Ask anything...',
+                                hintText: 'Ask about your conversations...',
                                 hintStyle: GoogleFonts.manrope(
-                                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8)),
+                                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                ),
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                               ),
                               onSubmitted: (_) => _sendMessage(),
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(right: 4, bottom: 4),
+                            padding: const EdgeInsets.only(right: 6, bottom: 6),
                             child: IconButton(
-                              icon: Icon(Icons.mic, color: Theme.of(context).colorScheme.primary, size: 22),
+                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                              padding: EdgeInsets.zero,
+                              icon: Icon(
+                                Icons.attach_file_rounded,
+                                color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                size: 20,
+                              ),
                               onPressed: () {},
                             ),
                           ),
@@ -568,25 +579,28 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
-                    child: GestureDetector(
-                      onTap: (_loading || _loadingChat) ? null : _sendMessage,
-                      child: Container(
-                        width: 42,
-                        height: 42,
-                        decoration: BoxDecoration(
-                          color: (_loading || _loadingChat)
-                              ? (isDark ? AppColors.surfaceDark : Colors.grey.shade300)
-                              : Theme.of(context).colorScheme.primary,
-                          shape: BoxShape.circle,
-                          boxShadow: (_loading || _loadingChat)
-                              ? null
-                              : [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 8)],
-                        ),
-                        child: const Icon(Icons.arrow_upward, color: Colors.white, size: 20),
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: (_loading || _loadingChat) ? null : _sendMessage,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: (_loading || _loadingChat)
+                            ? (isDark ? AppColors.surfaceDark : Colors.grey.shade300)
+                            : Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                        boxShadow: (_loading || _loadingChat)
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                       ),
+                      child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
                     ),
                   ),
                 ],
@@ -689,33 +703,80 @@ class _ChatHistoryTile extends StatelessWidget {
 class _UserBubble extends StatelessWidget {
   final String text;
   final bool isDark;
-  const _UserBubble({required this.text, required this.isDark});
+  final String? time;
+  const _UserBubble({required this.text, required this.isDark, this.time});
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-        decoration: BoxDecoration(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(18),
-            topRight: Radius.circular(4),
-            bottomLeft: Radius.circular(18),
-            bottomRight: Radius.circular(18),
+    final primary = Theme.of(context).colorScheme.primary;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // "You" label
+              Padding(
+                padding: const EdgeInsets.only(right: 4, bottom: 4),
+                child: Text(
+                  'YOU',
+                  style: GoogleFonts.manrope(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                  ),
+                ),
+              ),
+              // Bubble
+              Container(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.75,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: primary,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(3),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primary.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  text,
+                  style: GoogleFonts.manrope(
+                    fontSize: 14,
+                    color: Colors.white,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+              // Timestamp
+              if (time != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4, top: 4),
+                  child: Text(
+                    time!,
+                    style: GoogleFonts.manrope(
+                      fontSize: 10,
+                      color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          border: Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey.shade300),
         ),
-        child: Text(
-          text,
-          style: GoogleFonts.manrope(
-            fontSize: 15,
-            color: isDark ? Colors.white : Colors.black87,
-            height: 1.4,
-          ),
-        ),
-      ),
+      ],
     );
   }
 }
@@ -724,49 +785,88 @@ class _AiBubble extends StatelessWidget {
   final String text;
   final bool isDark;
   final bool streaming;
-  const _AiBubble({required this.text, required this.isDark, this.streaming = false});
+  final String? time;
+  const _AiBubble({required this.text, required this.isDark, this.streaming = false, this.time});
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // AI Avatar
+        // AI Avatar – primary/20 bg with border (HTML design)
         Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary, const Color(0xFF1E88E5)]),
-            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.2), blurRadius: 8)],
+            color: primary.withOpacity(0.18),
+            border: Border.all(color: primary.withOpacity(0.3), width: 1),
           ),
-          child: const Icon(Icons.smart_toy, color: Colors.white, size: 16),
+          child: Icon(Icons.smart_toy_rounded, color: primary, size: 18),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 12),
         Expanded(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.bubbleDark : const Color(0xFFF1F5F9),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(4),
-                topRight: Radius.circular(18),
-                bottomLeft: Radius.circular(18),
-                bottomRight: Radius.circular(18),
-              ),
-            ),
-            child: MarkdownBody(
-              data: streaming ? '$text ▌' : text,
-              styleSheet: MarkdownStyleSheet(
-                p: GoogleFonts.manrope(
-                  fontSize: 15,
-                  color: isDark ? const Color(0xFFE2E8F0) : Colors.black87,
-                  height: 1.5,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // "BUBBLES AI" label
+              Padding(
+                padding: const EdgeInsets.only(left: 2, bottom: 4),
+                child: Text(
+                  'BUBBLES AI',
+                  style: GoogleFonts.manrope(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                  ),
                 ),
-                strong: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: isDark ? Colors.white : Colors.black),
-                em: GoogleFonts.manrope(fontStyle: FontStyle.italic, color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
               ),
-            ),
+              // Bubble – flat top-left corner
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(3),
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                child: MarkdownBody(
+                  data: streaming ? '$text ◌' : text,
+                  styleSheet: MarkdownStyleSheet(
+                    p: GoogleFonts.manrope(
+                      fontSize: 14,
+                      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+                      height: 1.6,
+                    ),
+                    strong: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      color: primary,
+                    ),
+                    em: GoogleFonts.manrope(
+                      fontStyle: FontStyle.italic,
+                      color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700,
+                    ),
+                  ),
+                ),
+              ),
+              // Timestamp
+              if (time != null)
+                Padding(
+                  padding: const EdgeInsets.only(left: 2, top: 4),
+                  child: Text(
+                    time!,
+                    style: GoogleFonts.manrope(
+                      fontSize: 10,
+                      color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
       ],
@@ -780,41 +880,60 @@ class _TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 32,
             height: 32,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(colors: [Theme.of(context).colorScheme.primary.withOpacity(0.5), const Color(0xFF1E88E5).withOpacity(0.5)]),
+              color: primary.withOpacity(0.18),
+              border: Border.all(color: primary.withOpacity(0.3), width: 1),
             ),
-            child: const Icon(Icons.smart_toy, color: Colors.white, size: 16),
+            child: Icon(Icons.smart_toy_rounded, color: primary, size: 18),
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: isDark ? AppColors.bubbleDark.withOpacity(0.5) : const Color(0xFFF1F5F9),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(4),
-                topRight: Radius.circular(18),
-                bottomLeft: Radius.circular(18),
-                bottomRight: Radius.circular(18),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 2, bottom: 4),
+                child: Text(
+                  'BUBBLES AI',
+                  style: GoogleFonts.manrope(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
+                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                  ),
+                ),
               ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(3, (i) {
-                return Padding(
-                  padding: EdgeInsets.only(left: i > 0 ? 4 : 0),
-                  child: _BouncingDot(delay: i * 150),
-                );
-              }),
-            ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(3),
+                    topRight: Radius.circular(16),
+                    bottomLeft: Radius.circular(16),
+                    bottomRight: Radius.circular(16),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: List.generate(3, (i) {
+                    return Padding(
+                      padding: EdgeInsets.only(left: i > 0 ? 4 : 0),
+                      child: _BouncingDot(delay: i * 150),
+                    );
+                  }),
+                ),
+              ),
+            ],
           ),
         ],
       ),
