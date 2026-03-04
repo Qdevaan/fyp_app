@@ -1,5 +1,11 @@
+﻿import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/theme_provider.dart';
+import '../theme/design_tokens.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
@@ -16,192 +22,348 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService.instance;
   final _formKey = GlobalKey<FormState>();
-  
+
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  
-  bool _loading = false;
+
+  bool _isEmailLoading = false;
+  bool _isGoogleLoading = false;
+  late final StreamSubscription<AuthState> _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
+        if (!_isEmailLoading && mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSubscription.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
   }
 
+  Future<void> _showThemeSelectionDialog() async {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Select Theme',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.brightness_auto),
+              title: Text('System Default', style: GoogleFonts.manrope()),
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.system);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.light_mode),
+              title: Text('Light', style: GoogleFonts.manrope()),
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.light);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.dark_mode),
+              title: Text('Dark', style: GoogleFonts.manrope()),
+              onTap: () {
+                themeProvider.setThemeMode(ThemeMode.dark);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _loginWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    setState(() => _loading = true);
+
+    setState(() => _isEmailLoading = true);
     try {
       await _authService.signInWithEmail(_emailCtrl.text.trim(), _passCtrl.text);
-      // DO NOT NAVIGATE MANUALLY.
-      // The AuthGate in main.dart listens to the session change 
-      // and will automatically take you to the Home Screen.
+      if (mounted) {
+        await _showThemeSelectionDialog();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(e.toString().replaceAll('Exception:', '').trim()),
-            backgroundColor: Theme.of(context).colorScheme.error,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-          )
+          ),
         );
-        setState(() => _loading = false); // Only stop loading on error
+        setState(() => _isEmailLoading = false);
       }
     }
   }
 
   Future<void> _loginWithGoogle() async {
-    setState(() => _loading = true);
+    setState(() => _isGoogleLoading = true);
     try {
       await _authService.signInWithGoogle();
-      // AuthGate handles navigation automatically
+      // Delay stopping the loading state to wait for deep link return
+      await Future.delayed(const Duration(seconds: 4));
+      if (mounted) setState(() => _isGoogleLoading = false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Google Sign in failed: $e')),
         );
-        setState(() => _loading = false);
+        setState(() => _isGoogleLoading = false);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 40),
-                
-                // Header Section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Center(child: AppLogo(size: 120)),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Welcome Back',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Sign in to continue to Bubbles.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+      body: Stack(
+        children: [
+          // Decorative Background Blobs
+          Positioned(
+            top: -80,
+            left: -80,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -80,
+            right: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.purple.withOpacity(0.08),
+              ),
+            ),
+          ),
 
-                const SizedBox(height: 40),
-
-                // Form Section
-                Column(
+          // Main Content
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 28),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const SizedBox(height: 60),
+
+                    // Header â€” Logo + Title
+                    Column(
+                      children: [
+                        const AppLogo(size: 80),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Bubbles',
+                          style: GoogleFonts.manrope(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your premium AI Wingman & Consultant',
+                          style: GoogleFonts.manrope(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    // Form Fields
                     AppInput(
                       controller: _emailCtrl,
                       label: 'Email Address',
                       prefixIcon: Icons.email_outlined,
                       type: TextInputType.emailAddress,
+                      hintText: 'Enter your email',
                       validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
                     ),
-                    const SizedBox(height: 16),
-                    AppInput(
-                      controller: _passCtrl,
-                      label: 'Password',
-                      prefixIcon: Icons.lock_outline,
-                      obscure: true,
-                      validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: Add Forgot Password logic
-                        },
-                        child: Text(
-                          'Forgot Password?',
-                          style: TextStyle(color: theme.colorScheme.primary),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                    const SizedBox(height: 18),
 
-                const SizedBox(height: 24),
-
-                // Buttons Section
-                Column(
-                  children: [
-                    AppButton(
-                      label: 'Log In',
-                      onTap: _loginWithEmail,
-                      loading: _loading,
-                      filled: true,
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
+                    // Password with Forgot Password
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('OR', style: TextStyle(color: theme.colorScheme.outline, fontSize: 12)),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 4, bottom: 8),
+                              child: Text(
+                                'Password',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {},
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Text(
+                                  'Forgot Password?',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
+                        AppInput(
+                          controller: _passCtrl,
+                          label: '',
+                          prefixIcon: Icons.lock_outline,
+                          obscure: true,
+                          hintText: 'Enter your password',
+                          validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
+                        ),
                       ],
                     ),
+
+                    const SizedBox(height: 28),
+
+                    // Login Button
+                    AppButton(
+                      label: 'Log In',
+                      icon: Icons.arrow_forward,
+                      onTap: _loginWithEmail,
+                      loading: _isEmailLoading,
+                      filled: true,
+                    ),
+
                     const SizedBox(height: 24),
+
+                    // Divider
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Text(
+                            'Or continue with',
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // Social Buttons
                     SocialButton(
                       label: 'Continue with Google',
                       imagePath: 'assets/logos/google_logo.png',
                       onTap: _loginWithGoogle,
-                      loading: _loading,
+                      loading: _isGoogleLoading,
                     ),
-                  ],
-                ),
 
-                const SizedBox(height: 24),
+                    const SizedBox(height: 28),
 
-                // Footer Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account?",
-                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushNamed(context, '/signup');
-                      },
-                      child: Text(
-                        'Sign Up',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
+                    // Footer
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'New to Bubbles? ',
+                          style: GoogleFonts.manrope(
+                            fontSize: 14,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          ),
                         ),
-                      ),
+                        GestureDetector(
+                          onTap: () => Navigator.pushNamed(context, '/signup'),
+                          child: Text(
+                            'Sign Up',
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 30),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+
+          // Bottom accent line
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.transparent,
+                    Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
+import '../theme/design_tokens.dart';
 import '../widgets/app_button.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
@@ -70,87 +72,122 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text("Verify Email", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(flex: 1),
-              
-              // Icon & Title
-              Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.mark_email_unread_rounded,
-                      size: 64,
-                      color: theme.colorScheme.primary,
-                    ),
+        child: Column(
+          children: [
+            // Consistent header
+            Container(
+              decoration: BoxDecoration(
+                color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
                   ),
-                  const SizedBox(height: 32),
-                  Text(
-                    'Verify your email',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'We have sent a verification link to your email address. Please tap the link in the email to continue.',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                    ),
-                  ),
-                ],
+                ),
               ),
-
-              const Spacer(flex: 2),
-
-              // Buttons
-              Column(
-                children: [
-                  AppButton(
-                    label: 'I have verified it',
-                    onTap: _checkVerification,
-                    loading: _loading,
-                    filled: true,
-                  ),
-                  const SizedBox(height: 16),
-                  AppButton(
-                    label: 'Resend Email',
-                    onTap: _resendEmail,
-                    loading: _loading,
-                    filled: false,
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_back_rounded,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                    Text(
+                      'Verify Email',
+                      style: GoogleFonts.manrope(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              
-              const Spacer(flex: 1),
-            ],
-          ),
+            ),
+
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Spacer(flex: 1),
+
+                    // Icon & Title
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.mark_email_unread_rounded,
+                            size: 64,
+                            color: primary,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Text(
+                          'Verify your email',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.manrope(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'We have sent a verification link to your email address. Please tap the link in the email to continue.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.manrope(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            height: 1.6,
+                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(flex: 2),
+
+                    // Buttons
+                    Column(
+                      children: [
+                        AppButton(
+                          label: 'I have verified it',
+                          onTap: _checkVerification,
+                          loading: _loading,
+                          filled: true,
+                        ),
+                        const SizedBox(height: 16),
+                        AppButton(
+                          label: 'Resend Email',
+                          onTap: _resendEmail,
+                          loading: _loading,
+                          filled: false,
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(flex: 1),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

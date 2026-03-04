@@ -7,8 +7,10 @@ import 'services/api_service.dart';
 import 'services/livekit_service.dart';
 import 'services/deepgram_service.dart';
 import 'services/voice_assistant_service.dart';
+import 'services/wake_word_service.dart';
 import 'providers/theme_provider.dart';
 import 'widgets/voice_overlay.dart';
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/connections_screen.dart';
@@ -20,7 +22,8 @@ import 'screens/sessions_screen.dart';
 import 'screens/new_session_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
-import 'screens/splash_screen.dart';
+import 'screens/entity_screen.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,12 +74,16 @@ class BubblesApp extends StatelessWidget {
         // 5. Deepgram Service
         ChangeNotifierProvider(create: (context) => DeepgramService()),
 
-        // 6. Voice Assistant Service
-        ChangeNotifierProxyProvider<ConnectionService, VoiceAssistantService>(
+        // 6. Wake Word Service (Porcupine)
+        ChangeNotifierProvider(create: (context) => WakeWordService()),
+
+        // 7. Voice Assistant Service (depends on Connection + WakeWord)
+        ChangeNotifierProxyProvider2<ConnectionService, WakeWordService, VoiceAssistantService>(
           create: (context) => VoiceAssistantService(
             Provider.of<ConnectionService>(context, listen: false),
+            Provider.of<WakeWordService>(context, listen: false),
           ),
-          update: (context, connection, previous) => previous!,
+          update: (context, connection, wakeWord, previous) => previous!,
         ),
       ],
       child: Consumer<ThemeProvider>(
@@ -85,8 +92,8 @@ class BubblesApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'Bubbles',
             
-            // Theme Mode: Follows system settings (Light/Dark)
-            themeMode: ThemeMode.system,
+            // Theme Mode: Follows stored settings (System/Light/Dark)
+            themeMode: themeProvider.themeMode,
             
             // Light Theme Configuration
             theme: themeProvider.lightTheme.copyWith(
@@ -110,8 +117,8 @@ class BubblesApp extends StatelessWidget {
               ),
             ),
     
-            // The AuthGate manages the root state (Splash -> Login -> App)
-            home: const AuthGate(),
+            // The AuthGate manages the root state (Login -> App)
+            home: const SplashScreen(),
 
             // Global builder: adds VoiceOverlay on all routes except /settings
             builder: (context, child) {
@@ -131,6 +138,7 @@ class BubblesApp extends StatelessWidget {
               '/sessions': (context) => const SessionsScreen(),
               '/about': (context) => const AboutScreen(),
               '/settings': (context) => const SettingsScreen(),
+              '/entities': (context) => const EntityScreen(),
             },
           );
         },
@@ -157,48 +165,27 @@ class _VoiceOverlayWrapper extends StatelessWidget {
 }
 
 /// The Gatekeeper Widget
-/// Dynamically switches between Loading, Login, Profile Setup, and Home.
-class AuthGate extends StatefulWidget {
+/// Dynamically switches between Login and Home based on auth state.
+class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
-
-  @override
-  State<AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<AuthGate> {
-  bool _minSplashPassed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // Ensure splash screen is visible for at least 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _minSplashPassed = true;
-        });
-      }
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        // Show splash screen if:
-        // 1. Minimum time hasn't passed OR
-        // 2. Auth state is still loading
-        if (!_minSplashPassed || snapshot.connectionState == ConnectionState.waiting) {
-            return const SplashScreen(); 
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
-        
+
         final session = snapshot.data?.session;
 
         if (session != null) {
-          return const HomeScreen(); 
+          return const HomeScreen();
         } else {
-          return const LoginScreen(); 
+          return const LoginScreen();
         }
       },
     );

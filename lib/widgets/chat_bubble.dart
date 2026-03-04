@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../theme/design_tokens.dart';
 
 /// A reusable chat bubble widget used across screens:
 /// LiveWingman, Consultant, and Session Detail.
@@ -18,7 +20,7 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -27,46 +29,48 @@ class ChatBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
         decoration: BoxDecoration(
-          color: isUser ? theme.colorScheme.primary : theme.colorScheme.surfaceContainer,
+          color: isUser
+              ? (isDark ? Colors.transparent : Colors.transparent)
+              : (isDark ? AppColors.bubbleDark : const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: isUser ? const Radius.circular(16) : Radius.zero,
-            bottomRight: isUser ? Radius.zero : const Radius.circular(16),
+            topLeft: Radius.circular(isUser ? 18 : 4),
+            topRight: Radius.circular(isUser ? 4 : 18),
+            bottomLeft: const Radius.circular(18),
+            bottomRight: const Radius.circular(18),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            )
-          ],
+          border: isUser
+              ? Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey.shade300)
+              : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (!isUser && speakerLabel != null)
               Padding(
-                padding: const EdgeInsets.only(bottom: 4.0),
+                padding: const EdgeInsets.only(bottom: 4),
                 child: Text(
                   speakerLabel!,
-                  style: TextStyle(
+                  style: GoogleFonts.manrope(
                     fontSize: 10,
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ),
-            contentWidget ?? Text(
-              text,
-              style: TextStyle(
-                color: isUser ? theme.colorScheme.onPrimary : theme.colorScheme.onSurface,
-                fontSize: 15,
-              ),
-            ),
+            contentWidget ??
+                Text(
+                  text,
+                  style: GoogleFonts.manrope(
+                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A),
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                ),
           ],
         ),
       ),
     );
   }
 }
+

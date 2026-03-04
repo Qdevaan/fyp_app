@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-
+import '../theme/design_tokens.dart';
 import '../services/connection_service.dart';
 
 class ConnectionsScreen extends StatefulWidget {
@@ -18,7 +19,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
   @override
   void initState() {
     super.initState();
-    // Pre-fill with current URL
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final service = Provider.of<ConnectionService>(context, listen: false);
       _urlController.text = service.serverUrl;
@@ -35,11 +35,11 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     if (mounted) {
       if (service.isConnected) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Connected to Brain!"), backgroundColor: Colors.green)
+          const SnackBar(content: Text("âœ… Connected to Brain!"), backgroundColor: Colors.green),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("❌ Connection Failed. Check URL."), backgroundColor: Colors.red)
+          const SnackBar(content: Text("âŒ Connection Failed. Check URL."), backgroundColor: Colors.red),
         );
       }
     }
@@ -54,10 +54,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
       backgroundColor: Colors.black,
       builder: (ctx) => Scaffold(
         appBar: AppBar(
-          title: Text("Scan Server QR", style: TextStyle(color: Theme.of(ctx).colorScheme.onSurface)),
-          backgroundColor: Theme.of(ctx).colorScheme.surface,
+          title: Text("Scan Server QR", style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+          backgroundColor: AppColors.surfaceDark,
           leading: IconButton(
-            icon: Icon(Icons.close, color: Theme.of(ctx).colorScheme.onSurface),
+            icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () => Navigator.pop(ctx),
           ),
         ),
@@ -67,16 +67,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
             for (final barcode in barcodes) {
               if (barcode.rawValue != null) {
                 final code = barcode.rawValue!;
-                // Basic validation: ensure it looks like a URL
                 if (code.startsWith('http')) {
                   setState(() {
                     _urlController.text = code;
                     _isScanning = false;
                   });
-                  Navigator.pop(ctx); // Close scanner
-                  _saveAndTest(); // Auto-save
+                  Navigator.pop(ctx);
+                  _saveAndTest();
                 }
-                break; // Stop after first valid code
+                break;
               }
             }
           },
@@ -87,118 +86,518 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final connectionService = Provider.of<ConnectionService>(context);
+    final isConnected = connectionService.isConnected;
+    final isConnecting = connectionService.status == ConnectionStatus.connecting;
+    final primary = Theme.of(context).colorScheme.primary;
+    final serverUrl = connectionService.serverUrl;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Connect Brain", style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: theme.colorScheme.primary,
-        foregroundColor: theme.colorScheme.onPrimary,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Status Card
+            // ── Header (matches HTML: back arrow + title) ──────────────
             Container(
-              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: connectionService.isConnected 
-                    ? Colors.green.withOpacity(0.1) 
-                    : Theme.of(context).colorScheme.errorContainer.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: connectionService.isConnected 
-                      ? Colors.green 
-                      : Theme.of(context).colorScheme.error,
-                  width: 2
-                )
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    connectionService.isConnected ? Icons.wifi : Icons.wifi_off,
-                    color: connectionService.isConnected 
-                        ? Colors.green 
-                        : Theme.of(context).colorScheme.error,
-                    size: 32,
+                color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.arrow_back_rounded,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                    Text(
+                      'Brain Connection',
+                      style: GoogleFonts.manrope(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── Content ────────────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 8),
+
+                    // ── Status Card (matches HTML centered layout with glow) ──
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E293B).withOpacity(0.5)
+                            : Colors.white.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          // Icon with glow
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Glow blur behind icon
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isConnected
+                                      ? AppColors.success.withOpacity(0.15)
+                                      : AppColors.error.withOpacity(0.1),
+                                ),
+                              ),
+                              Container(
+                                width: 80,
+                                height: 80,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isConnected
+                                      ? AppColors.success.withOpacity(0.1)
+                                      : AppColors.error.withOpacity(0.08),
+                                  border: Border.all(
+                                    color: isConnected ? AppColors.success : AppColors.error,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Icon(
+                                  isConnected ? Icons.wifi_rounded : Icons.wifi_off_rounded,
+                                  color: isConnected ? AppColors.success : AppColors.error,
+                                  size: 36,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            isConnected ? 'Connected to Brain' : 'Not Connected',
+                            style: GoogleFonts.manrope(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          if (isConnected && serverUrl.isNotEmpty)
+                            Text(
+                              serverUrl,
+                              style: GoogleFonts.manrope(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: primary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          const SizedBox(height: 12),
+                          // Status badge with pulse dot
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isConnected
+                                  ? AppColors.success.withOpacity(0.1)
+                                  : AppColors.error.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(AppRadius.full),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isConnected)
+                                  _PulseDot(color: AppColors.success)
+                                else
+                                  Container(
+                                    width: 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.error,
+                                    ),
+                                  ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  isConnected ? 'Status: Active' : 'Status: Offline',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: isConnected ? AppColors.success : AppColors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          // Disconnect / Connect button
+                          if (isConnected)
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton(
+                                onPressed: () async {
+                                  await connectionService.saveUrl('');
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.error,
+                                  side: const BorderSide(color: AppColors.error, width: 1.5),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Disconnect',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    // ── Server URL Input ───────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 8),
+                      child: Text(
+                        'Server URL',
+                        style: GoogleFonts.manrope(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? const Color(0xFF1E293B).withOpacity(0.5)
+                            : Colors.white.withOpacity(0.7),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        border: Border.all(
+                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 16),
+                          Icon(
+                            Icons.dns_rounded,
+                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            size: 20,
+                          ),
+                          Expanded(
+                            child: TextField(
+                              controller: _urlController,
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'https://xxxx.ngrok-free.app',
+                                hintStyle: GoogleFonts.manrope(
+                                  color: isDark
+                                      ? const Color(0xFF475569)
+                                      : const Color(0xFF94A3B8),
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ── 2-column action buttons (matches HTML grid) ────
+                    Row(
                       children: [
-                        Text(
-                          connectionService.isConnected ? "Connected" : "Disconnected",
-                          style: TextStyle(
-                            fontSize: 18, 
-                            fontWeight: FontWeight.bold,
-                            color: connectionService.isConnected 
-                                ? Colors.green[800] 
-                                : Theme.of(context).colorScheme.error
+                        Expanded(
+                          child: _ActionButton(
+                            isDark: isDark,
+                            icon: Icons.network_check_rounded,
+                            label: 'Test Connection',
+                            loading: isConnecting,
+                            onTap: isConnecting ? null : _saveAndTest,
                           ),
                         ),
-                        Text(
-                          connectionService.isConnected 
-                            ? "Brain is online & ready." 
-                            : "Connect to Colab to activate AI.",
-                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _ActionButton(
+                            isDark: isDark,
+                            icon: Icons.qr_code_scanner_rounded,
+                            label: 'Scan QR',
+                            onTap: _scanQr,
+                          ),
                         ),
                       ],
                     ),
-                  )
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 30),
-            
-            // QR Button
-            ElevatedButton.icon(
-              icon: const Icon(Icons.qr_code_scanner, size: 24),
-              label: const Text("Scan QR from Colab"),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(height: 24),
+
+                    // ── How to connect? Collapsible section ────────────
+                    _HowToConnectSection(isDark: isDark, primary: primary),
+
+                    const SizedBox(height: 30),
+                  ],
+                ),
               ),
-              onPressed: _scanQr,
-            ),
-            
-            const SizedBox(height: 20),
-            const Row(children: [Expanded(child: Divider()), Padding(padding: EdgeInsets.all(8.0), child: Text("OR")), Expanded(child: Divider())]),
-            const SizedBox(height: 20),
-            
-            // Manual Input
-            TextField(
-              controller: _urlController,
-              decoration: InputDecoration(
-                labelText: "Server URL",
-                hintText: "https://xxxx.ngrok-free.app",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                prefixIcon: const Icon(Icons.link),
-                filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-              ),
-            ),
-            
-            const SizedBox(height: 20),
-            
-            ElevatedButton(
-              onPressed: connectionService.status == ConnectionStatus.connecting ? null : _saveAndTest,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: connectionService.status == ConnectionStatus.connecting 
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text("Save & Test Connection"),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Helper Widgets ─────────────────────────────────────────────────────────
+
+class _PulseDot extends StatefulWidget {
+  final Color color;
+  const _PulseDot({required this.color});
+  @override
+  State<_PulseDot> createState() => __PulseDotState();
+}
+
+class __PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 1))
+      ..repeat(reverse: true);
+    _anim = Tween(begin: 0.4, end: 1.0).animate(_ctrl);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+        opacity: _anim,
+        child: Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color),
+        ),
+      );
+}
+
+class _ActionButton extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+  final bool loading;
+
+  const _ActionButton({
+    required this.isDark,
+    required this.icon,
+    required this.label,
+    this.onTap,
+    this.loading = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(
+            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          ),
+        ),
+        child: loading
+            ? Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    icon,
+                    size: 20,
+                    color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _HowToConnectSection extends StatefulWidget {
+  final bool isDark;
+  final Color primary;
+  const _HowToConnectSection({required this.isDark, required this.primary});
+
+  @override
+  State<_HowToConnectSection> createState() => __HowToConnectSectionState();
+}
+
+class __HowToConnectSectionState extends State<_HowToConnectSection> {
+  bool _expanded = false;
+
+  static const _steps = [
+    ('1', 'Ensure your Brain Server is powered on and connected to the same local network as this device.'),
+    ('2', 'Enter the server\'s local URL or find the QR code in your server dashboard settings.'),
+    ('3', 'Tap \'Test Connection\' to verify the pairing. Once successful, status will turn green.'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = widget.isDark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark
+            ? const Color(0xFF1E293B).withOpacity(0.3)
+            : Colors.white.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(
+          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _expanded = !_expanded),
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(Icons.help_outline_rounded, color: widget.primary, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'How to connect?',
+                      style: GoogleFonts.manrope(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ),
+                  AnimatedRotation(
+                    turns: _expanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.expand_more_rounded,
+                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                  ),
+                ),
+              ),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: _steps.map((step) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 24,
+                          height: 24,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: widget.primary.withOpacity(0.18),
+                          ),
+                          child: Center(
+                            child: Text(
+                              step.$1,
+                              style: GoogleFonts.manrope(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: widget.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            step.$2,
+                            style: GoogleFonts.manrope(
+                              fontSize: 13,
+                              height: 1.6,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+        ],
       ),
     );
   }

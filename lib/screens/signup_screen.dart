@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
@@ -21,10 +24,25 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
   
-  bool _loading = false;
+  bool _isEmailLoading = false;
+  bool _isGoogleLoading = false;
+  late final StreamSubscription<AuthState> _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
+        if (!_isEmailLoading && mounted) {
+          Navigator.pushReplacementNamed(context, '/home');
+        }
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _authSubscription.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _confirmPassCtrl.dispose();
@@ -33,8 +51,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _signupWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    setState(() => _loading = true);
+
+    setState(() => _isEmailLoading = true);
     try {
       await _authService.signUpWithEmail(_emailCtrl.text.trim(), _passCtrl.text);
       if (!mounted) return;
@@ -48,163 +66,217 @@ class _SignupScreenState extends State<SignupScreen> {
         )
       );
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _isEmailLoading = false);
     }
   }
 
   Future<void> _signupWithGoogle() async {
-    setState(() => _loading = true);
+    setState(() => _isGoogleLoading = true);
     try {
       await _authService.signInWithGoogle();
-      // AuthGate will handle navigation
+      await Future.delayed(const Duration(seconds: 4));
+      if (mounted) setState(() => _isGoogleLoading = false);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Google Sign up failed: $e')),
         );
+        setState(() => _isGoogleLoading = false);
       }
-    } finally {
-      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 0.0),
-          child: Form(
-            key: _formKey,
+      body: Stack(
+        children: [
+          // Decorative Background Blobs
+          Positioned(
+            top: -80,
+            left: -80,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: theme.colorScheme.primary.withOpacity(0.15),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -80,
+            right: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.purple.withOpacity(0.08),
+              ),
+            ),
+          ),
+
+          // Main Content
+          SafeArea(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Header Section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Center(child: AppLogo(size: 120)),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Create Account',
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: theme.colorScheme.onSurface,
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: IconButton(
+                    padding: const EdgeInsets.only(left: 16, top: 16),
+                    icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 10),
+
+                          // Header + Logo + Title
+                          Column(
+                            children: [
+                              const AppLogo(size: 80),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Create Account',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 30,
+                                  fontWeight: FontWeight.w800,
+                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Join your personal Wingman today.',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 30),
+
+                          // Form Fields
+                          AppInput(
+                            controller: _emailCtrl,
+                            label: 'Email Address',
+                            prefixIcon: Icons.email_outlined,
+                            type: TextInputType.emailAddress,
+                            hintText: 'Enter your email',
+                            validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          AppInput(
+                            controller: _passCtrl,
+                            label: 'Password',
+                            prefixIcon: Icons.lock_outline,
+                            hintText: 'Enter your password',
+                            obscure: true,
+                            validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
+                          ),
+                          const SizedBox(height: 16),
+                          
+                          AppInput(
+                            controller: _confirmPassCtrl,
+                            label: 'Confirm Password',
+                            prefixIcon: Icons.lock_reset,
+                            hintText: 'Re-enter your password',
+                            obscure: true,
+                            validator: (v) => v == _passCtrl.text ? null : 'Passwords do not match',
+                          ),
+
+                          const SizedBox(height: 32),
+
+                          // Actions
+                          AppButton(
+                            label: 'Sign Up',
+                            onTap: _signupWithEmail,
+                            loading: _isEmailLoading,
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          // Divider
+                          Row(
+                            children: [
+                              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: Text(
+                                  'OR',
+                                  style: GoogleFonts.manrope(
+                                    color: isDark ? Colors.white70 : Colors.black54,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 24),
+                          
+                          SocialButton(
+                            label: 'Continue with Google',
+                            imagePath: 'assets/logos/google_logo.png',
+                            onTap: _signupWithGoogle,
+                            loading: _isGoogleLoading,
+                          ),
+                          const SizedBox(height: 20),
+                          // Footer 
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Already have an account?',
+                                style: GoogleFonts.manrope(
+                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: TextButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  minimumSize: Size.zero,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                child: Text(
+                                  'Log In',
+                                  style: GoogleFonts.manrope(
+                                    fontWeight: FontWeight.w800,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          
+                          // Bottom spacing for keyboard/scroll
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Join your personal Wingman today.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-
-                const SizedBox(height: 40),
-
-                // Form Section
-                Column(
-                  children: [
-                    AppInput(
-                      controller: _emailCtrl,
-                      label: 'Email Address',
-                      prefixIcon: Icons.email_outlined,
-                      type: TextInputType.emailAddress,
-                      validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
-                    ),
-                    const SizedBox(height: 16),
-                    AppInput(
-                      controller: _passCtrl,
-                      label: 'Password',
-                      prefixIcon: Icons.lock_outline,
-                      obscure: true,
-                      validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
-                    ),
-                    const SizedBox(height: 16),
-                    AppInput(
-                      controller: _confirmPassCtrl,
-                      label: 'Confirm Password',
-                      prefixIcon: Icons.lock_reset,
-                      obscure: true,
-                      validator: (v) => v == _passCtrl.text ? null : 'Passwords do not match',
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                // Buttons Section
-                Column(
-                  children: [
-                    AppButton(
-                      label: 'Sign Up',
-                      onTap: _signupWithEmail,
-                      loading: _loading,
-                      filled: true,
-                    ),
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text('OR', style: TextStyle(color: theme.colorScheme.outline, fontSize: 12)),
-                        ),
-                        Expanded(child: Divider(color: theme.colorScheme.outlineVariant)),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    SocialButton(
-                      label: 'Continue with Google',
-                      imagePath: 'assets/logos/google_logo.png',
-                      onTap: _signupWithGoogle,
-                      loading: _loading,
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 24),
-
-                // Footer Section
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Already have an account?',
-                      style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context), // Go back to login
-                      child: Text(
-                        'Log In',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                
-                // Bottom spacing for scroll
-                const SizedBox(height: 20),
               ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }

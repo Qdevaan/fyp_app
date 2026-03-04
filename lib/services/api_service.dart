@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'connection_service.dart';
 
 class ApiService {
@@ -26,15 +28,16 @@ class ApiService {
   }
 
   // --- 1. VOICE ENROLLMENT ---
-  /// Uploads audio to enroll the user's voice signature
-  Future<void> enrollVoice({
+  /// Uploads audio to enroll the user's voice signature.
+  /// Returns the enrolled_at timestamp string if successful, throws otherwise.
+  Future<String> enrollVoice({
     required String userId,
     required String userName,
     required String audioPath,
   }) async {
     if (_baseUrl.isEmpty) throw Exception('Server URL not set.');
 
-    final uri = Uri.parse('$_baseUrl/enroll'); // Updated endpoint for Colab
+    final uri = Uri.parse('$_baseUrl/enroll');
 
     try {
       final request = http.MultipartRequest('POST', uri);
@@ -49,8 +52,31 @@ class ApiService {
       if (response.statusCode != 200) {
         throw Exception('Server error ${response.statusCode}: ${response.body}');
       }
+
+      // Confirm the embedding was actually persisted in Supabase
+      final status = await checkEnrollmentStatus(userId);
+      if (status == null) {
+        throw Exception('Enrollment uploaded but embedding not found in database.');
+      }
+      return status;
     } catch (e) {
       throw Exception('Enrollment failed: $e');
+    }
+  }
+
+  /// Queries voice_enrollments to verify the embedding row exists.
+  /// Returns the enrolled_at timestamp string, or null if not enrolled.
+  Future<String?> checkEnrollmentStatus(String userId) async {
+    try {
+      final res = await Supabase.instance.client
+          .from('voice_enrollments')
+          .select('enrolled_at')
+          .eq('user_id', userId)
+          .maybeSingle();
+      return res?['enrolled_at'] as String?;
+    } catch (e) {
+      debugPrint('checkEnrollmentStatus error: $e');
+      return null;
     }
   }
 
@@ -141,21 +167,29 @@ class ApiService {
   }
 
   // --- 5. WINGMAN (TEXT) ---
-  Future<String?> sendTranscriptToWingman(String userId, String transcript) async {
+  Future<String?> sendTranscriptToWingman(
+    String userId,
+    String transcript, {
+    String? sessionId,
+    String speakerRole = 'others',
+  }) async {
     if (_baseUrl.isEmpty) return null;
 
     try {
       var uri = Uri.parse("$_baseUrl/process_transcript_wingman");
+      final body = <String, dynamic>{
+        "user_id": userId,
+        "transcript": transcript,
+        "speaker_role": speakerRole,
+        if (sessionId != null) "session_id": sessionId,
+      };
       var response = await http.post(
         uri,
         headers: {
           "Content-Type": "application/json",
           "ngrok-skip-browser-warning": "true",
         },
-        body: jsonEncode({
-          "user_id": userId,
-          "transcript": transcript
-        }),
+        body: jsonEncode(body),
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -166,5 +200,131 @@ class ApiService {
       debugPrint("Wingman API Error: $e");
     }
     return null;
+  }
+
+  // --- 6. SESSION LIFECYCLE ---
+  /// Creates a new live session on the server and returns the session_id.
+  Future<String?> createLiveSession(String userId) async {
+    if (_baseUrl.isEmpty) return null;
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/start_session"),
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: jsonEncode({"user_id": userId, "mode": "live_wingman"}),
+      ).timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body)['session_id'] as String?;
+      }
+    } catch (e) {
+      debugPrint("createLiveSession error: $e");
+    }
+    return null;
+  }
+
+  /// Ends a live session: fetches transcript, generates summary, marks completed.
+  Future<void> endLiveSession(String sessionId, String userId) async {
+    if (_baseUrl.isEmpty) return;
+    try {
+      await http.post(
+        Uri.parse("$_baseUrl/end_session"),
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: jsonEncode({"session_id": sessionId, "user_id": userId}),
+      ).timeout(const Duration(seconds: 30));
+    } catch (e) {
+      debugPrint("endLiveSession error: $e");
+    }
+  }
+
+  // --- 7. STREAMING CONSULTANT (SSE) ---
+  /// Streams tokens from /ask_consultant_stream via Server-Sent Events.
+  /// Yields text tokens one at a time. Caller should concatenate them.
+  /// [onSessionCreated] is called once with the session_id when the stream ends.
+  Stream<String> askConsultantStream(
+    String userId,
+    String question, {
+    String? sessionId,
+    void Function(String sessionId)? onSessionCreated,
+  }) async* {
+    if (_baseUrl.isEmpty) {
+      yield 'Please connect to the server first.';
+      return;
+    }
+    final client = http.Client();
+    try {
+      final request = http.Request('POST', Uri.parse("$_baseUrl/ask_consultant_stream"));
+      request.headers['Content-Type'] = 'application/json';
+      request.headers['ngrok-skip-browser-warning'] = 'true';
+      request.headers['Accept'] = 'text/event-stream';
+      request.body = jsonEncode({
+        'user_id': userId,
+        'question': question,
+        if (sessionId != null) 'session_id': sessionId,
+      });
+
+      final streamedResponse = await client.send(request).timeout(const Duration(seconds: 60));
+      if (streamedResponse.statusCode != 200) {
+        yield 'Server error: ${streamedResponse.statusCode}';
+        return;
+      }
+
+      String buffer = '';
+      await for (final bytes in streamedResponse.stream) {
+        buffer += utf8.decode(bytes, allowMalformed: true);
+        // Process complete SSE lines
+        while (buffer.contains('\n')) {
+          final idx = buffer.indexOf('\n');
+          final line = buffer.substring(0, idx).trim();
+          buffer = buffer.substring(idx + 1);
+          if (line.startsWith('data: ')) {
+            final data = line.substring(6);
+            try {
+              final parsed = jsonDecode(data) as Map<String, dynamic>;
+              if (parsed['token'] != null) {
+                yield parsed['token'] as String;
+              } else if (parsed['done'] == true) {
+                final sid = parsed['session_id'] as String?;
+                if (sid != null && onSessionCreated != null) onSessionCreated(sid);
+                return;
+              } else if (parsed['error'] != null) {
+                yield '\n[Error: ${parsed['error']}]';
+                return;
+              }
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (e) {
+      yield '\n[Connection error: $e]';
+    } finally {
+      client.close();
+    }
+  }
+
+  // --- 8. ASK ABOUT ENTITY ---
+  /// Returns an AI summary of everything known about a named entity.
+  Future<String> askAboutEntity(String userId, String entityName) async {
+    if (_baseUrl.isEmpty) return 'Server not connected.';
+    try {
+      final res = await http.post(
+        Uri.parse("$_baseUrl/ask_entity"),
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true",
+        },
+        body: jsonEncode({"user_id": userId, "entity_name": entityName}),
+      ).timeout(const Duration(seconds: 15));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body)['answer'] as String? ?? '—';
+      }
+      return 'Error: ${res.statusCode}';
+    } catch (e) {
+      return 'Connection error: $e';
+    }
   }
 }
