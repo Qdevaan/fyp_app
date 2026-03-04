@@ -49,6 +49,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  void _showContactSheet(BuildContext context, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) {
+        final primary = Theme.of(context).colorScheme.primary;
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 4,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF475569) : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Contact Us',
+                style: GoogleFonts.manrope(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Have questions, feedback, or need support? Reach out to the Bubbles team.',
+                style: GoogleFonts.manrope(
+                  fontSize: 13,
+                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 24),
+              _ContactRow(
+                isDark: isDark,
+                icon: Icons.email_outlined,
+                iconColor: primary,
+                label: 'Email Support',
+                value: 'support@bubbles.ai',
+              ),
+              const SizedBox(height: 12),
+              _ContactRow(
+                isDark: isDark,
+                icon: Icons.language_rounded,
+                iconColor: const Color(0xFF3B82F6),
+                label: 'Website',
+                value: 'www.bubbles.ai',
+              ),
+              const SizedBox(height: 12),
+              _ContactRow(
+                isDark: isDark,
+                icon: Icons.bug_report_outlined,
+                iconColor: const Color(0xFFF59E0B),
+                label: 'Report a Bug',
+                value: 'bugs@bubbles.ai',
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -272,6 +345,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ],
                       ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // ABOUT & SUPPORT
+                    _SectionLabel(label: 'About & Support'),
+                    _GroupedContainer(
+                      isDark: isDark,
+                      children: [
+                        _SettingsTile(
+                          isDark: isDark,
+                          iconBg: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                          iconColor: Theme.of(context).colorScheme.primary,
+                          icon: Icons.info_outline_rounded,
+                          title: 'About Bubbles',
+                          onTap: () => Navigator.pushNamed(context, '/about'),
+                        ),
+                        _TileDivider(isDark: isDark),
+                        _SettingsTile(
+                          isDark: isDark,
+                          iconBg: const Color(0xFF10B981).withOpacity(0.15),
+                          iconColor: const Color(0xFF10B981),
+                          icon: Icons.mail_outline_rounded,
+                          title: 'Contact Us',
+                          onTap: () => _showContactSheet(context, isDark),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 32),
 
@@ -1142,5 +1241,69 @@ class _VoiceEnrollmentSectionState extends State<_VoiceEnrollmentSection> {
           ),
         );
     }
+  }
+}
+
+// ── Contact row used in the contact bottom sheet ──────────────────────────
+class _ContactRow extends StatelessWidget {
+  final bool isDark;
+  final IconData icon;
+  final Color iconColor;
+  final String label;
+  final String value;
+
+  const _ContactRow({
+    required this.isDark,
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }

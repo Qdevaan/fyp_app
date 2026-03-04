@@ -290,52 +290,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         Builder(
                           builder: (context) => GestureDetector(
                             onTap: () => Navigator.pushNamed(context, '/settings'),
-                            child: Consumer<ConnectionService>(
-                              builder: (context, conn, _) {
-                                return Stack(
-                                  children: [
-                                    Container(
-                                      width: 44,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                          width: 2,
-                                        ),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: avatarUrl != null
+                                    ? CachedNetworkImage(
+                                        imageUrl: avatarUrl,
+                                        fit: BoxFit.cover,
+                                        placeholder: (_, __) => Container(color: AppColors.surfaceDark),
+                                      )
+                                    : Container(
+                                        color: isDark ? AppColors.surfaceDark : Colors.grey.shade200,
+                                        child: Icon(Icons.person, color: isDark ? Colors.white54 : Colors.grey),
                                       ),
-                                      child: ClipOval(
-                                        child: avatarUrl != null
-                                            ? CachedNetworkImage(
-                                                imageUrl: avatarUrl,
-                                                fit: BoxFit.cover,
-                                                placeholder: (_, __) => Container(color: AppColors.surfaceDark),
-                                              )
-                                            : Container(
-                                                color: isDark ? AppColors.surfaceDark : Colors.grey.shade200,
-                                                child: Icon(Icons.person, color: isDark ? Colors.white54 : Colors.grey),
-                                              ),
-                                      ),
-                                    ),
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Container(
-                                        width: 12,
-                                        height: 12,
-                                        decoration: BoxDecoration(
-                                          color: conn.isConnected ? AppColors.success : AppColors.error,
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-                                            width: 2,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
+                              ),
                             ),
                           ),
                         ),
@@ -531,18 +507,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(20),
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)],
+                                colors: isDark
+                                    ? const [Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF0F172A)]
+                                    : const [Color(0xFFEFF6FF), Color(0xFFDBEAFE), Color(0xFFEFF6FF)],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.15 : 0.10),
                                   blurRadius: 20,
                                   spreadRadius: 0,
                                 ),
                               ],
+                              border: isDark
+                                  ? null
+                                  : Border.all(
+                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.18),
+                                      width: 1,
+                                    ),
                             ),
                             child: Padding(
                               padding: const EdgeInsets.all(20),
@@ -576,7 +560,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         style: GoogleFonts.manrope(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w700,
-                                          color: Colors.white,
+                                          color: isDark ? Colors.white : const Color(0xFF0F172A),
                                         ),
                                       ),
                                     ],
@@ -584,10 +568,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(10),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.1),
+                                      color: isDark
+                                          ? Colors.white.withOpacity(0.1)
+                                          : Theme.of(context).colorScheme.primary.withOpacity(0.12),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
-                                    child: const Icon(Icons.mic, color: Colors.white, size: 22),
+                                    child: Icon(
+                                      Icons.mic,
+                                      color: isDark ? Colors.white : Theme.of(context).colorScheme.primary,
+                                      size: 22,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -597,7 +587,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 style: GoogleFonts.manrope(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
-                                  color: const Color(0xFFCBD5E1),
+                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
                                   height: 1.5,
                                 ),
                               ),
@@ -641,11 +631,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                       width: 48,
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: Colors.white.withOpacity(0.05),
+                                        color: isDark
+                                            ? Colors.white.withOpacity(0.05)
+                                            : Colors.black.withOpacity(0.04),
                                         borderRadius: BorderRadius.circular(AppRadius.md),
-                                        border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                        border: Border.all(
+                                          color: isDark
+                                              ? Colors.white.withOpacity(0.1)
+                                              : Colors.black.withOpacity(0.08),
+                                        ),
                                       ),
-                                      child: const Icon(Icons.settings, color: Colors.white, size: 20),
+                                      child: Icon(
+                                        Icons.settings,
+                                        color: isDark ? Colors.white : const Color(0xFF475569),
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
                                 ],

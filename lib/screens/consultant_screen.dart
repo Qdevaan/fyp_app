@@ -1,12 +1,27 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/design_tokens.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/connection_service.dart';
+import '../widgets/app_logo.dart';
+
+// ─── Voice mode state for the consultant ────────
+enum _CVoiceMode { off, listening, processing, speaking }
 
 // ────────────────────────────────────────────
 //  CONSULTANT SCREEN  (ChatGPT-style multi-chat)
@@ -18,7 +33,8 @@ class ConsultantScreen extends StatefulWidget {
   State<ConsultantScreen> createState() => _ConsultantScreenState();
 }
 
-class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBindingObserver {
+class _ConsultantScreenState extends State<ConsultantScreen>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -36,6 +52,16 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
   bool _drawerLoaded = false;
   bool _loadingChat = false; // loading messages for a selected past chat
 
+  // ── Hands-free voice mode ─────────────────
+  _CVoiceMode _voiceMode = _CVoiceMode.off;
+  final SpeechToText _stt = SpeechToText();
+  bool _sttReady = false;
+  final AudioPlayer _ttsPlayer = AudioPlayer();
+  String _voicePartial = '';
+  bool _voiceModeActive = false; // true when the loop should keep running
+  late final AnimationController _micPulse;
+  late final Animation<double> _micPulseAnim;
+
   static const _welcomeMsg =
       "Hello! I'm your Consultant AI.\n\nI have access to your **knowledge graph**, **session memories**, and **past summaries**. Ask me anything about your conversations, relationships, or decisions.";
 
@@ -45,6 +71,17 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_scrollListener);
     _messages.add({"role": "ai", "text": _welcomeMsg});
+
+    // Mic pulse animation (used when listening)
+    _micPulse = AnimationController(
+      vsync: this as TickerProvider,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _micPulseAnim = Tween<double>(begin: 1.0, end: 1.25).animate(
+      CurvedAnimation(parent: _micPulse, curve: Curves.easeInOut),
+    );
+
+    _initVoice();
   }
 
   @override
@@ -53,6 +90,9 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     _controller.dispose();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
+    _micPulse.dispose();
+    _ttsPlayer.dispose();
+    _stt.stop();
     super.dispose();
   }
 
@@ -169,10 +209,84 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     }
   }
 
+  // ── Not-connected dialog ─────────────────
+  void _showNotConnectedDialog() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.redAccent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Not Connected',
+                style: GoogleFonts.manrope(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'The Consultant AI requires a server connection. Please connect first in Settings.',
+          style: GoogleFonts.manrope(
+            fontSize: 14,
+            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Cancel',
+                style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pushNamed(context, '/connections');
+            },
+            style: TextButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            child: Text('Connect',
+                style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w700,
+                    color: Theme.of(context).colorScheme.primary)),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Send message (SSE streaming) ───────────
   void _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _loading || _loadingChat) return;
+
+    // Connection check
+    final conn = Provider.of<ConnectionService>(context, listen: false);
+    if (!conn.isConnected) {
+      _showNotConnectedDialog();
+      return;
+    }
 
     final user = AuthService.instance.currentUser;
     if (user == null) {
@@ -269,6 +383,237 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
     return '$hour12:$m $period';
   }
 
+  // ══════════════════════════════════════════════════════════
+  //  HANDS-FREE VOICE MODE
+  // ══════════════════════════════════════════════════════════
+
+  Future<void> _initVoice() async {
+    _sttReady = await _stt.initialize(
+      onError: (e) => debugPrint('🎙️ STT error: ${e.errorMsg}'),
+    );
+    // When TTS audio ends, auto-restart listening if still in voice mode
+    _ttsPlayer.onPlayerComplete.listen((_) {
+      if (_voiceModeActive && mounted) {
+        _setVoiceMode(_CVoiceMode.listening);
+        _startSTT();
+      }
+    });
+  }
+
+  void _setVoiceMode(_CVoiceMode mode) {
+    if (!mounted) return;
+    setState(() => _voiceMode = mode);
+  }
+
+  /// Toggle hands-free mode on / off.
+  void _toggleVoiceMode() {
+    if (_voiceMode == _CVoiceMode.off) {
+      _startVoiceMode();
+    } else {
+      _stopVoiceMode();
+    }
+  }
+
+  void _startVoiceMode() {
+    if (!_sttReady) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Microphone not available.'), backgroundColor: Colors.redAccent),
+      );
+      return;
+    }
+    _voiceModeActive = true;
+    _setVoiceMode(_CVoiceMode.listening);
+    _startSTT();
+  }
+
+  void _stopVoiceMode() {
+    _voiceModeActive = false;
+    _ttsPlayer.stop();
+    _stt.stop();
+    _setVoiceMode(_CVoiceMode.off);
+    setState(() => _voicePartial = '');
+  }
+
+  /// Interrupt mid-speak / mid-listen and start listening instead.
+  void _interruptAndListen() {
+    if (_voiceMode == _CVoiceMode.speaking) {
+      _ttsPlayer.stop(); // onPlayerComplete will NOT fire when stopped manually
+      _setVoiceMode(_CVoiceMode.listening);
+      _startSTT();
+    }
+  }
+
+  void _startSTT() {
+    if (!_sttReady || !_voiceModeActive) return;
+    setState(() => _voicePartial = '');
+    _stt.listen(
+      onResult: _onSTTResult,
+      listenMode: ListenMode.dictation,
+      pauseFor: const Duration(seconds: 2),
+      cancelOnError: false,
+      partialResults: true,
+    );
+  }
+
+  void _onSTTResult(SpeechRecognitionResult result) {
+    if (!mounted || !_voiceModeActive) return;
+    setState(() => _voicePartial = result.recognizedWords);
+    if (result.finalResult) {
+      final text = result.recognizedWords.trim();
+      if (text.isEmpty) {
+        // Nothing heard — keep listening
+        _startSTT();
+        return;
+      }
+      _sendVoiceMessage(text);
+    }
+  }
+
+  Future<void> _sendVoiceMessage(String text) async {
+    if (!mounted || !_voiceModeActive) return;
+
+    // Connection check
+    final conn = Provider.of<ConnectionService>(context, listen: false);
+    if (!conn.isConnected) {
+      _stopVoiceMode();
+      _showNotConnectedDialog();
+      return;
+    }
+
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _voicePartial = '';
+      _messages.add({'role': 'user', 'text': text, 'time': _nowTime()});
+      _voiceMode = _CVoiceMode.processing;
+      _loading = true;
+    });
+    _scrollToBottom();
+
+    final api = Provider.of<ApiService>(context, listen: false);
+    final buf = StringBuffer();
+    bool firstToken = true;
+
+    try {
+      final stream = api.askConsultantStream(
+        user.id,
+        text,
+        sessionId: _currentSessionId,
+        onSessionCreated: (sid) {
+          if (mounted) {
+            setState(() {
+              _currentSessionId = sid;
+              _drawerLoaded = false;
+            });
+          }
+        },
+      );
+
+      final aiTime = _nowTime();
+      await for (final token in stream) {
+        if (!mounted || !_voiceModeActive) break;
+        buf.write(token);
+        if (firstToken) {
+          setState(() {
+            _loading = false;
+            _messages.add({'role': 'ai', 'text': buf.toString(), 'streaming': 'true', 'time': aiTime});
+            _voiceMode = _CVoiceMode.speaking; // show speaking state while streaming
+          });
+          firstToken = false;
+        } else {
+          setState(() => _messages.last = {'role': 'ai', 'text': buf.toString(), 'streaming': 'true', 'time': aiTime});
+        }
+        _scrollToBottom();
+      }
+
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          if (_messages.isNotEmpty && _messages.last['streaming'] == 'true') {
+            _messages.last = {'role': 'ai', 'text': buf.toString(), 'time': _messages.last['time'] ?? _nowTime()};
+          }
+        });
+      }
+
+      // Speak the completed response
+      if (_voiceModeActive && buf.isNotEmpty) {
+        await _speakText(buf.toString());
+      }
+    } catch (e) {
+      if (mounted && _voiceModeActive) {
+        setState(() {
+          if (firstToken) {
+            _messages.add({'role': 'ai', 'text': 'Error: $e', 'time': _nowTime()});
+          }
+          _loading = false;
+          _voiceMode = _CVoiceMode.listening;
+        });
+        _startSTT();
+      }
+    }
+  }
+
+  /// Calls Deepgram Aura TTS and plays the audio.
+  /// After playback ends, `onPlayerComplete` restarts listening automatically.
+  Future<void> _speakText(String text) async {
+    if (!_voiceModeActive || !mounted) return;
+
+    // Strip markdown for TTS (basic)
+    final plain = text
+        .replaceAll(RegExp(r'\*\*(.+?)\*\*'), r'$1')
+        .replaceAll(RegExp(r'\*(.+?)\*'), r'$1')
+        .replaceAll(RegExp(r'#+\s'), '')
+        .replaceAll(RegExp(r'`(.+?)`'), r'$1')
+        .replaceAll(RegExp(r'\n+'), ' ')
+        .trim();
+
+    final apiKey = dotenv.env['DEEPGRAM_API_KEY'] ?? '';
+    if (apiKey.isEmpty) {
+      debugPrint('⚠️ No Deepgram API key — skipping TTS');
+      if (_voiceModeActive && mounted) {
+        _setVoiceMode(_CVoiceMode.listening);
+        _startSTT();
+      }
+      return;
+    }
+
+    _setVoiceMode(_CVoiceMode.speaking);
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://api.deepgram.com/v1/speak?model=aura-orpheus-en'),
+        headers: {
+          'Authorization': 'Token $apiKey',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'text': plain}),
+      ).timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        final dir = await getTemporaryDirectory();
+        final file = File('${dir.path}/consultant_tts.mp3');
+        await file.writeAsBytes(response.bodyBytes);
+        await _ttsPlayer.play(DeviceFileSource(file.path));
+        // onPlayerComplete in _initVoice handles restarting STT
+      } else {
+        debugPrint('❌ TTS error: ${response.statusCode}');
+        if (_voiceModeActive && mounted) {
+          _setVoiceMode(_CVoiceMode.listening);
+          _startSTT();
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ TTS network error: $e');
+      if (_voiceModeActive && mounted) {
+        _setVoiceMode(_CVoiceMode.listening);
+        _startSTT();
+      }
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════
+
   // ── Helpers ────────────────────────────────
   String _chatTitle(Map<String, dynamic> chat) {
     final q = chat['title'] as String? ?? 'Chat';
@@ -309,15 +654,7 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
               padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
               child: Row(
                 children: [
-                  Container(
-                    width: 34,
-                    height: 34,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(colors: [primary, const Color(0xFF1E88E5)]),
-                    ),
-                    child: const Icon(Icons.smart_toy, color: Colors.white, size: 18),
-                  ),
+                  AppLogo(size: 34),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -449,19 +786,52 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                         ),
                       ),
                     ),
-                    // New chat / options
-                    IconButton(
-                      tooltip: 'New chat',
-                      onPressed: _loading ? null : _newChat,
-                      icon: Icon(Icons.add_comment_outlined,
-                          color: _loading
-                              ? (isDark ? const Color(0xFF334155) : Colors.grey.shade300)
-                              : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                          size: 22),
+                    // Hands-free mic toggle
+                    _MicToggleButton(
+                      voiceMode: _voiceMode,
+                      onTap: () {
+                        if (_voiceMode == _CVoiceMode.speaking) {
+                          _interruptAndListen();
+                        } else {
+                          _toggleVoiceMode();
+                        }
+                      },
+                      isDark: isDark,
                     ),
                   ],
                 ),
               ),
+            ),
+
+            // ── CONNECTION BANNER ────────────────────
+            Consumer<ConnectionService>(
+              builder: (_, conn, __) => conn.isConnected
+                  ? const SizedBox.shrink()
+                  : GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/connections'),
+                      child: Container(
+                        width: double.infinity,
+                        color: Colors.redAccent.withOpacity(0.12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 15),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Not connected to server — tap to connect',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.redAccent,
+                                ),
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right_rounded, color: Colors.redAccent, size: 16),
+                          ],
+                        ),
+                      ),
+                    ),
             ),
 
             // ── CHAT AREA ─────────────────────────────
@@ -521,6 +891,16 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
               ),
             ),
 
+            // ── VOICE STATUS BANNER ───────────────────────
+            if (_voiceMode != _CVoiceMode.off)
+              _VoiceStatusBanner(
+                voiceMode: _voiceMode,
+                partial: _voicePartial,
+                isDark: isDark,
+                micPulseAnim: _micPulseAnim,
+                onStop: _stopVoiceMode,
+              ),
+
             // ── INPUT AREA ────────────────────────────
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -560,19 +940,6 @@ class _ConsultantScreenState extends State<ConsultantScreen> with WidgetsBinding
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                               ),
                               onSubmitted: (_) => _sendMessage(),
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(right: 6, bottom: 6),
-                            child: IconButton(
-                              constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                              padding: EdgeInsets.zero,
-                              icon: Icon(
-                                Icons.attach_file_rounded,
-                                color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                                size: 20,
-                              ),
-                              onPressed: () {},
                             ),
                           ),
                         ],
@@ -794,17 +1161,8 @@ class _AiBubble extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // AI Avatar – primary/20 bg with border (HTML design)
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: primary.withOpacity(0.18),
-            border: Border.all(color: primary.withOpacity(0.3), width: 1),
-          ),
-          child: Icon(Icons.smart_toy_rounded, color: primary, size: 18),
-        ),
+        // AI Avatar – app logo
+        AppLogo(size: 32),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -880,22 +1238,12 @@ class _TypingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
     return Padding(
       padding: const EdgeInsets.only(bottom: 24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: primary.withOpacity(0.18),
-              border: Border.all(color: primary.withOpacity(0.3), width: 1),
-            ),
-            child: Icon(Icons.smart_toy_rounded, color: primary, size: 18),
-          ),
+          AppLogo(size: 32),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -987,6 +1335,158 @@ class _BouncingDotState extends State<_BouncingDot> with SingleTickerProviderSta
           color: const Color(0xFF64748B),
           shape: BoxShape.circle,
         ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────
+//  MIC TOGGLE BUTTON (top-bar)
+// ────────────────────────────────────────────
+class _MicToggleButton extends StatelessWidget {
+  final _CVoiceMode voiceMode;
+  final VoidCallback onTap;
+  final bool isDark;
+
+  const _MicToggleButton({
+    required this.voiceMode,
+    required this.onTap,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final isActive = voiceMode != _CVoiceMode.off;
+    final isSpeaking = voiceMode == _CVoiceMode.speaking;
+
+    return Tooltip(
+      message: isActive
+          ? (isSpeaking ? 'Tap to interrupt' : 'Stop hands-free mode')
+          : 'Hands-free mode',
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          width: 36,
+          height: 36,
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive
+                ? primary.withOpacity(0.15)
+                : Colors.transparent,
+            border: Border.all(
+              color: isActive ? primary : Colors.transparent,
+              width: 1.5,
+            ),
+          ),
+          child: Icon(
+            isSpeaking
+                ? Icons.volume_up_rounded
+                : (isActive ? Icons.mic_rounded : Icons.mic_none_rounded),
+            size: 20,
+            color: isActive
+                ? primary
+                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ────────────────────────────────────────────
+//  VOICE STATUS BANNER (above input, when active)
+// ────────────────────────────────────────────
+class _VoiceStatusBanner extends StatelessWidget {
+  final _CVoiceMode voiceMode;
+  final String partial;
+  final bool isDark;
+  final Animation<double> micPulseAnim;
+  final VoidCallback onStop;
+
+  const _VoiceStatusBanner({
+    required this.voiceMode,
+    required this.partial,
+    required this.isDark,
+    required this.micPulseAnim,
+    required this.onStop,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final label = switch (voiceMode) {
+      _CVoiceMode.listening   => partial.isEmpty ? 'Listening…' : partial,
+      _CVoiceMode.processing  => 'Thinking…',
+      _CVoiceMode.speaking    => 'Speaking — tap mic to interrupt',
+      _CVoiceMode.off         => '',
+    };
+    final bg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+
+    return Container(
+      color: bg,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          // Pulsing mic icon
+          AnimatedBuilder(
+            animation: micPulseAnim,
+            builder: (_, child) => Transform.scale(
+              scale: voiceMode == _CVoiceMode.listening ? micPulseAnim.value : 1.0,
+              child: child,
+            ),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: primary.withOpacity(0.15),
+              ),
+              child: Icon(
+                voiceMode == _CVoiceMode.speaking
+                    ? Icons.volume_up_rounded
+                    : voiceMode == _CVoiceMode.processing
+                        ? Icons.hourglass_top_rounded
+                        : Icons.mic_rounded,
+                size: 17,
+                color: primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // Status text
+          Expanded(
+            child: Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                color: voiceMode == _CVoiceMode.listening && partial.isNotEmpty
+                    ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                    : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                fontStyle: voiceMode == _CVoiceMode.listening && partial.isEmpty
+                    ? FontStyle.italic
+                    : FontStyle.normal,
+              ),
+            ),
+          ),
+          // Stop button
+          GestureDetector(
+            onTap: onStop,
+            child: Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.redAccent.withOpacity(0.12),
+              ),
+              child: const Icon(Icons.close_rounded, size: 16, color: Colors.redAccent),
+            ),
+          ),
+        ],
       ),
     );
   }
