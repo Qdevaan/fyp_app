@@ -1,0 +1,40 @@
+FYP Presentation Notes: "Bubbles" - AI Wingman & Consultant
+===========================================================
+
+1. Key Points & Core Concept
+----------------------------
+*   **Project Name:** Bubbles
+*   **Elevator Pitch:** An intelligent "Wingman" and "Consultant" app that listens to your conversations in real-time to provide strategic advice, and remembers everything to give detailed guidance later.
+*   **Dual-AI System:**
+    *   **The Wingman (Real-Time):** Uses a fast AI model (Llama 3 8B) to give instant, short, strategic advice during conversations (e.g., dates, negotiations). It listens to the "Other" person and guides you.
+    *   **The Consultant (Deep Dive):** Uses a powerful AI model (Llama 3 70B) for detailed Q&A. It has "Long-Term Memory" (Vector Store) and a "Knowledge Graph" (Fact Network) to understand your specific context.
+*   **Tech Stack:**
+    *   **Frontend:** Flutter (Cross-platform mobile app).
+    *   **Backend:** Python (FastAPI) handling AI logic.
+    *   **Real-time:** LiveKit (Audio streaming) + Deepgram (Transcription/Diarization).
+    *   **Brain:** Groq (Ultra-fast AI inference) + Supabase (Database & Vectors).
+
+2. What We Have Done (Achievements)
+-----------------------------------
+*   **Full App Architecture:** Built a modern Flutter app with authentication (Supabase), routing, and a polished UI (Animations, Themes).
+*   **Backend "Brain":** Developed a Python FastAPI server that:
+    *   Manages **Knowledge Graphs** (using NetworkX) to track relationships and facts about people/topics.
+    *   Manages **Vector Memory** (using SentenceTransformers) to recall past conversations.
+    *   Integrates **Groq** for high-speed AI responses.
+*   **Real-Time Pipeline:** Implemented the logic for audio streaming and "Wingman" advice generation.
+*   **Consultant Mode:** Created the logic for the detailed Q&A system that retrieves history and facts before answering.
+*   **UI Implementation:** Completed key screens: Login, Home, Sessions, Connections, and Consultant Chat.
+
+3. What We Need To Do (Next Steps)
+----------------------------------
+*   **Server Deployment:** Move the backend from a local Tunnel (Ngrok) to a cloud provider (AWS/GCP/Render) for 24/7 availability.
+*   **End-to-End Integration Testing:** rigorously test the "Latency" of the Wingman mode. Ensure advice arrives in < 2 seconds.
+*   **Custom Diarization:** Researching/Implementing custom Speaker Diarization to replace or optimize Deepgram, ensuring we perfectly distinguish "User" vs "Speaker".
+*   **Offline Mode:** explore caching strategies for when internet is poor.
+
+4. Improvements & Challenges
+----------------------------
+*   **Latency Reduction:** Real-time advice needs to be faster. We are optimizing the "Speech-to-Text -> LLM -> Text-to-Speech" pipeline.
+*   **Context Accuracy:** Refining the "Knowledge Graph" updates so the AI doesn't hallucinate facts.
+*   **Privacy & Security:** Ensuring voice data is processed securely and not stored unnecessarily.
+*   **Battery Life:** Optimizing the real-time audio processing to consume less battery on the mobile device.
