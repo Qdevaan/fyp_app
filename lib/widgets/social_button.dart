@@ -42,14 +42,20 @@ class SocialButton extends StatelessWidget {
               if (imagePath != null)
                 Image.asset(imagePath!, height: 22, width: 22)
               else if (icon != null)
-                Icon(icon, size: 22, color: isDark ? Colors.white : Colors.black87),
+                Icon(
+                  icon,
+                  size: 22,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               const SizedBox(width: 10),
               Text(
                 label,
                 style: GoogleFonts.manrope(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF475569),
+                  color: isDark
+                      ? const Color(0xFFE2E8F0)
+                      : const Color(0xFF475569),
                 ),
               ),
             ],

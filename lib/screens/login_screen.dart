@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -33,7 +33,9 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         if (!_isEmailLoading && mounted) {
           Navigator.pushReplacementNamed(context, '/home');
@@ -98,7 +100,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isEmailLoading = true);
     try {
-      await _authService.signInWithEmail(_emailCtrl.text.trim(), _passCtrl.text);
+      await _authService.signInWithEmail(
+        _emailCtrl.text.trim(),
+        _passCtrl.text,
+      );
       if (mounted) {
         await _showThemeSelectionDialog();
         if (mounted) {
@@ -128,9 +133,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) setState(() => _isGoogleLoading = false);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign in failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Google Sign in failed: $e')));
         setState(() => _isGoogleLoading = false);
       }
     }
@@ -180,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 60),
 
-                    // Header â€” Logo + Title
+                    // Header — Logo + Title
                     Column(
                       children: [
                         const AppLogo(size: 80),
@@ -190,7 +195,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.manrope(
                             fontSize: 30,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -199,7 +206,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.manrope(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                           ),
                         ),
                       ],
@@ -214,7 +223,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icons.email_outlined,
                       type: TextInputType.emailAddress,
                       hintText: 'Enter your email',
-                      validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
+                      validator: (v) =>
+                          v != null && v.contains('@') ? null : 'Invalid email',
                     ),
                     const SizedBox(height: 18),
 
@@ -226,13 +236,18 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.only(left: 4, bottom: 8),
+                              padding: const EdgeInsets.only(
+                                left: 4,
+                                bottom: 8,
+                              ),
                               child: Text(
                                 'Password',
                                 style: GoogleFonts.manrope(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                                  color: isDark
+                                      ? const Color(0xFFCBD5E1)
+                                      : const Color(0xFF475569),
                                 ),
                               ),
                             ),
@@ -245,7 +260,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -258,7 +275,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icons.lock_outline,
                           obscure: true,
                           hintText: 'Enter your password',
-                          validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
+                          validator: (v) => v != null && v.length >= 6
+                              ? null
+                              : 'Min 6 characters',
                         ),
                       ],
                     ),
@@ -281,7 +300,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Expanded(
                           child: Divider(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
                           ),
                         ),
                         Padding(
@@ -290,13 +311,17 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Or continue with',
                             style: GoogleFonts.manrope(
                               fontSize: 12,
-                              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                              color: isDark
+                                  ? const Color(0xFF64748B)
+                                  : const Color(0xFF94A3B8),
                             ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
-                            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                            color: isDark
+                                ? const Color(0xFF334155)
+                                : const Color(0xFFE2E8F0),
                           ),
                         ),
                       ],
@@ -322,7 +347,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           'New to Bubbles? ',
                           style: GoogleFonts.manrope(
                             fontSize: 14,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                           ),
                         ),
                         GestureDetector(

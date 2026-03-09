@@ -9,9 +9,9 @@ class AppCard extends StatelessWidget {
   final Duration delay;
 
   const AppCard({
-    super.key, 
-    required this.child, 
-    this.padding = const EdgeInsets.all(16), 
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
     this.onTap,
     this.delay = Duration.zero,
   });
@@ -33,4 +33,3 @@ class AppCard extends StatelessWidget {
     );
   }
 }
-

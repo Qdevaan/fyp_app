@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/design_tokens.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -24,8 +25,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _startInitialization() async {
     // Short delay to let the UI render first
-    await Future.delayed(const Duration(milliseconds: 500));
-    
+    await Future.delayed(AppDurations.normal);
+
     if (mounted) {
       setState(() {
         _progress = 0.3;
@@ -82,7 +83,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
     if (deniedPermissions.isNotEmpty) {
       final result = await deniedPermissions.request();
-      final hasPermanentlyDenied = result.values.any((status) => status.isPermanentlyDenied);
+      final hasPermanentlyDenied = result.values.any(
+        (status) => status.isPermanentlyDenied,
+      );
 
       if (hasPermanentlyDenied && mounted) {
         await _showSettingsDialog(
@@ -101,7 +104,8 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!hasConnection && mounted) {
       await _showSettingsDialog(
         title: 'No Connectivity',
-        message: 'Internet is not available. Please enable Wi-Fi or mobile data.',
+        message:
+            'Internet is not available. Please enable Wi-Fi or mobile data.',
       );
     }
   }
@@ -111,12 +115,12 @@ class _SplashScreenState extends State<SplashScreen> {
     _targetRoute = session != null ? '/home' : '/login';
 
     // Simulate extra loading time for visual effect (optional)
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(AppDurations.normal);
   }
 
   void _onLoadingComplete() {
     if (!mounted || _targetRoute == null || _hasNavigated) return;
-    
+
     _hasNavigated = true;
     // Once the bar finishes filling to 1.0, navigate
     Navigator.of(context).pushReplacementNamed(_targetRoute!);
@@ -163,11 +167,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset(
-              logoPath,
-              width: 112,
-              height: 112,
-            ),
+            Image.asset(logoPath, width: 112, height: 112),
             const SizedBox(height: 24),
             SizedBox(
               width: 180,
@@ -175,12 +175,9 @@ class _SplashScreenState extends State<SplashScreen> {
                 borderRadius: BorderRadius.circular(8),
                 child: TweenAnimationBuilder<double>(
                   tween: Tween<double>(begin: 0.0, end: _progress),
-                  duration: const Duration(milliseconds: 500),
+                  duration: AppDurations.normal,
                   builder: (context, value, _) {
-                    return LinearProgressIndicator(
-                      value: value,
-                      minHeight: 6,
-                    );
+                    return LinearProgressIndicator(value: value, minHeight: 6);
                   },
                   onEnd: () {
                     if (_progress == 1.0) {

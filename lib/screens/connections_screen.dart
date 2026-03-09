@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -35,11 +35,17 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     if (mounted) {
       if (service.isConnected) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("âœ… Connected to Brain!"), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text("✅ Connected to Brain!"),
+            backgroundColor: Colors.green,
+          ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("âŒ Connection Failed. Check URL."), backgroundColor: Colors.red),
+          const SnackBar(
+            content: Text("❌ Connection Failed. Check URL."),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -54,7 +60,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
       backgroundColor: Colors.black,
       builder: (ctx) => Scaffold(
         appBar: AppBar(
-          title: Text("Scan Server QR", style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+          title: Text(
+            "Scan Server QR",
+            style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+          ),
           backgroundColor: AppColors.surfaceDark,
           leading: IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
@@ -89,22 +98,31 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final connectionService = Provider.of<ConnectionService>(context);
     final isConnected = connectionService.isConnected;
-    final isConnecting = connectionService.status == ConnectionStatus.connecting;
+    final isConnecting =
+        connectionService.status == ConnectionStatus.connecting;
     final primary = Theme.of(context).colorScheme.primary;
     final serverUrl = connectionService.serverUrl;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
-            // ── Header (matches HTML: back arrow + title) ──────────────
+            // -- Header (matches HTML: back arrow + title) --------------
             Container(
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
+                color:
+                    (isDark
+                            ? AppColors.backgroundDark
+                            : AppColors.backgroundLight)
+                        .withOpacity(0.9),
                 border: Border(
                   bottom: BorderSide(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
               ),
@@ -132,7 +150,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
               ),
             ),
 
-            // ── Content ────────────────────────────────────────────────
+            // -- Content ------------------------------------------------
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
@@ -141,7 +159,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                   children: [
                     const SizedBox(height: 8),
 
-                    // ── Status Card (matches HTML centered layout with glow) ──
+                    // -- Status Card (matches HTML centered layout with glow) --
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -150,7 +168,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                             : Colors.white.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                         border: Border.all(
-                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          color: isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0),
                         ),
                       ),
                       child: Column(
@@ -179,13 +199,19 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                       ? AppColors.success.withOpacity(0.1)
                                       : AppColors.error.withOpacity(0.08),
                                   border: Border.all(
-                                    color: isConnected ? AppColors.success : AppColors.error,
+                                    color: isConnected
+                                        ? AppColors.success
+                                        : AppColors.error,
                                     width: 2,
                                   ),
                                 ),
                                 child: Icon(
-                                  isConnected ? Icons.wifi_rounded : Icons.wifi_off_rounded,
-                                  color: isConnected ? AppColors.success : AppColors.error,
+                                  isConnected
+                                      ? Icons.wifi_rounded
+                                      : Icons.wifi_off_rounded,
+                                  color: isConnected
+                                      ? AppColors.success
+                                      : AppColors.error,
                                   size: 36,
                                 ),
                               ),
@@ -193,11 +219,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            isConnected ? 'Connected to Brain' : 'Not Connected',
+                            isConnected
+                                ? 'Connected to Brain'
+                                : 'Not Connected',
                             style: GoogleFonts.manrope(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: isDark ? Colors.white : const Color(0xFF0F172A),
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF0F172A),
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -214,12 +244,17 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           const SizedBox(height: 12),
                           // Status badge with pulse dot
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
                               color: isConnected
                                   ? AppColors.success.withOpacity(0.1)
                                   : AppColors.error.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(AppRadius.full),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.full,
+                              ),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -237,11 +272,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                   ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  isConnected ? 'Status: Active' : 'Status: Offline',
+                                  isConnected
+                                      ? 'Status: Active'
+                                      : 'Status: Offline',
                                   style: GoogleFonts.manrope(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: isConnected ? AppColors.success : AppColors.error,
+                                    color: isConnected
+                                        ? AppColors.success
+                                        : AppColors.error,
                                   ),
                                 ),
                               ],
@@ -258,10 +297,17 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                 },
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: AppColors.error,
-                                  side: const BorderSide(color: AppColors.error, width: 1.5),
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  side: const BorderSide(
+                                    color: AppColors.error,
+                                    width: 1.5,
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.lg,
+                                    ),
                                   ),
                                 ),
                                 child: Text(
@@ -279,7 +325,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── Server URL Input ───────────────────────────────
+                    // -- Server URL Input -------------------------------
                     Padding(
                       padding: const EdgeInsets.only(left: 4, bottom: 8),
                       child: Text(
@@ -287,7 +333,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                         style: GoogleFonts.manrope(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ),
@@ -298,7 +346,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                             : Colors.white.withOpacity(0.7),
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         border: Border.all(
-                          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                          color: isDark
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFE2E8F0),
                         ),
                       ),
                       child: Row(
@@ -306,7 +356,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           const SizedBox(width: 16),
                           Icon(
                             Icons.dns_rounded,
-                            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                            color: isDark
+                                ? const Color(0xFF64748B)
+                                : const Color(0xFF94A3B8),
                             size: 20,
                           ),
                           Expanded(
@@ -314,7 +366,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                               controller: _urlController,
                               style: GoogleFonts.manrope(
                                 fontSize: 14,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                               ),
                               decoration: InputDecoration(
                                 hintText: 'https://xxxx.ngrok-free.app',
@@ -337,7 +391,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
                     const SizedBox(height: 16),
 
-                    // ── 2-column action buttons (matches HTML grid) ────
+                    // -- 2-column action buttons (matches HTML grid) ----
                     Row(
                       children: [
                         Expanded(
@@ -363,7 +417,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── How to connect? Collapsible section ────────────
+                    // -- How to connect? Collapsible section ------------
                     _HowToConnectSection(isDark: isDark, primary: primary),
 
                     const SizedBox(height: 30),
@@ -378,7 +432,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
   }
 }
 
-// ── Helper Widgets ─────────────────────────────────────────────────────────
+// -- Helper Widgets ---------------------------------------------------------
 
 class _PulseDot extends StatefulWidget {
   final Color color;
@@ -387,15 +441,18 @@ class _PulseDot extends StatefulWidget {
   State<_PulseDot> createState() => __PulseDotState();
 }
 
-class __PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMixin {
+class __PulseDotState extends State<_PulseDot>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(seconds: 1))
-      ..repeat(reverse: true);
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
     _anim = Tween(begin: 0.4, end: 1.0).animate(_ctrl);
   }
 
@@ -407,13 +464,13 @@ class __PulseDotState extends State<_PulseDot> with SingleTickerProviderStateMix
 
   @override
   Widget build(BuildContext context) => FadeTransition(
-        opacity: _anim,
-        child: Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color),
-        ),
-      );
+    opacity: _anim,
+    child: Container(
+      width: 8,
+      height: 8,
+      decoration: BoxDecoration(shape: BoxShape.circle, color: widget.color),
+    ),
+  );
 }
 
 class _ActionButton extends StatelessWidget {
@@ -461,7 +518,9 @@ class _ActionButton extends StatelessWidget {
                   Icon(
                     icon,
                     size: 20,
-                    color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                    color: isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF475569),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -469,7 +528,9 @@ class _ActionButton extends StatelessWidget {
                     style: GoogleFonts.manrope(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+                      color: isDark
+                          ? const Color(0xFFCBD5E1)
+                          : const Color(0xFF475569),
                     ),
                   ),
                 ],
@@ -492,9 +553,18 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
   bool _expanded = false;
 
   static const _steps = [
-    ('1', 'Ensure your Brain Server is powered on and connected to the same local network as this device.'),
-    ('2', 'Enter the server\'s local URL or find the QR code in your server dashboard settings.'),
-    ('3', 'Tap \'Test Connection\' to verify the pairing. Once successful, status will turn green.'),
+    (
+      '1',
+      'Ensure your Brain Server is powered on and connected to the same local network as this device.',
+    ),
+    (
+      '2',
+      'Enter the server\'s local URL or find the QR code in your server dashboard settings.',
+    ),
+    (
+      '3',
+      'Tap \'Test Connection\' to verify the pairing. Once successful, status will turn green.',
+    ),
   ];
 
   @override
@@ -519,7 +589,11 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Icon(Icons.help_outline_rounded, color: widget.primary, size: 20),
+                  Icon(
+                    Icons.help_outline_rounded,
+                    color: widget.primary,
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -536,7 +610,9 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
                     duration: const Duration(milliseconds: 200),
                     child: Icon(
                       Icons.expand_more_rounded,
-                      color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B),
                     ),
                   ),
                 ],
@@ -548,7 +624,9 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
               decoration: BoxDecoration(
                 border: Border(
                   top: BorderSide(
-                    color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF334155)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
               ),

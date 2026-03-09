@@ -8,7 +8,7 @@ class LiveKitService extends ChangeNotifier {
   ApiService _apiService;
   Room? _room;
   EventsListener<RoomEvent>? _listener;
-  
+
   bool _isConnected = false;
   bool get isConnected => _isConnected;
 
@@ -59,28 +59,29 @@ class LiveKitService extends ChangeNotifier {
         try {
           final String dataStr = utf8.decode(event.data);
           final Map<String, dynamic> data = jsonDecode(dataStr);
-          
+
           if (data['type'] == 'transcript') {
             final String text = data['text'];
             final bool isFinal = data['is_final'] ?? false;
             final String speaker = data['speaker'] ?? "user";
-            
-            debugPrint("TRANSCRIPT: $text (Final: $isFinal, Speaker: $speaker)");
-            
+
+            debugPrint(
+              "TRANSCRIPT: $text (Final: $isFinal, Speaker: $speaker)",
+            );
+
             _currentTranscript = text;
             _currentSpeaker = speaker;
             notifyListeners();
           } else if (data['type'] == 'assistant_response') {
-             final String text = data['text'];
-             debugPrint("ADVICE: $text");
-             _currentAdvice = text;
-             notifyListeners();
+            final String text = data['text'];
+            debugPrint("ADVICE: $text");
+            _currentAdvice = text;
+            notifyListeners();
           }
         } catch (e) {
           debugPrint("Error parsing data: $e");
         }
       });
-
     } catch (e) {
       debugPrint("LiveKit Connection Error: $e");
       _isConnected = false;
@@ -104,4 +105,3 @@ class LiveKitService extends ChangeNotifier {
     super.dispose();
   }
 }
-

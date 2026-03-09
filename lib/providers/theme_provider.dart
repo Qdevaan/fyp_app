@@ -54,17 +54,18 @@ class ThemeProvider extends ChangeNotifier {
         bodyColor: Colors.black87,
         displayColor: Colors.black87,
       ),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _seedColor,
-        brightness: Brightness.light,
-      ).copyWith(
-        primary: _seedColor,
-        onPrimary: Colors.white,
-        secondary: _seedColor,
-        onSecondary: Colors.white,
-        surface: AppColors.surfaceLight,
-        onSurface: const Color(0xFF0F172A),
-      ),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: _seedColor,
+            brightness: Brightness.light,
+          ).copyWith(
+            primary: _seedColor,
+            onPrimary: Colors.white,
+            secondary: _seedColor,
+            onSecondary: Colors.white,
+            surface: AppColors.surfaceLight,
+            onSurface: const Color(0xFF0F172A),
+          ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.backgroundLight,
@@ -88,7 +89,10 @@ class ThemeProvider extends ChangeNotifier {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: Colors.grey.shade200),
@@ -111,7 +115,10 @@ class ThemeProvider extends ChangeNotifier {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 15),
+          textStyle: GoogleFonts.manrope(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
         ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
@@ -132,17 +139,18 @@ class ThemeProvider extends ChangeNotifier {
         bodyColor: const Color(0xFFE2E8F0),
         displayColor: const Color(0xFFE2E8F0),
       ),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _seedColor,
-        brightness: Brightness.dark,
-      ).copyWith(
-        primary: _seedColor,
-        onPrimary: Colors.white,
-        secondary: _seedColor,
-        onSecondary: Colors.white,
-        surface: AppColors.surfaceDark,
-        onSurface: const Color(0xFFE2E8F0),
-      ),
+      colorScheme:
+          ColorScheme.fromSeed(
+            seedColor: _seedColor,
+            brightness: Brightness.dark,
+          ).copyWith(
+            primary: _seedColor,
+            onPrimary: Colors.white,
+            secondary: _seedColor,
+            onSecondary: Colors.white,
+            surface: AppColors.surfaceDark,
+            onSurface: const Color(0xFFE2E8F0),
+          ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.backgroundDark,
@@ -166,7 +174,10 @@ class ThemeProvider extends ChangeNotifier {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceDark,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
@@ -189,7 +200,10 @@ class ThemeProvider extends ChangeNotifier {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
-          textStyle: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 15),
+          textStyle: GoogleFonts.manrope(
+            fontWeight: FontWeight.w700,
+            fontSize: 15,
+          ),
         ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(

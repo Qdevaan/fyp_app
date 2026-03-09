@@ -10,7 +10,8 @@ import 'package:web_socket_channel/io.dart';
 class DeepgramService extends ChangeNotifier {
   // CONFIG — loaded from environment variables
   static String get _apiKey => dotenv.env['DEEPGRAM_API_KEY'] ?? '';
-  static const String _wsUrl = "wss://api.deepgram.com/v1/listen?smart_format=true&diarize=true&model=nova-2";
+  static const String _wsUrl =
+      "wss://api.deepgram.com/v1/listen?smart_format=true&diarize=true&model=nova-2";
 
   // STATE
   bool _isConnected = false;
@@ -57,7 +58,7 @@ class DeepgramService extends ChangeNotifier {
       // Using AAC LC which is generally supported for streaming
       final stream = await _recorder.startStream(
         const RecordConfig(
-          encoder: AudioEncoder.aacLc, 
+          encoder: AudioEncoder.pcm16bits,
           sampleRate: 16000,
           numChannels: 1,
         ),
@@ -84,7 +85,6 @@ class DeepgramService extends ChangeNotifier {
           disconnect();
         },
       );
-
     } catch (e) {
       debugPrint("❌ DeepgramService: Connection Failed: $e");
       disconnect();
@@ -94,29 +94,31 @@ class DeepgramService extends ChangeNotifier {
   void _handleMessage(dynamic message) {
     try {
       final data = jsonDecode(message);
-      
+
       // Check if it's a transcript
       if (data['type'] == 'Results') {
-         final channel = data['channel'];
-         final alternatives = channel['alternatives'] as List;
-         if (alternatives.isNotEmpty) {
-           final alt = alternatives[0];
-           final transcript = alt['transcript'] as String;
-           
-           if (transcript.trim().isNotEmpty && data['is_final'] == true) {
-             // Extract Speaker
-             int speakerId = 0;
-             if (alt['words'] != null && (alt['words'] as List).isNotEmpty) {
-               speakerId = alt['words'][0]['speaker'];
-             }
-             
-             _currentTranscript = transcript;
-             _currentSpeaker = speakerId == 0 ? "user" : "other"; // Simple mapping
-             
-             debugPrint("🗣️ Deepgram: [$_currentSpeaker] $transcript");
-             notifyListeners();
-           }
-         }
+        final channel = data['channel'];
+        final alternatives = channel['alternatives'] as List;
+        if (alternatives.isNotEmpty) {
+          final alt = alternatives[0];
+          final transcript = alt['transcript'] as String;
+
+          if (transcript.trim().isNotEmpty && data['is_final'] == true) {
+            // Extract Speaker
+            int speakerId = 0;
+            if (alt['words'] != null && (alt['words'] as List).isNotEmpty) {
+              speakerId = alt['words'][0]['speaker'];
+            }
+
+            _currentTranscript = transcript;
+            _currentSpeaker = speakerId == 0
+                ? "user"
+                : "other"; // Simple mapping
+
+            debugPrint("🗣️ Deepgram: [$_currentSpeaker] $transcript");
+            notifyListeners();
+          }
+        }
       }
     } catch (e) {
       debugPrint("Error parsing Deepgram message: $e");
@@ -131,7 +133,7 @@ class DeepgramService extends ChangeNotifier {
     _audioStreamSubscription = null;
 
     await _recorder.stop();
-    
+
     await _channel?.sink.close();
     _channel = null;
   }

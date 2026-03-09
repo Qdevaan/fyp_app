@@ -23,6 +23,8 @@ import 'screens/new_session_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/entity_screen.dart';
+import 'widgets/auth_guard.dart';
+import 'routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,7 +48,8 @@ Future<void> main() async {
 }
 
 class BubblesApp extends StatelessWidget {
-  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+  static final GlobalKey<NavigatorState> navigatorKey =
+      GlobalKey<NavigatorState>();
 
   const BubblesApp({super.key});
 
@@ -103,28 +106,12 @@ class BubblesApp extends StatelessWidget {
             themeMode: themeProvider.themeMode,
 
             // Light Theme Configuration
-            theme: themeProvider.lightTheme.copyWith(
-              pageTransitionsTheme: const PageTransitionsTheme(
-                builders: {
-                  TargetPlatform.android: ZoomPageTransitionsBuilder(),
-                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                  TargetPlatform.windows: ZoomPageTransitionsBuilder(),
-                },
-              ),
-            ),
+            theme: themeProvider.lightTheme,
 
             // Dark Theme Configuration
-            darkTheme: themeProvider.darkTheme.copyWith(
-              pageTransitionsTheme: const PageTransitionsTheme(
-                builders: {
-                  TargetPlatform.android: ZoomPageTransitionsBuilder(),
-                  TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-                  TargetPlatform.windows: ZoomPageTransitionsBuilder(),
-                },
-              ),
-            ),
+            darkTheme: themeProvider.darkTheme,
 
-            // The AuthGate manages the root state (Login -> App)
+            // The root screen
             home: const SplashScreen(),
 
             // Global builder: adds VoiceOverlay on all routes except /settings
@@ -134,7 +121,7 @@ class BubblesApp extends StatelessWidget {
 
             // Custom routes with animations for specific ones
             onGenerateRoute: (settings) {
-              if (settings.name == '/settings') {
+              if (settings.name == AppRoutes.settings) {
                 return PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       const SettingsScreen(),
@@ -154,7 +141,7 @@ class BubblesApp extends StatelessWidget {
                         );
                       },
                 );
-              } else if (settings.name == '/entities') {
+              } else if (settings.name == AppRoutes.entities) {
                 return PageRouteBuilder(
                   pageBuilder: (context, animation, secondaryAnimation) =>
                       const EntityScreen(),
@@ -180,18 +167,27 @@ class BubblesApp extends StatelessWidget {
 
             // Routes for manual navigation
             routes: {
-              '/login': (context) => const LoginScreen(),
-              '/signup': (context) => const SignupScreen(),
-              '/verify-email': (context) => const VerifyEmailScreen(),
-              '/profile-completion': (context) =>
-                  const ProfileCompletionScreen(),
-              '/home': (context) => const HomeScreen(),
-              '/connections': (context) => const ConnectionsScreen(),
-              '/new-session': (context) => const NewSessionScreen(),
-              '/consultant': (context) => const ConsultantScreen(),
-              '/sessions': (context) => const SessionsScreen(),
-              '/about': (context) => const AboutScreen(),
-              // Settings and Entities are handled in onGenerateRoute for custom transitions
+              AppRoutes.login: (context) =>
+                  const AuthGuard(requireAuth: false, child: LoginScreen()),
+              AppRoutes.signup: (context) =>
+                  const AuthGuard(requireAuth: false, child: SignupScreen()),
+              AppRoutes.verifyEmail: (context) => const AuthGuard(
+                requireAuth: false,
+                child: VerifyEmailScreen(),
+              ),
+              AppRoutes.profileCompletion: (context) =>
+                  const AuthGuard(child: ProfileCompletionScreen()),
+              AppRoutes.home: (context) => const AuthGuard(child: HomeScreen()),
+              AppRoutes.connections: (context) =>
+                  const AuthGuard(child: ConnectionsScreen()),
+              AppRoutes.newSession: (context) =>
+                  const AuthGuard(child: NewSessionScreen()),
+              AppRoutes.consultant: (context) =>
+                  const AuthGuard(child: ConsultantScreen()),
+              AppRoutes.sessions: (context) =>
+                  const AuthGuard(child: SessionsScreen()),
+              AppRoutes.about: (context) =>
+                  const AuthGuard(child: AboutScreen()),
             },
           );
         },
@@ -219,28 +215,3 @@ class _VoiceOverlayWrapper extends StatelessWidget {
 
 /// The Gatekeeper Widget
 /// Dynamically switches between Login and Home based on auth state.
-class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<AuthState>(
-      stream: Supabase.instance.client.auth.onAuthStateChange,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final session = snapshot.data?.session;
-
-        if (session != null) {
-          return const HomeScreen();
-        } else {
-          return const LoginScreen();
-        }
-      },
-    );
-  }
-}

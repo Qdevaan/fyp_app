@@ -19,11 +19,11 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final AuthService _authService = AuthService.instance;
   final _formKey = GlobalKey<FormState>();
-  
+
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
-  
+
   bool _isEmailLoading = false;
   bool _isGoogleLoading = false;
   late final StreamSubscription<AuthState> _authSubscription;
@@ -31,7 +31,9 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void initState() {
     super.initState();
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
+      data,
+    ) {
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         if (!_isEmailLoading && mounted) {
           Navigator.pushReplacementNamed(context, '/home');
@@ -54,7 +56,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
     setState(() => _isEmailLoading = true);
     try {
-      await _authService.signUpWithEmail(_emailCtrl.text.trim(), _passCtrl.text);
+      await _authService.signUpWithEmail(
+        _emailCtrl.text.trim(),
+        _passCtrl.text,
+      );
       if (!mounted) return;
       Navigator.pushNamed(context, '/verify-email');
     } catch (e) {
@@ -63,7 +68,7 @@ class _SignupScreenState extends State<SignupScreen> {
           content: Text(e.toString().replaceAll('Exception:', '').trim()),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
-        )
+        ),
       );
     } finally {
       if (mounted) setState(() => _isEmailLoading = false);
@@ -78,9 +83,9 @@ class _SignupScreenState extends State<SignupScreen> {
       if (mounted) setState(() => _isGoogleLoading = false);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign up failed: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Google Sign up failed: $e')));
         setState(() => _isGoogleLoading = false);
       }
     }
@@ -128,7 +133,10 @@ class _SignupScreenState extends State<SignupScreen> {
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     padding: const EdgeInsets.only(left: 16, top: 16),
-                    icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: theme.colorScheme.onSurface,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
@@ -152,7 +160,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                 style: GoogleFonts.manrope(
                                   fontSize: 30,
                                   fontWeight: FontWeight.w800,
-                                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                  color: isDark
+                                      ? Colors.white
+                                      : const Color(0xFF0F172A),
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -161,7 +171,9 @@ class _SignupScreenState extends State<SignupScreen> {
                                 style: GoogleFonts.manrope(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
-                                  color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                                  color: isDark
+                                      ? const Color(0xFF94A3B8)
+                                      : const Color(0xFF64748B),
                                 ),
                               ),
                             ],
@@ -176,27 +188,33 @@ class _SignupScreenState extends State<SignupScreen> {
                             prefixIcon: Icons.email_outlined,
                             type: TextInputType.emailAddress,
                             hintText: 'Enter your email',
-                            validator: (v) => v != null && v.contains('@') ? null : 'Invalid email',
+                            validator: (v) => v != null && v.contains('@')
+                                ? null
+                                : 'Invalid email',
                           ),
                           const SizedBox(height: 16),
-                          
+
                           AppInput(
                             controller: _passCtrl,
                             label: 'Password',
                             prefixIcon: Icons.lock_outline,
                             hintText: 'Enter your password',
                             obscure: true,
-                            validator: (v) => v != null && v.length >= 6 ? null : 'Min 6 characters',
+                            validator: (v) => v != null && v.length >= 6
+                                ? null
+                                : 'Min 6 characters',
                           ),
                           const SizedBox(height: 16),
-                          
+
                           AppInput(
                             controller: _confirmPassCtrl,
                             label: 'Confirm Password',
                             prefixIcon: Icons.lock_reset,
                             hintText: 'Re-enter your password',
                             obscure: true,
-                            validator: (v) => v == _passCtrl.text ? null : 'Passwords do not match',
+                            validator: (v) => v == _passCtrl.text
+                                ? null
+                                : 'Passwords do not match',
                           ),
 
                           const SizedBox(height: 32),
@@ -208,28 +226,44 @@ class _SignupScreenState extends State<SignupScreen> {
                             loading: _isEmailLoading,
                           ),
                           const SizedBox(height: 24),
-                          
+
                           // Divider
                           Row(
                             children: [
-                              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                              Expanded(
+                                child: Divider(
+                                  color: isDark
+                                      ? Colors.white24
+                                      : Colors.black12,
+                                ),
+                              ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: Text(
                                   'OR',
                                   style: GoogleFonts.manrope(
-                                    color: isDark ? Colors.white70 : Colors.black54,
+                                    color: isDark
+                                        ? Colors.white70
+                                        : Colors.black54,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
-                              Expanded(child: Divider(color: isDark ? Colors.white24 : Colors.black12)),
+                              Expanded(
+                                child: Divider(
+                                  color: isDark
+                                      ? Colors.white24
+                                      : Colors.black12,
+                                ),
+                              ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 24),
-                          
+
                           SocialButton(
                             label: 'Continue with Google',
                             imagePath: 'assets/logos/google_logo.png',
@@ -237,23 +271,28 @@ class _SignupScreenState extends State<SignupScreen> {
                             loading: _isGoogleLoading,
                           ),
                           const SizedBox(height: 20),
-                          // Footer 
+                          // Footer
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 'Already have an account?',
                                 style: GoogleFonts.manrope(
-                                  color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF64748B),
+                                  color: isDark
+                                      ? const Color(0xFFCBD5E1)
+                                      : const Color(0xFF64748B),
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                  ),
                                   minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
                                   'Log In',
@@ -265,7 +304,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                             ],
                           ),
-                          
+
                           // Bottom spacing for keyboard/scroll
                           const SizedBox(height: 20),
                         ],

@@ -318,8 +318,7 @@ class VoiceEnrollmentSection extends StatefulWidget {
   const VoiceEnrollmentSection({required this.isDark});
 
   @override
-  State<VoiceEnrollmentSection> createState() =>
-      VoiceEnrollmentSectionState();
+  State<VoiceEnrollmentSection> createState() => VoiceEnrollmentSectionState();
 }
 
 class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {

@@ -1,4 +1,4 @@
-Ôªøimport 'dart:async';
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -87,7 +87,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
             final role = record['role'] as String?;
             final content = record['content'] as String?;
             if (role == 'llm' && content != null && content.isNotEmpty) {
-              // Response received ‚Äî cancel the timeout and clear any lost state
+              // Response received ó cancel the timeout and clear any lost state
               _realtimeTimeoutTimer?.cancel();
               setState(() {
                 _currentSuggestion = content;
@@ -144,7 +144,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
         speakerRole: 'others',
       );
 
-      // Start a 30-second watchdog ‚Äî if no LLM row arrives, show a recovery UI
+      // Start a 30-second watchdog ó if no LLM row arrives, show a recovery UI
       _realtimeTimeoutTimer?.cancel();
       _realtimeTimeoutTimer = Timer(const Duration(seconds: 30), () {
         if (mounted && _currentSuggestion == "Thinking...") {
@@ -227,7 +227,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
       if (sid != null) {
         _sessionId = sid;
         _subscribeToLiveSuggestions(sid);
-        debugPrint('üéôÔ∏è Live session created: $sid');
+        debugPrint('??? Live session created: $sid');
       }
 
       await deepgram.connect();
@@ -457,7 +457,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
                   ] else
                     const SizedBox(height: 20),
 
-                  // START Button ‚Äî greyed out when offline
+                  // START Button ó greyed out when offline
                   GestureDetector(
                     onTap: isServerOnline ? _toggleSession : () {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -713,7 +713,7 @@ class _NewSessionScreenState extends State<NewSessionScreen> with TickerProvider
   }
 
   Widget _buildAdviceContent(bool isDark) {
-    // Realtime connection was lost ‚Äî show error state with retry
+    // Realtime connection was lost ó show error state with retry
     if (_realtimeLost) {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -863,3 +863,4 @@ class _CheckItem extends StatelessWidget {
     );
   }
 }
+

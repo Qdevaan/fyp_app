@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
 
@@ -27,7 +27,9 @@ class ChatBubble extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
         decoration: BoxDecoration(
           color: isUser
               ? (isDark ? Colors.transparent : Colors.transparent)
@@ -39,7 +41,11 @@ class ChatBubble extends StatelessWidget {
             bottomRight: const Radius.circular(18),
           ),
           border: isUser
-              ? Border.all(color: isDark ? const Color(0xFF334155) : Colors.grey.shade300)
+              ? Border.all(
+                  color: isDark
+                      ? const Color(0xFF334155)
+                      : Colors.grey.shade300,
+                )
               : null,
         ),
         child: Column(
@@ -62,7 +68,9 @@ class ChatBubble extends StatelessWidget {
                 Text(
                   text,
                   style: GoogleFonts.manrope(
-                    color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A),
+                    color: isDark
+                        ? const Color(0xFFE2E8F0)
+                        : const Color(0xFF0F172A),
                     fontSize: 15,
                     height: 1.4,
                   ),
@@ -73,4 +81,3 @@ class ChatBubble extends StatelessWidget {
     );
   }
 }
-

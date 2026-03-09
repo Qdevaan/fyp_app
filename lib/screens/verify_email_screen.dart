@@ -19,23 +19,27 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   void _checkVerification() async {
     // Reload user to get latest metadata
     try {
-      // Note: Supabase user reload might be needed depending on implementation, 
+      // Note: Supabase user reload might be needed depending on implementation,
       // but accessing the property triggers a check on the current instance.
       // Ideally, you might want to call _authService.refreshSession() if available.
-      
+
       if (_authService.isEmailVerified) {
-        Navigator.of(context).pushNamedAndRemoveUntil('/profile-completion', (route) => false);
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil('/profile-completion', (route) => false);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Email not verified yet. Please check your inbox.'),
+            content: const Text(
+              'Email not verified yet. Please check your inbox.',
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
-       // handle error
+      // handle error
     }
   }
 
@@ -44,9 +48,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     try {
       final user = _authService.currentUser;
       if (user != null && user.email != null) {
-        await _authService.signUpWithEmail(user.email!, ''); // Trigger resend link
+        await _authService.resendVerificationEmail(user.email!);
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Verification email sent!'),
               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -76,17 +80,25 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
             // Consistent header
             Container(
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
+                color:
+                    (isDark
+                            ? AppColors.backgroundDark
+                            : AppColors.backgroundLight)
+                        .withOpacity(0.9),
                 border: Border(
                   bottom: BorderSide(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
               ),
@@ -116,7 +128,10 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
 
             Expanded(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -144,7 +159,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           style: GoogleFonts.manrope(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -155,7 +172,9 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             height: 1.6,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
                           ),
                         ),
                       ],

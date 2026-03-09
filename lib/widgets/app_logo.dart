@@ -4,11 +4,7 @@ class AppLogo extends StatelessWidget {
   final double size;
   final Color? fallbackColor;
 
-  const AppLogo({
-    super.key, 
-    this.size = 100,
-    this.fallbackColor,
-  });
+  const AppLogo({super.key, this.size = 100, this.fallbackColor});
 
   @override
   Widget build(BuildContext context) {
@@ -17,16 +13,14 @@ class AppLogo extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Image.asset(
-      isDarkMode 
-          ? 'assets/logos/logo_dark.png' 
-          : 'assets/logos/logo_light.png',
+      isDarkMode ? 'assets/logos/logo_dark.png' : 'assets/logos/logo_light.png',
       width: size,
       height: size,
       fit: BoxFit.contain,
       errorBuilder: (c, o, s) => Icon(
-        Icons.bubble_chart, 
-        size: size, 
-        color: fallbackColor ?? Theme.of(context).colorScheme.primary
+        Icons.bubble_chart,
+        size: size,
+        color: fallbackColor ?? Theme.of(context).colorScheme.primary,
       ),
     );
   }

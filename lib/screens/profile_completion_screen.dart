@@ -3,6 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../services/auth_service.dart';
 import '../widgets/app_button.dart';
@@ -14,17 +16,18 @@ class ProfileCompletionScreen extends StatefulWidget {
   const ProfileCompletionScreen({super.key});
 
   @override
-  State<ProfileCompletionScreen> createState() => _ProfileCompletionScreenState();
+  State<ProfileCompletionScreen> createState() =>
+      _ProfileCompletionScreenState();
 }
 
 class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   final _nameCtrl = TextEditingController();
-  final _countryCtrl = TextEditingController(); 
-  final _dobCtrl = TextEditingController(); 
-  
+  final _countryCtrl = TextEditingController();
+  final _dobCtrl = TextEditingController();
+
   DateTime? _dob;
   String? _gender;
-  
+
   File? _imageFile;
   String? _avatarUrl;
   bool _loading = false;
@@ -32,12 +35,48 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
 
   // Extensive list of countries
   static const List<String> _countries = [
-    'United States', 'United Kingdom', 'Canada', 'Australia', 'Pakistan', 'India', 
-    'Germany', 'France', 'Italy', 'Spain', 'Brazil', 'Mexico', 'Japan', 'South Korea',
-    'China', 'Russia', 'South Africa', 'Nigeria', 'Egypt', 'Saudi Arabia', 'UAE',
-    'Argentina', 'Netherlands', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Poland',
-    'Turkey', 'Indonesia', 'Thailand', 'Vietnam', 'Philippines', 'Malaysia', 'Singapore',
-    'New Zealand', 'Ireland', 'Portugal', 'Greece', 'Switzerland', 'Austria', 'Belgium'
+    'United States',
+    'United Kingdom',
+    'Canada',
+    'Australia',
+    'Pakistan',
+    'India',
+    'Germany',
+    'France',
+    'Italy',
+    'Spain',
+    'Brazil',
+    'Mexico',
+    'Japan',
+    'South Korea',
+    'China',
+    'Russia',
+    'South Africa',
+    'Nigeria',
+    'Egypt',
+    'Saudi Arabia',
+    'UAE',
+    'Argentina',
+    'Netherlands',
+    'Sweden',
+    'Norway',
+    'Denmark',
+    'Finland',
+    'Poland',
+    'Turkey',
+    'Indonesia',
+    'Thailand',
+    'Vietnam',
+    'Philippines',
+    'Malaysia',
+    'Singapore',
+    'New Zealand',
+    'Ireland',
+    'Portugal',
+    'Greece',
+    'Switzerland',
+    'Austria',
+    'Belgium',
   ];
 
   @override
@@ -58,13 +97,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         _countryCtrl.text = profile['country'] ?? '';
         _gender = profile['gender'];
         _avatarUrl = profile['avatar_url'];
-        
+
         if (profile['dob'] != null) {
           _dob = DateTime.parse(profile['dob']);
           _dobCtrl.text = "${_dob!.day}/${_dob!.month}/${_dob!.year}";
         }
-      } 
-      
+      }
+
       if (_nameCtrl.text.isEmpty) {
         final metaName = user.userMetadata?['full_name'];
         if (metaName != null) _nameCtrl.text = metaName;
@@ -73,7 +112,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         final metaAvatar = user.userMetadata?['avatar_url'];
         if (metaAvatar != null) _avatarUrl = metaAvatar;
       }
-
     } catch (e) {
       debugPrint("Error loading profile: $e");
     } finally {
@@ -94,7 +132,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   Future<void> _selectDate() async {
     final now = DateTime.now();
     final initialDate = DateTime(2000);
-    
+
     final picked = await showDatePicker(
       context: context,
       initialDate: _dob ?? initialDate,
@@ -132,9 +170,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         String searchQuery = '';
         return StatefulBuilder(
           builder: (context, setModalState) {
-            final filteredCountries = _countries.where((country) => 
-              country.toLowerCase().contains(searchQuery.toLowerCase())
-            ).toList();
+            final filteredCountries = _countries
+                .where(
+                  (country) =>
+                      country.toLowerCase().contains(searchQuery.toLowerCase()),
+                )
+                .toList();
 
             return DraggableScrollableSheet(
               initialChildSize: 0.7,
@@ -151,14 +192,19 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                         width: 40,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurfaceVariant.withOpacity(0.3),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                     ),
                     // Search Bar
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8,
+                      ),
                       child: TextField(
                         onChanged: (val) {
                           setModalState(() => searchQuery = val);
@@ -167,12 +213,17 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                           hintText: 'Search Country',
                           prefixIcon: const Icon(Icons.search),
                           filled: true,
-                          fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                          fillColor: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withOpacity(0.3),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.lg),
                             borderSide: BorderSide.none,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -189,11 +240,22 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                             title: Text(
                               country,
                               style: TextStyle(
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.normal,
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
                               ),
                             ),
-                            trailing: isSelected ? Icon(Icons.check, color: Theme.of(context).colorScheme.primary) : null,
+                            trailing: isSelected
+                                ? Icon(
+                                    Icons.check,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  )
+                                : null,
                             onTap: () {
                               setState(() => _countryCtrl.text = country);
                               Navigator.pop(context);
@@ -213,13 +275,16 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   }
 
   Future<void> _saveProfile() async {
-    if (_nameCtrl.text.isEmpty || _countryCtrl.text.isEmpty || _dob == null || _gender == null) {
+    if (_nameCtrl.text.isEmpty ||
+        _countryCtrl.text.isEmpty ||
+        _dob == null ||
+        _gender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please fill all fields'),
           backgroundColor: Theme.of(context).colorScheme.error,
           behavior: SnackBarBehavior.floating,
-        )
+        ),
       );
       return;
     }
@@ -229,7 +294,19 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     try {
       String? finalAvatarUrl = _avatarUrl;
       if (_imageFile != null) {
-        finalAvatarUrl = await AuthService.instance.uploadAvatar(_imageFile!);
+        final dir = await getTemporaryDirectory();
+        final targetPath = '${dir.absolute.path}/temp.jpg';
+        final compressedFile = await FlutterImageCompress.compressAndGetFile(
+          _imageFile!.absolute.path,
+          targetPath,
+          quality: 70,
+          minWidth: 512,
+          minHeight: 512,
+        );
+        final fileToUpload = compressedFile != null
+            ? File(compressedFile.path)
+            : _imageFile!;
+        finalAvatarUrl = await AuthService.instance.uploadAvatar(fileToUpload);
       }
 
       await AuthService.instance.upsertProfile(
@@ -242,28 +319,37 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/home');
-
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  InputDecoration _getDecoration(BuildContext context, String label, {IconData? icon}) {
+  InputDecoration _getDecoration(
+    BuildContext context,
+    String label, {
+    IconData? icon,
+  }) {
     final theme = Theme.of(context);
     return InputDecoration(
       labelText: label,
       filled: true,
       fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
-      prefixIcon: icon != null ? Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant) : null,
+      prefixIcon: icon != null
+          ? Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant)
+          : null,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.2)),
+        borderSide: BorderSide(
+          color: theme.colorScheme.outline.withOpacity(0.2),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -282,7 +368,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     ImageProvider? bgImage;
     if (_imageFile != null) {
       bgImage = FileImage(_imageFile!);
@@ -298,17 +384,25 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     }
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
             // Consistent header
             Container(
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
+                color:
+                    (isDark
+                            ? AppColors.backgroundDark
+                            : AppColors.backgroundLight)
+                        .withOpacity(0.9),
                 border: Border(
                   bottom: BorderSide(
-                    color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFFE2E8F0),
                   ),
                 ),
               ),
@@ -344,135 +438,170 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                const Center(child: AppLogo(size: 80)),
-                const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Complete Profile',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  'Tell us a bit more about yourself',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppSpacing.xl),
+                      const Center(child: AppLogo(size: 80)),
+                      const SizedBox(height: AppSpacing.lg),
+                      Text(
+                        'Complete Profile',
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        'Tell us a bit more about yourself',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
 
-                // 1. Photo Section
-                Center(
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: theme.colorScheme.primary, width: 2),
-                          boxShadow: [
-                            BoxShadow(
-                              color: theme.colorScheme.primary.withOpacity(0.2),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
+                      // 1. Photo Section
+                      Center(
+                        child: Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: theme.colorScheme.primary,
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: theme.colorScheme.primary
+                                        .withOpacity(0.2),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundColor:
+                                    theme.colorScheme.surfaceContainerHighest,
+                                backgroundImage: bgImage,
+                                child: bgImage == null
+                                    ? Icon(
+                                        Icons.person_rounded,
+                                        size: 60,
+                                        color: theme
+                                            .colorScheme
+                                            .onSurfaceVariant
+                                            .withOpacity(0.5),
+                                      )
+                                    : null,
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: _pickImage,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: theme.scaffoldBackgroundColor,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt_rounded,
+                                    size: 20,
+                                    color: theme.colorScheme.onPrimary,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
                         ),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                          backgroundImage: bgImage,
-                          child: bgImage == null 
-                            ? Icon(Icons.person_rounded, size: 60, color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)) 
-                            : null,
-                        ),
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primary,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: theme.scaffoldBackgroundColor, width: 2),
-                            ),
-                            child: Icon(Icons.camera_alt_rounded, size: 20, color: theme.colorScheme.onPrimary),
-                          ),
-                        ),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // 2. Full Name Input
+                      AppInput(
+                        controller: _nameCtrl,
+                        label: 'Full Name',
+                        prefixIcon: Icons.person_outline_rounded,
                       ),
+
+                      const SizedBox(height: AppSpacing.md),
+
+                      // 3. Gender Dropdown
+                      DropdownButtonFormField<String>(
+                        value: _gender,
+                        decoration: _getDecoration(
+                          context,
+                          'Gender',
+                          icon: Icons.wc_rounded,
+                        ),
+                        icon: Icon(
+                          Icons.arrow_drop_down_rounded,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        dropdownColor: theme.colorScheme.surfaceContainer,
+                        items: ['Male', 'Female', 'Other']
+                            .map(
+                              (e) => DropdownMenuItem(
+                                value: e,
+                                child: Text(
+                                  e,
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (val) => setState(() => _gender = val),
+                      ),
+
+                      const SizedBox(height: AppSpacing.md),
+
+                      // 4. Date of Birth
+                      AppInput(
+                        controller: _dobCtrl,
+                        label: 'Date of Birth',
+                        prefixIcon: Icons.calendar_today_rounded,
+                        readOnly: true,
+                        onTap: _selectDate,
+                      ),
+
+                      const SizedBox(height: AppSpacing.md),
+
+                      // 5. Country Picker (Modern Modal)
+                      AppInput(
+                        controller: _countryCtrl,
+                        label: 'Country',
+                        prefixIcon: Icons.public_rounded,
+                        readOnly: true,
+                        onTap: _showCountryPicker,
+                        suffixIcon: Icons.arrow_drop_down_rounded,
+                      ),
+
+                      const SizedBox(height: AppSpacing.xl),
+
+                      // 6. Complete Button
+                      AppButton(
+                        label: 'Complete Setup',
+                        onTap: _saveProfile,
+                        loading: _loading,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ),
-                
-                const SizedBox(height: AppSpacing.xl),
-
-                // 2. Full Name Input
-                AppInput(
-                  controller: _nameCtrl,
-                  label: 'Full Name',
-                  prefixIcon: Icons.person_outline_rounded,
-                ),
-                
-                const SizedBox(height: AppSpacing.md),
-                
-                // 3. Gender Dropdown
-                DropdownButtonFormField<String>(
-                  value: _gender,
-                  decoration: _getDecoration(context, 'Gender', icon: Icons.wc_rounded),
-                  icon: Icon(Icons.arrow_drop_down_rounded, color: theme.colorScheme.onSurfaceVariant),
-                  dropdownColor: theme.colorScheme.surfaceContainer,
-                  items: ['Male', 'Female', 'Other'].map((e) => DropdownMenuItem(
-                    value: e, 
-                    child: Text(e, style: TextStyle(color: theme.colorScheme.onSurface))
-                  )).toList(),
-                  onChanged: (val) => setState(() => _gender = val),
-                ),
-                
-                const SizedBox(height: AppSpacing.md),
-
-                // 4. Date of Birth
-                AppInput(
-                  controller: _dobCtrl,
-                  label: 'Date of Birth',
-                  prefixIcon: Icons.calendar_today_rounded,
-                  readOnly: true,
-                  onTap: _selectDate,
-                ),
-
-                const SizedBox(height: AppSpacing.md),
-                
-                // 5. Country Picker (Modern Modal)
-                AppInput(
-                  controller: _countryCtrl,
-                  label: 'Country',
-                  prefixIcon: Icons.public_rounded,
-                  readOnly: true,
-                  onTap: _showCountryPicker,
-                  suffixIcon: Icons.arrow_drop_down_rounded,
-                ),
-
-                const SizedBox(height: AppSpacing.xl),
-                
-                // 6. Complete Button
-                AppButton(
-                  label: 'Complete Setup', 
-                  onTap: _saveProfile, 
-                  loading: _loading
-                ),
-                const SizedBox(height: AppSpacing.xl),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
-        ),
-      ],
-    ),
-  ),
-);
+      ),
+    );
   }
 }

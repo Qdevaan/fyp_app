@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -18,6 +19,7 @@ class EntityScreen extends StatefulWidget {
 }
 
 class _EntityScreenState extends State<EntityScreen> {
+  Timer? _debounceTimer;
   final _supabase = Supabase.instance.client;
 
   List<Map<String, dynamic>> _entities = [];
@@ -43,6 +45,12 @@ class _EntityScreenState extends State<EntityScreen> {
     'object': Icons.category_rounded,
     'concept': Icons.lightbulb_rounded,
   };
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -279,7 +287,16 @@ class _EntityScreenState extends State<EntityScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                 child: TextField(
-                  onChanged: (v) => setState(() => _search = v),
+                  onChanged: (v) {
+                    if (_debounceTimer?.isActive ?? false)
+                      _debounceTimer!.cancel();
+                    _debounceTimer = Timer(
+                      const Duration(milliseconds: 300),
+                      () {
+                        setState(() => _search = v);
+                      },
+                    );
+                  },
                   style: GoogleFonts.manrope(
                     color: isDark ? Colors.white : Colors.black87,
                   ),

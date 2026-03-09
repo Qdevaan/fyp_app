@@ -13,7 +13,7 @@ class ConnectionService with ChangeNotifier {
   ConnectionStatus _status = ConnectionStatus.disconnected;
   Timer? _statusCheckTimer;
   bool _isChecking = false;
-  
+
   // -- Connectivity --
   final Connectivity _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
@@ -21,7 +21,7 @@ class ConnectionService with ChangeNotifier {
   // --- Public Getters ---
   String get serverUrl => _serverUrl;
   // Backwards compatibility if needed, but prefer serverUrl
-  String get serverIp => _serverUrl; 
+  String get serverIp => _serverUrl;
   ConnectionStatus get status => _status;
   bool get isConnected => _status == ConnectionStatus.connected;
 
@@ -35,9 +35,11 @@ class ConnectionService with ChangeNotifier {
     // Initial check
     final results = await _connectivity.checkConnectivity();
     _handleConnectivityChange(results);
-    
+
     // Listen for changes
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(_handleConnectivityChange);
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
+      _handleConnectivityChange,
+    );
   }
 
   void _handleConnectivityChange(List<ConnectivityResult> results) {
@@ -56,7 +58,7 @@ class ConnectionService with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _serverUrl = prefs.getString('server_url') ?? '';
     notifyListeners();
-    
+
     if (_serverUrl.isNotEmpty) {
       await checkConnection(notifyResult: false);
     }
@@ -69,18 +71,20 @@ class ConnectionService with ChangeNotifier {
     if (cleanUrl.endsWith('/')) {
       cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
     }
-    
+
     // If user just types an IP or domain, assume http (or https for ngrok)
     if (!cleanUrl.startsWith('http')) {
       if (cleanUrl.contains('ngrok')) {
         cleanUrl = 'https://$cleanUrl';
       } else {
         // Assume local dev server on HTTP
-        cleanUrl = 'http://$cleanUrl'; 
-        // If it's just an IP like 192.168.1.5, append port 8000 if missing? 
+        cleanUrl = 'http://$cleanUrl';
+        // If it's just an IP like 192.168.1.5, append port 8000 if missing?
         // Better to let user type port, but we can be smart:
-        if (RegExp(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$').hasMatch(url.trim())) {
-             cleanUrl = 'http://${url.trim()}:8000';
+        if (RegExp(
+          r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$',
+        ).hasMatch(url.trim())) {
+          cleanUrl = 'http://${url.trim()}:8000';
         }
       }
     }
@@ -89,7 +93,7 @@ class ConnectionService with ChangeNotifier {
     await prefs.setString('server_url', cleanUrl);
     _serverUrl = cleanUrl;
     notifyListeners();
-    
+
     // Test immediately
     await checkConnection();
   }
@@ -97,7 +101,7 @@ class ConnectionService with ChangeNotifier {
   // --- Connection Testing ---
   Future<bool> checkConnection({bool notifyResult = true}) async {
     if (_status == ConnectionStatus.offline) return false;
-    
+
     if (_serverUrl.isEmpty) {
       _updateStatus(ConnectionStatus.disconnected);
       return false;
@@ -110,17 +114,20 @@ class ConnectionService with ChangeNotifier {
 
     try {
       debugPrint('Pinging $_serverUrl/ ...');
-      final response = await http.get(
-        Uri.parse('$_serverUrl/'),
-        headers: {"ngrok-skip-browser-warning": "true"},
-      ).timeout(const Duration(seconds: 5));
+      final response = await http
+          .get(
+            Uri.parse('$_serverUrl/'),
+            headers: {"ngrok-skip-browser-warning": "true"},
+          )
+          .timeout(const Duration(seconds: 5));
 
       debugPrint('Ping response: ${response.statusCode}');
 
       // Strictly check for 200 OK on the health endpoint
       if (response.statusCode == 200) {
         _updateStatus(ConnectionStatus.connected);
-        if (notifyResult) debugPrint('Connection successful! (Status: ${response.statusCode})');
+        if (notifyResult)
+          debugPrint('Connection successful! (Status: ${response.statusCode})');
         return true;
       } else {
         debugPrint('Server returned error status: ${response.statusCode}');

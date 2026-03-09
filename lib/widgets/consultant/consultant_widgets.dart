@@ -51,10 +51,14 @@ class ChatHistoryTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.manrope(
                         fontSize: 13,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.w700
+                            : FontWeight.w500,
                         color: isActive
                             ? primary
-                            : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155)),
+                            : (isDark
+                                  ? const Color(0xFFCBD5E1)
+                                  : const Color(0xFF334155)),
                         height: 1.3,
                       ),
                     ),
@@ -64,7 +68,9 @@ class ChatHistoryTile extends StatelessWidget {
                         date,
                         style: GoogleFonts.manrope(
                           fontSize: 11,
-                          color: isDark ? const Color(0xFF475569) : Colors.grey.shade400,
+                          color: isDark
+                              ? const Color(0xFF475569)
+                              : Colors.grey.shade400,
                         ),
                       ),
                     ],
@@ -76,7 +82,10 @@ class ChatHistoryTile extends StatelessWidget {
                   width: 6,
                   height: 6,
                   margin: const EdgeInsets.only(left: 8),
-                  decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
+                  decoration: BoxDecoration(
+                    color: primary,
+                    shape: BoxShape.circle,
+                  ),
                 ),
             ],
           ),
@@ -114,7 +123,9 @@ class UserBubble extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
                   ),
                 ),
               ),
@@ -123,7 +134,10 @@ class UserBubble extends StatelessWidget {
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.75,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: primary,
                   borderRadius: const BorderRadius.only(
@@ -157,7 +171,9 @@ class UserBubble extends StatelessWidget {
                     time!,
                     style: GoogleFonts.manrope(
                       fontSize: 10,
-                      color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF475569)
+                          : const Color(0xFF94A3B8),
                     ),
                   ),
                 ),
@@ -174,7 +190,12 @@ class AiBubble extends StatelessWidget {
   final bool isDark;
   final bool streaming;
   final String? time;
-  const AiBubble({required this.text, required this.isDark, this.streaming = false, this.time});
+  const AiBubble({
+    required this.text,
+    required this.isDark,
+    this.streaming = false,
+    this.time,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +219,9 @@ class AiBubble extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
                   ),
                 ),
               ),
@@ -206,7 +229,9 @@ class AiBubble extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFFE2E8F0),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(3),
                     topRight: Radius.circular(16),
@@ -219,7 +244,9 @@ class AiBubble extends StatelessWidget {
                   styleSheet: MarkdownStyleSheet(
                     p: GoogleFonts.manrope(
                       fontSize: 14,
-                      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
+                      color: isDark
+                          ? const Color(0xFFE2E8F0)
+                          : const Color(0xFF1E293B),
                       height: 1.6,
                     ),
                     strong: GoogleFonts.manrope(
@@ -228,7 +255,9 @@ class AiBubble extends StatelessWidget {
                     ),
                     em: GoogleFonts.manrope(
                       fontStyle: FontStyle.italic,
-                      color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700,
+                      color: isDark
+                          ? const Color(0xFFCBD5E1)
+                          : Colors.grey.shade700,
                     ),
                   ),
                 ),
@@ -241,7 +270,9 @@ class AiBubble extends StatelessWidget {
                     time!,
                     style: GoogleFonts.manrope(
                       fontSize: 10,
-                      color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
+                      color: isDark
+                          ? const Color(0xFF475569)
+                          : const Color(0xFF94A3B8),
                     ),
                   ),
                 ),
@@ -277,14 +308,21 @@ class TypingIndicator extends StatelessWidget {
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : const Color(0xFF94A3B8),
                   ),
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
+                  color: isDark
+                      ? const Color(0xFF1E293B)
+                      : const Color(0xFFE2E8F0),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(3),
                     topRight: Radius.circular(16),
@@ -318,18 +356,22 @@ class BouncingDot extends StatefulWidget {
   State<BouncingDot> createState() => BouncingDotState();
 }
 
-class BouncingDotState extends State<BouncingDot> with SingleTickerProviderStateMixin {
+class BouncingDotState extends State<BouncingDot>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))
-      ..repeat(reverse: true);
-    _animation = Tween(begin: 0.0, end: -6.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
+    _animation = Tween(
+      begin: 0.0,
+      end: -6.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     Future.delayed(Duration(milliseconds: widget.delay), () {
       if (mounted) _controller.forward();
     });
@@ -394,9 +436,7 @@ class MicToggleButton extends StatelessWidget {
           margin: const EdgeInsets.only(right: 4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isActive
-                ? primary.withOpacity(0.15)
-                : Colors.transparent,
+            color: isActive ? primary.withOpacity(0.15) : Colors.transparent,
             border: Border.all(
               color: isActive ? primary : Colors.transparent,
               width: 1.5,
@@ -439,10 +479,10 @@ class VoiceStatusBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final label = switch (voiceMode) {
-      CVoiceMode.listening   => partial.isEmpty ? 'Listening…' : partial,
-      CVoiceMode.processing  => 'Thinking…',
-      CVoiceMode.speaking    => 'Speaking — tap mic to interrupt',
-      CVoiceMode.off         => '',
+      CVoiceMode.listening => partial.isEmpty ? 'Listening…' : partial,
+      CVoiceMode.processing => 'Thinking…',
+      CVoiceMode.speaking => 'Speaking — tap mic to interrupt',
+      CVoiceMode.off => '',
     };
     final bg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
 
@@ -455,7 +495,9 @@ class VoiceStatusBanner extends StatelessWidget {
           AnimatedBuilder(
             animation: micPulseAnim,
             builder: (_, child) => Transform.scale(
-              scale: voiceMode == CVoiceMode.listening ? micPulseAnim.value : 1.0,
+              scale: voiceMode == CVoiceMode.listening
+                  ? micPulseAnim.value
+                  : 1.0,
               child: child,
             ),
             child: Container(
@@ -469,8 +511,8 @@ class VoiceStatusBanner extends StatelessWidget {
                 voiceMode == CVoiceMode.speaking
                     ? Icons.volume_up_rounded
                     : voiceMode == CVoiceMode.processing
-                        ? Icons.hourglass_top_rounded
-                        : Icons.mic_rounded,
+                    ? Icons.hourglass_top_rounded
+                    : Icons.mic_rounded,
                 size: 17,
                 color: primary,
               ),
@@ -487,7 +529,9 @@ class VoiceStatusBanner extends StatelessWidget {
                 fontSize: 13,
                 color: voiceMode == CVoiceMode.listening && partial.isNotEmpty
                     ? (isDark ? Colors.white : const Color(0xFF0F172A))
-                    : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                    : (isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF64748B)),
                 fontStyle: voiceMode == CVoiceMode.listening && partial.isEmpty
                     ? FontStyle.italic
                     : FontStyle.normal,
@@ -504,7 +548,11 @@ class VoiceStatusBanner extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.redAccent.withOpacity(0.12),
               ),
-              child: const Icon(Icons.close_rounded, size: 16, color: Colors.redAccent),
+              child: const Icon(
+                Icons.close_rounded,
+                size: 16,
+                color: Colors.redAccent,
+              ),
             ),
           ),
         ],

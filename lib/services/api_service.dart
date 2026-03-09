@@ -17,7 +17,9 @@ class ApiService {
   Future<Map<String, dynamic>?> getLiveKitToken(String userId) async {
     if (_baseUrl.isEmpty) return null;
     try {
-      final response = await http.get(Uri.parse('$_baseUrl/getToken?userId=$userId'));
+      final response = await http.get(
+        Uri.parse('$_baseUrl/getToken?userId=$userId'),
+      );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       }
@@ -46,17 +48,23 @@ class ApiService {
       request.fields['user_name'] = userName;
       request.files.add(await http.MultipartFile.fromPath('file', audioPath));
 
-      final streamedResponse = await request.send().timeout(const Duration(seconds: 60));
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 60),
+      );
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode != 200) {
-        throw Exception('Server error ${response.statusCode}: ${response.body}');
+        throw Exception(
+          'Server error ${response.statusCode}: ${response.body}',
+        );
       }
 
       // Confirm the embedding was actually persisted in Supabase
       final status = await checkEnrollmentStatus(userId);
       if (status == null) {
-        throw Exception('Enrollment uploaded but embedding not found in database.');
+        throw Exception(
+          'Enrollment uploaded but embedding not found in database.',
+        );
       }
       return status;
     } catch (e) {
@@ -83,15 +91,18 @@ class ApiService {
   // --- 2. LIVE WINGMAN ---
   /// Sends a short audio chunk for live processing
   Future<Map<String, dynamic>> processAudioChunk(String filePath) async {
-    if (_baseUrl.isEmpty) return {"transcript": "", "suggestion": "No Server URL"};
+    if (_baseUrl.isEmpty)
+      return {"transcript": "", "suggestion": "No Server URL"};
 
     try {
       var uri = Uri.parse("$_baseUrl/process_audio");
       var request = http.MultipartRequest('POST', uri);
       request.headers['ngrok-skip-browser-warning'] = 'true';
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
-      
-      var streamedResponse = await request.send().timeout(const Duration(seconds: 5));
+
+      var streamedResponse = await request.send().timeout(
+        const Duration(seconds: 5),
+      );
       var response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode == 200) {
@@ -108,27 +119,34 @@ class ApiService {
 
   // --- 3. SESSION SAVING ---
   /// Uploads the full session log for vector embedding
-  Future<bool> saveSession(String userId, List<Map<String, dynamic>> logs) async {
+  Future<bool> saveSession(
+    String userId,
+    List<Map<String, dynamic>> logs,
+  ) async {
     if (_baseUrl.isEmpty) return false;
 
     try {
       var uri = Uri.parse("$_baseUrl/save_session");
-      
-      // Flatten logs for context
-      String fullTranscript = logs.map((l) => "${l['speaker']}: ${l['text']}").join("\n");
 
-      var response = await http.post(
-        uri,
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: jsonEncode({
-          "user_id": userId,
-          "transcript": fullTranscript,
-          "logs": logs
-        }),
-      ).timeout(const Duration(seconds: 15));
+      // Flatten logs for context
+      String fullTranscript = logs
+          .map((l) => "${l['speaker']}: ${l['text']}")
+          .join("\n");
+
+      var response = await http
+          .post(
+            uri,
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            body: jsonEncode({
+              "user_id": userId,
+              "transcript": fullTranscript,
+              "logs": logs,
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
       return response.statusCode == 200;
     } catch (e) {
@@ -144,17 +162,16 @@ class ApiService {
 
     try {
       var uri = Uri.parse("$_baseUrl/ask_consultant");
-      var response = await http.post(
-        uri,
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: jsonEncode({
-          "user_id": userId,
-          "question": question
-        }),
-      ).timeout(const Duration(seconds: 30)); // Llama 70B can be slow
+      var response = await http
+          .post(
+            uri,
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            body: jsonEncode({"user_id": userId, "question": question}),
+          )
+          .timeout(const Duration(seconds: 30)); // Llama 70B can be slow
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
@@ -183,14 +200,16 @@ class ApiService {
         "speaker_role": speakerRole,
         if (sessionId != null) "session_id": sessionId,
       };
-      var response = await http.post(
-        uri,
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: jsonEncode(body),
-      ).timeout(const Duration(seconds: 10));
+      var response = await http
+          .post(
+            uri,
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
@@ -207,14 +226,16 @@ class ApiService {
   Future<String?> createLiveSession(String userId) async {
     if (_baseUrl.isEmpty) return null;
     try {
-      final res = await http.post(
-        Uri.parse("$_baseUrl/start_session"),
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: jsonEncode({"user_id": userId, "mode": "live_wingman"}),
-      ).timeout(const Duration(seconds: 10));
+      final res = await http
+          .post(
+            Uri.parse("$_baseUrl/start_session"),
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            body: jsonEncode({"user_id": userId, "mode": "live_wingman"}),
+          )
+          .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         return jsonDecode(res.body)['session_id'] as String?;
       }
@@ -228,14 +249,16 @@ class ApiService {
   Future<void> endLiveSession(String sessionId, String userId) async {
     if (_baseUrl.isEmpty) return;
     try {
-      await http.post(
-        Uri.parse("$_baseUrl/end_session"),
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: jsonEncode({"session_id": sessionId, "user_id": userId}),
-      ).timeout(const Duration(seconds: 30));
+      await http
+          .post(
+            Uri.parse("$_baseUrl/end_session"),
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            body: jsonEncode({"session_id": sessionId, "user_id": userId}),
+          )
+          .timeout(const Duration(seconds: 30));
     } catch (e) {
       debugPrint("endLiveSession error: $e");
     }
@@ -257,7 +280,10 @@ class ApiService {
     }
     final client = http.Client();
     try {
-      final request = http.Request('POST', Uri.parse("$_baseUrl/ask_consultant_stream"));
+      final request = http.Request(
+        'POST',
+        Uri.parse("$_baseUrl/ask_consultant_stream"),
+      );
       request.headers['Content-Type'] = 'application/json';
       request.headers['ngrok-skip-browser-warning'] = 'true';
       request.headers['Accept'] = 'text/event-stream';
@@ -267,7 +293,9 @@ class ApiService {
         if (sessionId != null) 'session_id': sessionId,
       });
 
-      final streamedResponse = await client.send(request).timeout(const Duration(seconds: 60));
+      final streamedResponse = await client
+          .send(request)
+          .timeout(const Duration(seconds: 60));
       if (streamedResponse.statusCode != 200) {
         yield 'Server error: ${streamedResponse.statusCode}';
         return;
@@ -289,7 +317,8 @@ class ApiService {
                 yield parsed['token'] as String;
               } else if (parsed['done'] == true) {
                 final sid = parsed['session_id'] as String?;
-                if (sid != null && onSessionCreated != null) onSessionCreated(sid);
+                if (sid != null && onSessionCreated != null)
+                  onSessionCreated(sid);
                 return;
               } else if (parsed['error'] != null) {
                 yield '\n[Error: ${parsed['error']}]';
@@ -311,20 +340,50 @@ class ApiService {
   Future<String> askAboutEntity(String userId, String entityName) async {
     if (_baseUrl.isEmpty) return 'Server not connected.';
     try {
-      final res = await http.post(
-        Uri.parse("$_baseUrl/ask_entity"),
-        headers: {
-          "Content-Type": "application/json",
-          "ngrok-skip-browser-warning": "true",
-        },
-        body: jsonEncode({"user_id": userId, "entity_name": entityName}),
-      ).timeout(const Duration(seconds: 15));
+      final res = await http
+          .post(
+            Uri.parse("$_baseUrl/ask_entity"),
+            headers: {
+              "Content-Type": "application/json",
+              "ngrok-skip-browser-warning": "true",
+            },
+            body: jsonEncode({"user_id": userId, "entity_name": entityName}),
+          )
+          .timeout(const Duration(seconds: 15));
       if (res.statusCode == 200) {
         return jsonDecode(res.body)['answer'] as String? ?? '—';
       }
       return 'Error: ${res.statusCode}';
     } catch (e) {
       return 'Connection error: $e';
+    }
+  }
+
+  Future<Map<String, dynamic>?> parseVoiceCommand(
+    String userId,
+    String command,
+  ) async {
+    if (!_connectionService.isConnected) return null;
+    final url = Uri.parse("${_connectionService.serverUrl}/voice_command");
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+            body: jsonEncode({'user_id': userId, 'command': command}),
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('Voice command parse error: $e');
+      return null;
     }
   }
 }

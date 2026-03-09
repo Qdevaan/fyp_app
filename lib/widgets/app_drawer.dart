@@ -1,4 +1,4 @@
-﻿import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -23,12 +23,18 @@ class AppDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final name = userData?['full_name'] ?? currentUser?.userMetadata?['full_name'] ?? 'Guest';
+    final name =
+        userData?['full_name'] ??
+        currentUser?.userMetadata?['full_name'] ??
+        'Guest';
     final email = currentUser?.email ?? '';
-    final photoUrl = userData?['avatar_url'] ?? currentUser?.userMetadata?['avatar_url'];
+    final photoUrl =
+        userData?['avatar_url'] ?? currentUser?.userMetadata?['avatar_url'];
 
     return Drawer(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(24),
@@ -38,14 +44,26 @@ class AppDrawer extends StatelessWidget {
       child: Column(
         children: [
           Consumer<ConnectionService>(
-            builder: (context, conn, _) => _buildHeader(context, name, email, photoUrl, conn.status, isDark),
+            builder: (context, conn, _) => _buildHeader(
+              context,
+              name,
+              email,
+              photoUrl,
+              conn.status,
+              isDark,
+            ),
           ),
 
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               children: [
-                _DrawerItem(icon: Icons.home_rounded, label: 'Home', isDark: isDark, onTap: () => Navigator.pop(context)),
+                _DrawerItem(
+                  icon: Icons.home_rounded,
+                  label: 'Home',
+                  isDark: isDark,
+                  onTap: () => Navigator.pop(context),
+                ),
                 const SizedBox(height: 4),
                 _DrawerItem(
                   icon: Icons.mic_rounded,
@@ -77,8 +95,16 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                  child: Divider(color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade200, height: 1),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  child: Divider(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.05)
+                        : Colors.grey.shade200,
+                    height: 1,
+                  ),
                 ),
                 Consumer<ConnectionService>(
                   builder: (context, conn, _) => _DrawerItem(
@@ -89,7 +115,9 @@ class AppDrawer extends StatelessWidget {
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: conn.isConnected ? AppColors.success : AppColors.warning,
+                        color: conn.isConnected
+                            ? AppColors.success
+                            : AppColors.warning,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -128,7 +156,14 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String name, String email, String? photoUrl, ConnectionStatus status, bool isDark) {
+  Widget _buildHeader(
+    BuildContext context,
+    String name,
+    String email,
+    String? photoUrl,
+    ConnectionStatus status,
+    bool isDark,
+  ) {
     Color statusColor;
     String statusText;
     switch (status) {
@@ -169,16 +204,29 @@ class AppDrawer extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.5), width: 2),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.5),
+                    width: 2,
+                  ),
                 ),
                 child: CircleAvatar(
                   radius: 28,
-                  backgroundImage: photoUrl != null ? CachedNetworkImageProvider(photoUrl) : null,
-                  backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  backgroundImage: photoUrl != null
+                      ? CachedNetworkImageProvider(photoUrl)
+                      : null,
+                  backgroundColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.2),
                   child: photoUrl == null
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white),
+                          style: GoogleFonts.manrope(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         )
                       : null,
                 ),
@@ -192,7 +240,10 @@ class AppDrawer extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: statusColor,
                     shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF0F172A), width: 2),
+                    border: Border.all(
+                      color: const Color(0xFF0F172A),
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -205,27 +256,41 @@ class AppDrawer extends StatelessWidget {
               children: [
                 Text(
                   name,
-                  style: GoogleFonts.manrope(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white),
+                  style: GoogleFonts.manrope(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
                 Text(
                   email,
-                  style: GoogleFonts.manrope(fontSize: 13, color: Colors.white60),
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    color: Colors.white60,
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     statusText,
-                    style: GoogleFonts.manrope(color: statusColor, fontSize: 11, fontWeight: FontWeight.w700),
+                    style: GoogleFonts.manrope(
+                      color: statusColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -255,7 +320,11 @@ class AppDrawer extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Logout',
-                style: GoogleFonts.manrope(color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 15),
+                style: GoogleFonts.manrope(
+                  color: AppColors.error,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
               ),
             ],
           ),
@@ -291,7 +360,11 @@ class _DrawerItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              Icon(icon, color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600, size: 22),
+              Icon(
+                icon,
+                color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                size: 22,
+              ),
               const SizedBox(width: 16),
               Expanded(
                 child: Text(

@@ -33,7 +33,9 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.hidden) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden) {
       if (_isListening) {
         _wasListeningBeforePause = true;
         stopListening();
@@ -102,7 +104,10 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(
-        byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes),
+        byteData.buffer.asUint8List(
+          byteData.offsetInBytes,
+          byteData.lengthInBytes,
+        ),
         flush: true,
       );
       debugPrint('🎙️ Porcupine: Extracted .ppn to ${file.path}');

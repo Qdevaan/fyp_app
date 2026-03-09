@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
 
@@ -75,7 +75,9 @@ class _AppInputState extends State<AppInput> {
                 ? Icon(
                     widget.prefixIcon,
                     size: 20,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8),
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF94A3B8),
                   )
                 : null,
             suffixIcon: isPassword
@@ -88,30 +90,42 @@ class _AppInputState extends State<AppInput> {
                     onPressed: () => setState(() => _hidden = !_hidden),
                   )
                 : (widget.suffixIcon != null
-                    ? Icon(
-                        widget.suffixIcon,
-                        size: 20,
-                        color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF94A3B8),
-                      )
-                    : null),
+                      ? Icon(
+                          widget.suffixIcon,
+                          size: 20,
+                          color: isDark
+                              ? const Color(0xFF94A3B8)
+                              : const Color(0xFF94A3B8),
+                        )
+                      : null),
             filled: true,
             fillColor: isDark ? AppColors.surfaceDark : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: BorderSide(
-                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: BorderSide(
-                color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+                color: isDark
+                    ? const Color(0xFF334155)
+                    : const Color(0xFFE2E8F0),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
-              borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),

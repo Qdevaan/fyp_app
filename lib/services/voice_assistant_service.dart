@@ -203,7 +203,7 @@ class VoiceAssistantService extends ChangeNotifier {
     // Stop Porcupine while we capture the user's command
     // (avoids microphone conflict with speech_to_text)
     await _wakeWordService.stopListening();
-    
+
     // Add a tiny delay to ensure audio hardware is fully released
     await Future.delayed(const Duration(milliseconds: 300));
 
@@ -231,20 +231,22 @@ class VoiceAssistantService extends ChangeNotifier {
   }
 
   void _onCommandResult(SpeechRecognitionResult result) {
-    if (_state == VoiceAssistantState.processing) return; // Prevent multiple calls
+    if (_state == VoiceAssistantState.processing)
+      return; // Prevent multiple calls
 
     _partialText = result.recognizedWords;
     notifyListeners();
 
     final partialLower = _partialText.toLowerCase();
-    bool isEarlyMatch = partialLower.contains('start wingman') || 
-                        partialLower.contains('wingman session') || 
-                        partialLower.contains('new session') || 
-                        partialLower.contains('wingman') ||
-                        partialLower.contains('consultant') || 
-                        partialLower.contains('tell me') || 
-                        partialLower.contains('what is') || 
-                        partialLower.contains('who is');
+    bool isEarlyMatch =
+        partialLower.contains('start wingman') ||
+        partialLower.contains('wingman session') ||
+        partialLower.contains('new session') ||
+        partialLower.contains('wingman') ||
+        partialLower.contains('consultant') ||
+        partialLower.contains('tell me') ||
+        partialLower.contains('what is') ||
+        partialLower.contains('who is');
 
     if (result.finalResult || isEarlyMatch) {
       if (isEarlyMatch) {
@@ -270,32 +272,6 @@ class VoiceAssistantService extends ChangeNotifier {
     notifyListeners();
 
     final lowerCommand = command.toLowerCase();
-
-    // 1. Local intercept for Wingman
-    if (lowerCommand.contains('start wingman') ||
-        lowerCommand.contains('wingman session') ||
-        lowerCommand.contains('new session') ||
-        lowerCommand.contains('wingman')) {
-      _lastResponse = "Starting your Wingman session.";
-      await _speak(_lastResponse);
-      _pendingNavigationRoute = '/new-session';
-      _pendingNavigationArgs = null;
-      hideOverlay();
-      return;
-    }
-
-    // 2. Local intercept for AI Consultant
-    if (lowerCommand.contains('consultant') ||
-        lowerCommand.contains('tell me') ||
-        lowerCommand.contains('what is') ||
-        lowerCommand.contains('who is')) {
-      _lastResponse = "Going to Consultant mode.";
-      await _speak(_lastResponse);
-      _pendingNavigationRoute = '/consultant';
-      _pendingNavigationArgs = {'initialQuery': command};
-      hideOverlay();
-      return;
-    }
 
     // Check server connection
     if (!_connectionService.isConnected ||

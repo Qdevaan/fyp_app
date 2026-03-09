@@ -9,7 +9,7 @@ class AuthService {
   static final AuthService instance = AuthService._internal();
 
   final SupabaseClient _client = Supabase.instance.client;
-  
+
   // Key for storing profile data in SharedPreferences
   static const String _profileCacheKey = 'cached_user_profile';
 
@@ -20,7 +20,8 @@ class AuthService {
   Session? get currentSession => _client.auth.currentSession;
 
   /// Checks if the current user's email is verified based on Supabase metadata.
-  bool get isEmailVerified => _client.auth.currentUser?.emailConfirmedAt != null;
+  bool get isEmailVerified =>
+      _client.auth.currentUser?.emailConfirmedAt != null;
 
   // ---------------------------------------------------------------------------
   // AUTHENTICATION METHODS
@@ -32,6 +33,18 @@ class AuthService {
         OAuthProvider.google,
         redirectTo: 'io.supabase.bubbles://login-callback/',
         authScreenLaunchMode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      throw _handleAuthError(e);
+    }
+  }
+
+  Future<void> resendVerificationEmail(String email) async {
+    try {
+      await _client.auth.resend(
+        type: OtpType.signup,
+        email: email,
+        emailRedirectTo: 'io.supabase.bubbles://login-callback/',
       );
     } catch (e) {
       throw _handleAuthError(e);
@@ -52,10 +65,7 @@ class AuthService {
 
   Future<void> signInWithEmail(String email, String password) async {
     try {
-      await _client.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
+      await _client.auth.signInWithPassword(email: email, password: password);
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -104,7 +114,7 @@ class AuthService {
           .select()
           .eq('id', user.id)
           .maybeSingle();
-          
+
       // 3. Save to Local Storage
       if (data != null) {
         await prefs.setString(_profileCacheKey, jsonEncode(data));
@@ -150,7 +160,7 @@ class AuthService {
       // We merge the new updates with whatever we already had locally
       final prefs = await SharedPreferences.getInstance();
       Map<String, dynamic> currentCache = {};
-      
+
       if (prefs.containsKey(_profileCacheKey)) {
         final jsonString = prefs.getString(_profileCacheKey);
         if (jsonString != null) {
@@ -161,7 +171,6 @@ class AuthService {
       // Merge new updates into current cache
       final newCache = {...currentCache, ...updates};
       await prefs.setString(_profileCacheKey, jsonEncode(newCache));
-
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -173,13 +182,16 @@ class AuthService {
       if (user == null) throw const AuthException('User not authenticated');
 
       final fileExt = imageFile.path.split('.').last;
-      final fileName = '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final fileName =
+          '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
 
-      await _client.storage.from('avatars').upload(
-        fileName,
-        imageFile,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _client.storage
+          .from('avatars')
+          .upload(
+            fileName,
+            imageFile,
+            fileOptions: const FileOptions(upsert: true),
+          );
 
       final publicUrl = _client.storage.from('avatars').getPublicUrl(fileName);
       return publicUrl;

@@ -18,7 +18,7 @@ class AboutScreen extends StatelessWidget {
         children: [
           // Ambient Background (Static)
           const _AmbientBackground(),
-          
+
           CustomScrollView(
             slivers: [
               _buildSliverAppBar(context),
@@ -54,12 +54,12 @@ class AboutScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 32),
-                     _buildSectionHeader(
+                    _buildSectionHeader(
                       theme,
                       icon: Icons.lightbulb_circle,
                       title: 'Project Rationale',
                     ),
-                     const SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     _GlassCard(
                       child: Column(
                         children: [
@@ -67,7 +67,9 @@ class AboutScreen extends StatelessWidget {
                             'As a student, sometime after a conversation ends, I realize the words that I used were not appropriate for the conversation and I could have done it in a better way, or how could I have delivered my message more clearly and made my conversation more engaging? But then, after some time passes, I forget all the points that I wanted to keep in mind.',
                             style: theme.textTheme.bodyLarge?.copyWith(
                               height: 1.6,
-                               color: theme.colorScheme.onSurface.withOpacity(0.8),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.8,
+                              ),
                             ),
                             textAlign: TextAlign.justify,
                           ),
@@ -76,7 +78,9 @@ class AboutScreen extends StatelessWidget {
                             'The purpose of our project is to create a smart assistant that can not only capture, summarize, and analyze conversations in real-time but also assist people in improving their communication skills. The system will determine the tone of the conversation, map the flow of the conversation, provide instant responses, suggest strong phrases, and comment on the clarity, structure, and engagement of the conversation.',
                             style: theme.textTheme.bodyLarge?.copyWith(
                               height: 1.6,
-                               color: theme.colorScheme.onSurface.withOpacity(0.8),
+                              color: theme.colorScheme.onSurface.withOpacity(
+                                0.8,
+                              ),
                             ),
                             textAlign: TextAlign.justify,
                           ),
@@ -116,18 +120,25 @@ class AboutScreen extends StatelessWidget {
                           Text(
                             'Crafted with ❤️ by the Bubbles Team',
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withOpacity(0.7),
                               letterSpacing: 1.2,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                              color: theme.colorScheme.surfaceVariant
+                                  .withOpacity(0.5),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: theme.colorScheme.outline.withOpacity(0.1),
+                                color: theme.colorScheme.outline.withOpacity(
+                                  0.1,
+                                ),
                               ),
                             ),
                             child: Text(
@@ -142,13 +153,14 @@ class AboutScreen extends StatelessWidget {
                           Text(
                             'Made with AI Love',
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.6),
+                              color: theme.colorScheme.onSurfaceVariant
+                                  .withOpacity(0.6),
                             ),
                           ),
                         ],
                       ),
                     ),
-                     const SizedBox(height: 30),
+                    const SizedBox(height: 30),
                   ]),
                 ),
               ),
@@ -178,7 +190,7 @@ class AboutScreen extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-             Container(
+            Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -369,15 +381,12 @@ class _DeveloperInfoCard extends StatelessWidget {
   final String name;
   final String regNo;
 
-  const _DeveloperInfoCard({
-    required this.name,
-    required this.regNo,
-  });
+  const _DeveloperInfoCard({required this.name, required this.regNo});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return _GlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -386,7 +395,10 @@ class _DeveloperInfoCard extends StatelessWidget {
             padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: theme.colorScheme.primary.withOpacity(0.5), width: 2),
+              border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.5),
+                width: 2,
+              ),
             ),
             child: CircleAvatar(
               radius: 28,
@@ -403,7 +415,7 @@ class _DeveloperInfoCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            name, 
+            name,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface,

@@ -23,7 +23,7 @@ class AppColors {
   // Text
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFF94A3B8); // slate-400
-  static const Color textMuted = Color(0xFF64748B);     // slate-500
+  static const Color textMuted = Color(0xFF64748B); // slate-500
 
   // Accents
   static const Color success = Color(0xFF22C55E);
@@ -55,6 +55,10 @@ class AppDurations {
 }
 
 class AppTypography {
-  static TextStyle title(BuildContext context) => Theme.of(context).textTheme.headlineMedium!.copyWith(fontWeight: FontWeight.bold);
-  static TextStyle label(BuildContext context) => Theme.of(context).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.w600);
+  static TextStyle title(BuildContext context) => Theme.of(
+    context,
+  ).textTheme.headlineMedium!.copyWith(fontWeight: FontWeight.bold);
+  static TextStyle label(BuildContext context) => Theme.of(
+    context,
+  ).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.w600);
 }

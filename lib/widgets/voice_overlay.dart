@@ -1,4 +1,4 @@
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +7,7 @@ import '../services/voice_assistant_service.dart';
 import '../theme/design_tokens.dart';
 
 /// A global voice assistant overlay that matches the Bubbles design system.
-/// Triggered by the "Hey Bubbles" wake word â€” slides up from the bottom
+/// Triggered by the "Hey Bubbles" wake word — slides up from the bottom
 /// with a glassmorphic panel showing state, waveforms, and response text.
 class VoiceOverlay extends StatefulWidget {
   final GlobalKey<NavigatorState>? navigatorKey;
@@ -74,7 +74,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
 
         return Stack(
           children: [
-            // â”€â”€ Scrim â”€â”€
+            // ── Scrim ──
             Positioned.fill(
               child: GestureDetector(
                 onTap: () => assistant.hideOverlay(),
@@ -86,7 +86,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
               ),
             ),
 
-            // â”€â”€ Panel â”€â”€
+            // ── Panel ──
             Positioned(
               bottom: 0,
               left: 0,
@@ -99,82 +99,83 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // PANEL
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Widget _buildPanel(
-      BuildContext context, VoiceAssistantService assistant, bool isDark) {
+    BuildContext context,
+    VoiceAssistantService assistant,
+    bool isDark,
+  ) {
     return Material(
       type: MaterialType.transparency,
       child: Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-                  const Color(0xFF0F172A),
-                  const Color(0xFF1E293B),
-                  const Color(0xFF0F172A),
-                ]
-              : [
-                  Colors.white,
-                  const Color(0xFFF1F5F9),
-                  Colors.white,
-                ],
-        ),
-        border: Border.all(
-          color: isDark
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
-              : Colors.grey.shade200,
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.12 : 0.08),
-            blurRadius: 40,
-            spreadRadius: 0,
-            offset: const Offset(0, -8),
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    const Color(0xFF0F172A),
+                    const Color(0xFF1E293B),
+                    const Color(0xFF0F172A),
+                  ]
+                : [Colors.white, const Color(0xFFF1F5F9), Colors.white],
           ),
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+          border: Border.all(
+            color: isDark
+                ? Theme.of(context).colorScheme.primary.withOpacity(0.15)
+                : Colors.grey.shade200,
+            width: 1,
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // â”€â”€ Status Chip â”€â”€
-            _buildStatusChip(assistant, isDark),
-            const SizedBox(height: 24),
-
-            // â”€â”€ Visual Indicator â”€â”€
-            _buildVisualIndicator(assistant, isDark),
-            const SizedBox(height: 24),
-
-            // â”€â”€ Text Display â”€â”€
-            _buildTextDisplay(assistant, isDark),
-            const SizedBox(height: 20),
-
-            // â”€â”€ Bottom Bar (voice mode + dismiss) â”€â”€
-            _buildBottomBar(assistant, isDark),
+          boxShadow: [
+            BoxShadow(
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(isDark ? 0.12 : 0.08),
+              blurRadius: 40,
+              spreadRadius: 0,
+              offset: const Offset(0, -8),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
-      ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── Status Chip ──
+              _buildStatusChip(assistant, isDark),
+              const SizedBox(height: 24),
+
+              // ── Visual Indicator ──
+              _buildVisualIndicator(assistant, isDark),
+              const SizedBox(height: 24),
+
+              // ── Text Display ──
+              _buildTextDisplay(assistant, isDark),
+              const SizedBox(height: 20),
+
+              // ── Bottom Bar (voice mode + dismiss) ──
+              _buildBottomBar(assistant, isDark),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // STATUS CHIP
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Widget _buildStatusChip(VoiceAssistantService assistant, bool isDark) {
     String label;
@@ -208,10 +209,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.full),
         color: accentColor.withOpacity(0.12),
-        border: Border.all(
-          color: accentColor.withOpacity(0.25),
-          width: 1,
-        ),
+        border: Border.all(color: accentColor.withOpacity(0.25), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -228,7 +226,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                   color: accentColor,
                   boxShadow: [
                     BoxShadow(
-                      color: accentColor.withOpacity(0.5 * (_pulseAnimation.value - 1.0) / 0.2),
+                      color: accentColor.withOpacity(
+                        0.5 * (_pulseAnimation.value - 1.0) / 0.2,
+                      ),
                       blurRadius: 6,
                       spreadRadius: 2 * (_pulseAnimation.value - 1.0) / 0.2,
                     ),
@@ -254,9 +254,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // VISUAL INDICATOR
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Widget _buildVisualIndicator(VoiceAssistantService assistant, bool isDark) {
     switch (assistant.state) {
@@ -271,7 +271,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     }
   }
 
-  /// Pulsing orb with concentric rings â€” listening state
+  /// Pulsing orb with concentric rings — listening state
   Widget _buildListeningOrb(bool isDark) {
     return SizedBox(
       height: 90,
@@ -289,7 +289,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.15),
                     width: 1.5,
                   ),
                 ),
@@ -300,7 +302,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                 height: 65 * (1.0 + (_pulseAnimation.value - 1.0) * 0.6),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.08),
                 ),
               ),
               // Center orb
@@ -312,17 +316,26 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [Theme.of(context).colorScheme.primary, AppColors.primaryDark],
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      AppColors.primaryDark,
+                    ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.4),
                       blurRadius: 16,
                       spreadRadius: 2,
                     ),
                   ],
                 ),
-                child: const Icon(Icons.mic_rounded, color: Colors.white, size: 22),
+                child: const Icon(
+                  Icons.mic_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
               ),
             ],
           );
@@ -331,7 +344,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  /// Sequenced dots â€” processing state
+  /// Sequenced dots — processing state
   Widget _buildProcessingIndicator(bool isDark) {
     return SizedBox(
       height: 60,
@@ -371,7 +384,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  /// Waveform bars â€” speaking state
+  /// Waveform bars — speaking state
   Widget _buildSpeakingWaves(bool isDark) {
     return SizedBox(
       height: 60,
@@ -407,7 +420,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  /// Idle orb â€” subtle waiting state
+  /// Idle orb — subtle waiting state
   Widget _buildIdleOrb(bool isDark) {
     return AnimatedBuilder(
       animation: _pulseAnimation,
@@ -418,14 +431,20 @@ class _VoiceOverlayState extends State<VoiceOverlay>
           height: 56,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.06 + glow * 0.04),
+            color: Theme.of(
+              context,
+            ).colorScheme.primary.withOpacity(0.06 + glow * 0.04),
             border: Border.all(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.2 + glow * 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.2 + glow * 0.1),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(glow * 0.15),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withOpacity(glow * 0.15),
                 blurRadius: 12,
               ),
             ],
@@ -440,9 +459,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // TEXT DISPLAY
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Widget _buildTextDisplay(VoiceAssistantService assistant, bool isDark) {
     String displayText;
@@ -455,15 +474,11 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         displayText = assistant.partialText.isNotEmpty
             ? '"${assistant.partialText}"'
             : 'Go ahead, I\'m listening...';
-        textColor = isDark
-            ? const Color(0xFFCBD5E1)
-            : const Color(0xFF475569);
+        textColor = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569);
         break;
       case VoiceAssistantState.processing:
         displayText = '"${assistant.partialText}"';
-        textColor = isDark
-            ? const Color(0xFFCBD5E1)
-            : const Color(0xFF475569);
+        textColor = isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569);
         break;
       case VoiceAssistantState.speaking:
         displayText = assistant.lastResponse;
@@ -473,9 +488,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         break;
       default:
         displayText = 'Say "Hey Bubbles" to begin';
-        textColor = isDark
-            ? AppColors.textSecondary
-            : AppColors.textMuted;
+        textColor = isDark ? AppColors.textSecondary : AppColors.textMuted;
     }
 
     return AnimatedSwitcher(
@@ -496,9 +509,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // BOTTOM BAR
-  // â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”
+  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
   Widget _buildBottomBar(VoiceAssistantService assistant, bool isDark) {
     return Row(
@@ -536,7 +549,9 @@ class _VoiceOverlayState extends State<VoiceOverlay>
                   style: GoogleFonts.manrope(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                    color: isDark
+                        ? AppColors.textSecondary
+                        : AppColors.textMuted,
                   ),
                 ),
               ],
@@ -595,4 +610,3 @@ class _VoiceOverlayState extends State<VoiceOverlay>
     );
   }
 }
-
