@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/app_card.dart';
+import '../theme/design_tokens.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -167,18 +169,19 @@ class AboutScreen extends StatelessWidget {
 
   Widget _buildSliverAppBar(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return SliverAppBar(
       expandedHeight: 300.0,
       pinned: true,
       stretch: true,
-      backgroundColor: theme.colorScheme.primary.withAlpha(230),
-      foregroundColor: theme.colorScheme.onPrimary,
+      backgroundColor: AppColors.primary.withAlpha(230),
+      foregroundColor: Colors.white,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
-        title: const Text(
+        title: Text(
           'About Bubbles',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w200, fontSize: 20),
         ),
         centerTitle: true,
         background: Stack(
@@ -188,8 +191,8 @@ class AboutScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondaryContainer,
+                    AppColors.backgroundDark,
+                    AppColors.primary.withAlpha(128),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -343,26 +346,19 @@ class _GlassCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadius.xxl),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           padding: padding ?? const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withAlpha(178),
-            borderRadius: BorderRadius.circular(20),
+            color: isDark ? AppColors.glassWhite : Colors.white,
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
             border: Border.all(
-              color: theme.colorScheme.outline.withAlpha(26),
+              color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: theme.shadowColor.withAlpha(13),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
           ),
           child: child,
         ),
@@ -438,10 +434,9 @@ class _AmbientBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
-        // Top right ambient blob
         Positioned(
           top: -100,
           right: -100,
@@ -450,11 +445,12 @@ class _AmbientBackground extends StatelessWidget {
             height: 400,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primaryContainer.withAlpha(76),
+              gradient: RadialGradient(
+                colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+              ),
             ),
           ),
         ),
-        // Bottom left ambient blob
         Positioned(
           bottom: -100,
           left: -100,
@@ -463,7 +459,9 @@ class _AmbientBackground extends StatelessWidget {
             height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.secondaryContainer.withAlpha(76),
+              gradient: RadialGradient(
+                colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+              ),
             ),
           ),
         ),

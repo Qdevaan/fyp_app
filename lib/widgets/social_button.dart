@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
@@ -26,46 +27,53 @@ class SocialButton extends StatelessWidget {
       button: true,
       label: label,
       enabled: !loading,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
+      child: GestureDetector(
         onTap: loading ? null : onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
-          height: 52,
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.surfaceDark : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: isDark ? AppColors.slate700 : AppColors.slate200,
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (imagePath != null)
-                Image.asset(imagePath!, height: 22, width: 22)
-              else if (icon != null)
-                Icon(
-                  icon,
-                  size: 22,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              const SizedBox(width: 10),
-              Text(
-                label,
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? AppColors.slate200
-                      : AppColors.slate600,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              height: 52,
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.glassWhite : Colors.white.withAlpha(200),
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                border: Border.all(
+                  color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
                 ),
               ),
-            ],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (loading)
+                    SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: isDark ? Colors.white : AppColors.slate700,
+                      ),
+                    )
+                  else ...[
+                    if (imagePath != null)
+                      Image.asset(imagePath!, height: 22, width: 22)
+                    else if (icon != null)
+                      Icon(icon, size: 22, color: isDark ? Colors.white : Colors.black87),
+                    const SizedBox(width: 10),
+                    Text(
+                      label,
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? AppColors.slate200 : AppColors.slate600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
           ),
         ),
-      ),
       ),
     );
   }

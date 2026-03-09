@@ -20,12 +20,12 @@ void showComingSoon(BuildContext context, String feature) {
 void showContactSheet(BuildContext context, bool isDark) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: isDark ? AppColors.slate800 : Colors.white,
+    backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
     ),
     builder: (_) {
-      final primary = Theme.of(context).colorScheme.primary;
+      final primary = AppColors.primary;
       return Padding(
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
         child: Column(
@@ -98,11 +98,11 @@ void showThemeModePicker(BuildContext context, ThemeProvider themeProvider) {
     builder: (ctx) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
       return AlertDialog(
-        backgroundColor: isDark ? AppColors.slate800 : Colors.white,
+        backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
           side: BorderSide(
-            color: Theme.of(context).colorScheme.primary.withAlpha(26),
+            color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
             width: 1,
           ),
         ),
@@ -111,12 +111,12 @@ void showThemeModePicker(BuildContext context, ThemeProvider themeProvider) {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withAlpha(26),
+                color: AppColors.primary.withAlpha(26),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.palette_outlined,
-                color: Theme.of(context).colorScheme.primary,
+                color: AppColors.primary,
                 size: 20,
               ),
             ),
@@ -190,12 +190,12 @@ Widget _buildThemeOption(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isSelected
-            ? Theme.of(context).colorScheme.primary.withAlpha(26)
+            ? AppColors.primary.withAlpha(26)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected
-              ? Theme.of(context).colorScheme.primary.withAlpha(76)
+              ? AppColors.primary.withAlpha(76)
               : (isDark ? Colors.white10 : Colors.black12),
           width: 1,
         ),
@@ -206,7 +206,7 @@ Widget _buildThemeOption(
             icon,
             size: 20,
             color: isSelected
-                ? Theme.of(context).colorScheme.primary
+                ? AppColors.primary
                 : (isDark ? Colors.white70 : Colors.black87),
           ),
           const SizedBox(width: 12),
@@ -217,7 +217,7 @@ Widget _buildThemeOption(
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
-                    ? Theme.of(context).colorScheme.primary
+                    ? AppColors.primary
                     : (isDark ? Colors.white : Colors.black87),
               ),
             ),
@@ -225,7 +225,7 @@ Widget _buildThemeOption(
           if (isSelected)
             Icon(
               Icons.check_circle_rounded,
-              color: Theme.of(context).colorScheme.primary,
+              color: AppColors.primary,
               size: 20,
             ),
         ],
@@ -287,10 +287,10 @@ void showVoiceModePicker(BuildContext context, VoiceAssistantService voice) {
   showModalBottomSheet(
     context: context,
     backgroundColor: Theme.of(context).brightness == Brightness.dark
-        ? AppColors.surfaceDark
+        ? AppColors.backgroundDark
         : Colors.white,
     shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
     ),
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setSheetState) {

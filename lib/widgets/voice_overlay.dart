@@ -131,15 +131,13 @@ class _VoiceOverlayState extends State<VoiceOverlay>
           ),
           border: Border.all(
             color: isDark
-                ? Theme.of(context).colorScheme.primary.withAlpha(38)
+                ? AppColors.primary.withAlpha(38)
                 : Colors.grey.shade200,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Theme.of(
-                context,
-              ).colorScheme.primary.withAlpha(isDark ? 31 : 20),
+              color: AppColors.primary.withAlpha(isDark ? 31 : 20),
               blurRadius: 40,
               spreadRadius: 0,
               offset: const Offset(0, -8),

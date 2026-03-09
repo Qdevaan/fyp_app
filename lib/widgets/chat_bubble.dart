@@ -32,8 +32,8 @@ class ChatBubble extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isUser
-              ? (isDark ? Colors.transparent : Colors.transparent)
-              : (isDark ? AppColors.bubbleDark : AppColors.slate100),
+              ? Colors.transparent
+              : (isDark ? AppColors.glassWhite : AppColors.slate100),
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(isUser ? 18 : 4),
             topRight: Radius.circular(isUser ? 4 : 18),
@@ -43,10 +43,12 @@ class ChatBubble extends StatelessWidget {
           border: isUser
               ? Border.all(
                   color: isDark
-                      ? AppColors.slate700
+                      ? AppColors.glassBorder
                       : Colors.grey.shade300,
                 )
-              : null,
+              : (isDark
+                  ? Border.all(color: AppColors.glassBorder)
+                  : null),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,7 +60,7 @@ class ChatBubble extends StatelessWidget {
                   speakerLabel!,
                   style: GoogleFonts.manrope(
                     fontSize: 10,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                   ),

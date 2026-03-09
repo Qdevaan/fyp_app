@@ -127,33 +127,40 @@ class _SignupScreenState extends State<SignupScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: Stack(
         children: [
-          // Decorative Background Blobs
-          Positioned(
-            top: -80,
-            left: -80,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withAlpha(38),
+          // Mesh gradient background
+          if (isDark) ...[
+            Positioned(
+              top: -120,
+              left: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                  ),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: -80,
-            right: -80,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.purple.withAlpha(20),
+            Positioned(
+              bottom: -120,
+              right: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
 
           // Main Content
           SafeArea(
@@ -165,7 +172,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     padding: const EdgeInsets.only(left: 16, top: 16),
                     icon: Icon(
                       Icons.arrow_back,
-                      color: theme.colorScheme.onSurface,
+                      color: isDark ? Colors.white : AppColors.slate900,
                     ),
                     onPressed: () => Navigator.pop(context),
                   ),
@@ -188,22 +195,18 @@ class _SignupScreenState extends State<SignupScreen> {
                               Text(
                                 'Create Account',
                                 style: GoogleFonts.manrope(
-                                  fontSize: 30,
-                                  fontWeight: FontWeight.w800,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.slate900,
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w200,
+                                  color: isDark ? Colors.white : AppColors.slate900,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 8),
                               Text(
                                 'Join your personal Wingman today.',
                                 style: GoogleFonts.manrope(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                  color: isDark
-                                      ? AppColors.slate400
-                                      : AppColors.slate500,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppColors.slate400,
                                 ),
                               ),
                             ],
@@ -214,7 +217,7 @@ class _SignupScreenState extends State<SignupScreen> {
                           // Form Fields
                           AppInput(
                             controller: _emailCtrl,
-                            label: 'Email Address',
+                            label: 'Email',
                             prefixIcon: Icons.email_outlined,
                             type: TextInputType.emailAddress,
                             hintText: 'Enter your email',
@@ -244,10 +247,10 @@ class _SignupScreenState extends State<SignupScreen> {
                                     child: LinearProgressIndicator(
                                       value: _passwordStrength,
                                       backgroundColor: isDark
-                                          ? AppColors.slate700
+                                          ? AppColors.glassBorder
                                           : AppColors.slate200,
                                       color: _strengthColor,
-                                      minHeight: 4,
+                                      minHeight: 3,
                                     ),
                                   ),
                                 ),
@@ -291,21 +294,15 @@ class _SignupScreenState extends State<SignupScreen> {
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: isDark
-                                      ? Colors.white24
-                                      : Colors.black12,
+                                  color: isDark ? AppColors.glassBorder : AppColors.slate200,
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
                                 child: Text(
                                   'OR',
                                   style: GoogleFonts.manrope(
-                                    color: isDark
-                                        ? Colors.white70
-                                        : Colors.black54,
+                                    color: AppColors.slate500,
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -313,9 +310,7 @@ class _SignupScreenState extends State<SignupScreen> {
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: isDark
-                                      ? Colors.white24
-                                      : Colors.black12,
+                                  color: isDark ? AppColors.glassBorder : AppColors.slate200,
                                 ),
                               ),
                             ],
@@ -337,27 +332,22 @@ class _SignupScreenState extends State<SignupScreen> {
                               Text(
                                 'Already have an account?',
                                 style: GoogleFonts.manrope(
-                                  color: isDark
-                                      ? AppColors.slate300
-                                      : AppColors.slate500,
-                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.slate400,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8),
                                   minimumSize: Size.zero,
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
                                   'Log In',
                                   style: GoogleFonts.manrope(
-                                    fontWeight: FontWeight.w800,
-                                    color: theme.colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),

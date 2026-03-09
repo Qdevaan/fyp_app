@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/design_tokens.dart';
 
 class AppLogo extends StatelessWidget {
   final double size;
@@ -20,7 +21,7 @@ class AppLogo extends StatelessWidget {
       errorBuilder: (c, o, s) => Icon(
         Icons.bubble_chart,
         size: size,
-        color: fallbackColor ?? Theme.of(context).colorScheme.primary,
+        color: fallbackColor ?? AppColors.primary,
       ),
     );
   }

@@ -37,8 +37,8 @@ class AppDrawer extends StatelessWidget {
           : AppColors.backgroundLight,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
-          topRight: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+          topRight: Radius.circular(AppRadius.xxl),
+          bottomRight: Radius.circular(AppRadius.xxl),
         ),
       ),
       child: Column(
@@ -101,7 +101,7 @@ class AppDrawer extends StatelessWidget {
                   ),
                   child: Divider(
                     color: isDark
-                        ? Colors.white.withAlpha(13)
+                        ? AppColors.glassBorder
                         : Colors.grey.shade200,
                     height: 1,
                   ),
@@ -187,14 +187,14 @@ class AppDrawer extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.slate900, AppColors.slate800],
+          colors: [AppColors.backgroundDark, AppColors.primary.withAlpha(38)],
         ),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
+          bottomLeft: Radius.circular(AppRadius.xxl),
+          bottomRight: Radius.circular(AppRadius.xxl),
         ),
       ),
       child: Row(
@@ -205,9 +205,7 @@ class AppDrawer extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withAlpha(128),
+                    color: AppColors.primary.withAlpha(128),
                     width: 2,
                   ),
                 ),
@@ -216,9 +214,7 @@ class AppDrawer extends StatelessWidget {
                   backgroundImage: photoUrl != null
                       ? CachedNetworkImageProvider(photoUrl)
                       : null,
-                  backgroundColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withAlpha(51),
+                  backgroundColor: AppColors.primary.withAlpha(51),
                   child: photoUrl == null
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
@@ -313,7 +309,7 @@ class AppDrawer extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
             color: AppColors.error.withAlpha(26),
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
             border: Border.all(color: AppColors.error.withAlpha(51)),
           ),
           child: Row(
@@ -362,7 +358,7 @@ class _DrawerItem extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(

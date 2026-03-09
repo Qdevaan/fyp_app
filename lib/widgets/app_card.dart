@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/design_tokens.dart';
 import 'fade_slide_transition.dart';
@@ -18,16 +19,28 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return FadeSlideTransition(
       delay: delay,
-      child: Material(
-        elevation: 2,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        color: Theme.of(context).colorScheme.surface,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: onTap,
-          child: Padding(padding: padding, child: child),
+      child: GestureDetector(
+        onTap: onTap,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.glassWhite : Colors.white.withAlpha(200),
+                borderRadius: BorderRadius.circular(AppRadius.xxl),
+                border: Border.all(
+                  color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+              padding: padding,
+              child: child,
+            ),
+          ),
         ),
       ),
     );

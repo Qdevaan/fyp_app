@@ -157,47 +157,122 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final logoPath = isDarkMode
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final logoPath = isDark
         ? 'assets/logos/logo_dark.png'
         : 'assets/logos/logo_light.png';
 
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset(logoPath, width: 112, height: 112),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: 180,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: TweenAnimationBuilder<double>(
-                  tween: Tween<double>(begin: 0.0, end: _progress),
-                  duration: AppDurations.normal,
-                  builder: (context, value, _) {
-                    return LinearProgressIndicator(value: value, minHeight: 6);
-                  },
-                  onEnd: () {
-                    if (_progress == 1.0) {
-                      _onLoadingComplete();
-                    }
-                  },
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          // Mesh gradient background
+          if (isDark) ...[
+            Positioned(
+              top: -120,
+              left: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            AnimatedSwitcher(
-              duration: AppDurations.dialog,
-              child: Text(
-                _loadingText,
-                key: ValueKey<String>(_loadingText),
-                style: Theme.of(context).textTheme.bodyMedium,
+            Positioned(
+              bottom: -120,
+              right: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                  ),
+                ),
               ),
             ),
           ],
-        ),
+          // Center content
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Logo with glow
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withAlpha(38),
+                        blurRadius: 60,
+                        spreadRadius: 20,
+                      ),
+                    ],
+                  ),
+                  child: Image.asset(logoPath, width: 112, height: 112),
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'BUBBLES',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w200,
+                    letterSpacing: 8,
+                    color: isDark ? Colors.white : AppColors.slate900,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: 180,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0.0, end: _progress),
+                      duration: AppDurations.normal,
+                      builder: (context, value, _) {
+                        return LinearProgressIndicator(
+                          value: value,
+                          minHeight: 3,
+                          backgroundColor: isDark
+                              ? AppColors.glassBorder
+                              : AppColors.slate200,
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            AppColors.primary,
+                          ),
+                        );
+                      },
+                      onEnd: () {
+                        if (_progress == 1.0) {
+                          _onLoadingComplete();
+                        }
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                AnimatedSwitcher(
+                  duration: AppDurations.dialog,
+                  child: Text(
+                    _loadingText,
+                    key: ValueKey<String>(_loadingText),
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.5,
+                      color: isDark ? AppColors.slate400 : AppColors.slate500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

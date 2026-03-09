@@ -65,7 +65,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
             "Scan Server QR",
             style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
           ),
-          backgroundColor: AppColors.surfaceDark,
+          backgroundColor: AppColors.backgroundDark,
           leading: IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () => Navigator.pop(ctx),
@@ -101,28 +101,55 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     final isConnected = connectionService.isConnected;
     final isConnecting =
         connectionService.status == ConnectionStatus.connecting;
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
     final serverUrl = connectionService.serverUrl;
 
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          if (isDark) ...[
+            Positioned(
+              top: -120,
+              left: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -120,
+              right: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          SafeArea(
         child: Column(
           children: [
-            // -- Header (matches HTML: back arrow + title) --------------
             Container(
               decoration: BoxDecoration(
-                color:
-                    (isDark
-                            ? AppColors.backgroundDark
-                            : AppColors.backgroundLight)
-                        .withAlpha(230),
+                color: Colors.transparent,
                 border: Border(
                   bottom: BorderSide(
                     color: isDark
-                        ? AppColors.slate800
+                        ? AppColors.glassBorder
                         : AppColors.slate200,
                   ),
                 ),
@@ -165,13 +192,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? AppColors.slate800.withAlpha(128)
-                            : Colors.white.withAlpha(178),
-                        borderRadius: BorderRadius.circular(AppRadius.xl),
+                            ? AppColors.glassWhite
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.xxl),
                         border: Border.all(
                           color: isDark
-                              ? AppColors.slate700
-                              : AppColors.slate200,
+                              ? AppColors.glassBorder
+                              : Colors.grey.shade200,
                         ),
                       ),
                       child: Column(
@@ -343,13 +370,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     Container(
                       decoration: BoxDecoration(
                         color: isDark
-                            ? AppColors.slate800.withAlpha(128)
-                            : Colors.white.withAlpha(178),
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                            ? AppColors.glassWhite
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadius.xxl),
                         border: Border.all(
                           color: isDark
-                              ? AppColors.slate700
-                              : AppColors.slate200,
+                              ? AppColors.glassBorder
+                              : Colors.grey.shade200,
                         ),
                       ),
                       child: Row(
@@ -445,6 +472,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
           ],
         ),
       ),
+        ],
+      ),
     );
   }
 }
@@ -512,10 +541,10 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.slate800 : AppColors.slate100,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          color: isDark ? AppColors.glassWhite : AppColors.slate100,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
           border: Border.all(
-            color: isDark ? AppColors.slate700 : AppColors.slate200,
+            color: isDark ? AppColors.glassBorder : AppColors.slate200,
           ),
         ),
         child: loading
@@ -525,7 +554,7 @@ class _ActionButton extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Theme.of(context).colorScheme.primary,
+                    color: AppColors.primary,
                   ),
                 ),
               )
@@ -590,11 +619,11 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
     return Container(
       decoration: BoxDecoration(
         color: isDark
-            ? AppColors.slate800.withAlpha(76)
-            : Colors.white.withAlpha(128),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+            ? AppColors.glassWhite
+            : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(
-          color: isDark ? AppColors.slate700 : AppColors.slate200,
+          color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
         ),
       ),
       child: Column(

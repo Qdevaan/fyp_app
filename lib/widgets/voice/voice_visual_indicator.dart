@@ -79,15 +79,13 @@ class VoiceVisualIndicator extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Theme.of(context).colorScheme.primary,
+                      AppColors.primary,
                       AppColors.primaryDark,
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withAlpha(102),
+                      color: AppColors.primary.withAlpha(102),
                       blurRadius: 16,
                       spreadRadius: 2,
                     ),
@@ -213,7 +211,7 @@ class VoiceVisualIndicator extends StatelessWidget {
           ),
           child: Icon(
             Icons.mic_none_rounded,
-            color: Theme.of(context).colorScheme.primary.withAlpha(178),
+            color: AppColors.primary.withAlpha(178),
             size: 26,
           ),
         );

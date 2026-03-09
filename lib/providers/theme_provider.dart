@@ -51,8 +51,8 @@ class ThemeProvider extends ChangeNotifier {
       useMaterial3: true,
       brightness: Brightness.light,
       textTheme: _manropeTextTheme.apply(
-        bodyColor: Colors.black87,
-        displayColor: Colors.black87,
+        bodyColor: AppColors.slate900,
+        displayColor: AppColors.slate900,
       ),
       colorScheme:
           ColorScheme.fromSeed(
@@ -68,7 +68,7 @@ class ThemeProvider extends ChangeNotifier {
           ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.backgroundLight,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.slate900,
         elevation: 0,
         centerTitle: true,
@@ -79,30 +79,30 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surfaceLight,
+        color: Colors.white.withAlpha(220),
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
           side: BorderSide(color: Colors.grey.shade200),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: Colors.white.withAlpha(200),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 14,
+          vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide(color: Colors.grey.shade200),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide(color: Colors.grey.shade200),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide(color: _seedColor, width: 2),
         ),
       ),
@@ -111,9 +111,9 @@ class ThemeProvider extends ChangeNotifier {
           backgroundColor: _seedColor,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.full),
           ),
           textStyle: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,
@@ -153,7 +153,7 @@ class ThemeProvider extends ChangeNotifier {
           ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
       appBarTheme: AppBarTheme(
-        backgroundColor: AppColors.backgroundDark,
+        backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -164,30 +164,30 @@ class ThemeProvider extends ChangeNotifier {
         ),
       ),
       cardTheme: CardThemeData(
-        color: AppColors.surfaceDark,
+        color: AppColors.glassWhite,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          side: BorderSide(color: Colors.white.withAlpha(13)),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          side: BorderSide(color: AppColors.glassBorder),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surfaceDark,
+        fillColor: AppColors.glassInput,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 14,
+          vertical: 16,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: Colors.white.withAlpha(26)),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: AppColors.glassBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          borderSide: BorderSide(color: Colors.white.withAlpha(26)),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderSide: BorderSide(color: AppColors.glassBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           borderSide: BorderSide(color: _seedColor, width: 2),
         ),
       ),
@@ -196,9 +196,9 @@ class ThemeProvider extends ChangeNotifier {
           backgroundColor: _seedColor,
           foregroundColor: Colors.white,
           elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.full),
           ),
           textStyle: GoogleFonts.manrope(
             fontWeight: FontWeight.w700,

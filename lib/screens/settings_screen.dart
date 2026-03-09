@@ -70,7 +70,40 @@ class _SettingsScreenState extends State<SettingsScreen> {
         }
       },
       child: Scaffold(
-        body: SafeArea(
+        backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+        body: Stack(
+          children: [
+            if (isDark) ...[
+              Positioned(
+                top: -120,
+                left: -120,
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -120,
+                right: -120,
+                child: Container(
+                  width: 400,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            SafeArea(
           child: Column(
             children: [
               // --- Header ---
@@ -96,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: GoogleFonts.manrope(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -145,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               style: GoogleFonts.manrope(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.primary,
+                                color: AppColors.primary,
                               ),
                             ),
                             onTap: () =>
@@ -238,12 +271,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               ToggleTile(
                                 isDark: isDark,
-                                iconBg: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withAlpha(51),
-                                iconColor: Theme.of(
-                                  context,
-                                ).colorScheme.primary,
+                                iconBg: AppColors.primary.withAlpha(51),
+                              iconColor: AppColors.primary,
                                 icon: Icons.hearing_rounded,
                                 title: '"Hey Bubbles" Wake Word',
                                 value: voice.isWakeWordEnabled,
@@ -338,10 +367,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           SettingsTile(
                             isDark: isDark,
-                            iconBg: Theme.of(
-                              context,
-                            ).colorScheme.primary.withAlpha(38),
-                            iconColor: Theme.of(context).colorScheme.primary,
+                            iconBg: AppColors.primary.withAlpha(38),
+                            iconColor: AppColors.primary,
                             icon: Icons.info_outline_rounded,
                             title: 'About Bubbles',
                             onTap: () => Navigator.pushNamed(context, '/about'),
@@ -371,10 +398,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isDark
-                                      ? AppColors.surfaceDark
+                                      ? AppColors.glassWhite
                                       : Colors.white,
                                   borderRadius: BorderRadius.circular(
-                                    AppRadius.lg,
+                                    AppRadius.xxl,
+                                  ),
+                                  border: Border.all(
+                                    color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
                                   ),
                                 ),
                                 child: Center(
@@ -425,6 +455,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+        ),
+          ],
         ),
       ),
     );

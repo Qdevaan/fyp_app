@@ -22,12 +22,12 @@ class ChatHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -35,7 +35,7 @@ class ChatHistoryTile extends StatelessWidget {
             color: isActive
                 ? primary.withOpacity(isDark ? 0.15 : 0.08)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: isActive
                 ? Border.all(color: primary.withAlpha(76))
                 : null,
@@ -106,7 +106,7 @@ class UserBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +200,7 @@ class AiBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,7 +231,7 @@ class AiBubble extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppColors.slate800
+                      ? AppColors.glassWhite
                       : AppColors.slate200,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(3),
@@ -239,6 +239,7 @@ class AiBubble extends StatelessWidget {
                     bottomLeft: Radius.circular(16),
                     bottomRight: Radius.circular(16),
                   ),
+                  border: isDark ? Border.all(color: AppColors.glassBorder) : null,
                 ),
                 child: MarkdownBody(
                   data: streaming ? '$text ÃƒÂ¢Ã¢â‚¬â€Ã…â€™' : text,
@@ -322,7 +323,7 @@ class TypingIndicator extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? AppColors.slate800
+                      ? AppColors.glassWhite
                       : AppColors.slate200,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(3),
@@ -330,6 +331,7 @@ class TypingIndicator extends StatelessWidget {
                     bottomLeft: Radius.circular(16),
                     bottomRight: Radius.circular(16),
                   ),
+                  border: isDark ? Border.all(color: AppColors.glassBorder) : null,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -420,7 +422,7 @@ class MicToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
     final isActive = voiceMode != CVoiceMode.off;
     final isSpeaking = voiceMode == CVoiceMode.speaking;
 
@@ -478,7 +480,7 @@ class VoiceStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
     final label = switch (voiceMode) {
       CVoiceMode.listening => partial.isEmpty ? 'ListeningÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : partial,
       CVoiceMode.processing => 'ThinkingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦',

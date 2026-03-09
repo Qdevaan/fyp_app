@@ -166,8 +166,8 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.slate800 : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xxl)),
         title: Row(
           children: [
             Container(
@@ -220,17 +220,17 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               Navigator.pushNamed(context, '/connections');
             },
             style: TextButton.styleFrom(
-              backgroundColor: cs.primary.withAlpha(31),
+              backgroundColor: AppColors.primary.withAlpha(31),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.full),
               ),
             ),
             child: Text(
               'Connect',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.w700,
-                color: cs.primary,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -482,9 +482,9 @@ class _ConsultantScreenState extends State<ConsultantScreen>
 
   // -- Drawer (reads from provider) --
   Widget _buildDrawer(bool isDark, ConsultantProvider chat) {
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
     return Drawer(
-      backgroundColor: isDark ? AppColors.slate900 : Colors.white,
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
       child: SafeArea(
         child: Column(
           children: [
@@ -513,7 +513,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               ),
             ),
             Divider(
-              color: isDark ? AppColors.slate800 : Colors.grey.shade200,
+              color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
               height: 1,
             ),
             ListTile(
@@ -603,14 +603,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                 // -- TOP BAR --
                 Container(
                   decoration: BoxDecoration(
-                    color: (isDark
-                            ? AppColors.backgroundDark
-                            : AppColors.backgroundLight)
-                        .withAlpha(230),
+                    color: Colors.transparent,
                     border: Border(
                       bottom: BorderSide(
                         color: isDark
-                            ? AppColors.slate800
+                            ? AppColors.glassBorder
                             : AppColors.slate200,
                       ),
                     ),
@@ -751,11 +748,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: cs.primary,
+                                  color: AppColors.primary,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: cs.primary.withAlpha(77),
+                                      color: AppColors.primary.withAlpha(77),
                                       blurRadius: 8,
                                     ),
                                   ],
@@ -792,7 +789,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                     border: Border(
                       top: BorderSide(
                         color: isDark
-                            ? AppColors.slate800
+                            ? AppColors.glassBorder
                             : AppColors.slate200,
                       ),
                     ),
@@ -804,9 +801,12 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                         child: Container(
                           decoration: BoxDecoration(
                             color: isDark
-                                ? AppColors.slate800
+                                ? AppColors.glassInput
                                 : AppColors.slate100,
-                            borderRadius: BorderRadius.circular(28),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                            border: Border.all(
+                              color: isDark ? AppColors.glassBorder : Colors.transparent,
+                            ),
                           ),
                           child: TextField(
                             controller: _controller,
@@ -848,15 +848,15 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                             decoration: BoxDecoration(
                               color: (chat.loading || chat.loadingChat)
                                   ? (isDark
-                                      ? AppColors.surfaceDark
+                                      ? AppColors.glassWhite
                                       : Colors.grey.shade300)
-                                  : cs.primary,
+                                  : AppColors.primary,
                               shape: BoxShape.circle,
                               boxShadow: (chat.loading || chat.loadingChat)
                                   ? null
                                   : [
                                       BoxShadow(
-                                        color: cs.primary.withAlpha(77),
+                                        color: AppColors.primary.withAlpha(77),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4),
                                       ),

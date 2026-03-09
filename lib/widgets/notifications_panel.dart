@@ -88,7 +88,7 @@ class NotificationsPanel extends StatelessWidget {
                       style: GoogleFonts.manrope(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -140,7 +140,7 @@ class NotificationsPanel extends StatelessWidget {
                         ...highlights.map(
                           (hl) => _NotificationCard(
                             isDark: isDark,
-                            accentColor: const AppColors.error,
+                            accentColor: AppColors.error,
                             icon: Icons.warning_amber_rounded,
                             title: hl['title'] as String? ?? 'Highlight',
                             body: hl['body'] as String? ?? '',
@@ -152,7 +152,7 @@ class NotificationsPanel extends StatelessWidget {
                         ...events.map(
                           (ev) => _NotificationCard(
                             isDark: isDark,
-                            accentColor: const AppColors.warning,
+                            accentColor: AppColors.warning,
                             icon: Icons.event_rounded,
                             title: ev['title'] as String? ?? 'Event',
                             body: ev['description'] as String? ?? '',

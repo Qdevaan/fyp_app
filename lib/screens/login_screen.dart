@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -145,33 +145,40 @@ class _LoginScreenState extends State<LoginScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: Stack(
         children: [
-          // Decorative Background Blobs
-          Positioned(
-            top: -80,
-            left: -80,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withAlpha(38),
+          // Mesh gradient background
+          if (isDark) ...[
+            Positioned(
+              top: -120,
+              left: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                  ),
+                ),
               ),
             ),
-          ),
-          Positioned(
-            bottom: -80,
-            right: -80,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.purple.withAlpha(20),
+            Positioned(
+              bottom: -120,
+              right: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                  ),
+                ),
               ),
             ),
-          ),
+          ],
 
           // Main Content
           SafeArea(
@@ -184,30 +191,26 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 60),
 
-                    // Header Ã¢â‚¬â€ Logo + Title
+                    // Header — Logo + Title
                     Column(
                       children: [
                         const AppLogo(size: 80),
                         const SizedBox(height: 16),
                         Text(
-                          'Bubbles',
+                          'Welcome Back',
                           style: GoogleFonts.manrope(
-                            fontSize: 30,
-                            fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.slate900,
+                            fontSize: 36,
+                            fontWeight: FontWeight.w200,
+                            color: isDark ? Colors.white : AppColors.slate900,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Text(
                           'Your premium AI Wingman & Consultant',
                           style: GoogleFonts.manrope(
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: isDark
-                                ? AppColors.slate400
-                                : AppColors.slate500,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.slate400,
                           ),
                         ),
                       ],
@@ -218,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     // Form Fields
                     AppInput(
                       controller: _emailCtrl,
-                      label: 'Email Address',
+                      label: 'Email',
                       prefixIcon: Icons.email_outlined,
                       type: TextInputType.emailAddress,
                       hintText: 'Enter your email',
@@ -235,18 +238,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Padding(
-                              padding: const EdgeInsets.only(
-                                left: 4,
-                                bottom: 8,
-                              ),
+                              padding: const EdgeInsets.only(left: 4, bottom: 8),
                               child: Text(
-                                'Password',
+                                'PASSWORD',
                                 style: GoogleFonts.manrope(
-                                  fontSize: 13,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? AppColors.slate300
-                                      : AppColors.slate600,
+                                  letterSpacing: 1.2,
+                                  color: isDark ? AppColors.slate400 : AppColors.slate500,
                                 ),
                               ),
                             ),
@@ -259,9 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -283,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 28),
 
-                    // Login Button
+                    // Login Button — gradient primary
                     AppButton(
                       label: 'Log In',
                       icon: Icons.arrow_forward,
@@ -299,9 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Expanded(
                           child: Divider(
-                            color: isDark
-                                ? AppColors.slate700
-                                : AppColors.slate200,
+                            color: isDark ? AppColors.glassBorder : AppColors.slate200,
                           ),
                         ),
                         Padding(
@@ -310,17 +305,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             'Or continue with',
                             style: GoogleFonts.manrope(
                               fontSize: 12,
-                              color: isDark
-                                  ? AppColors.slate500
-                                  : AppColors.slate400,
+                              color: AppColors.slate500,
                             ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
-                            color: isDark
-                                ? AppColors.slate700
-                                : AppColors.slate200,
+                            color: isDark ? AppColors.glassBorder : AppColors.slate200,
                           ),
                         ),
                       ],
@@ -346,9 +337,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           'New to Bubbles? ',
                           style: GoogleFonts.manrope(
                             fontSize: 14,
-                            color: isDark
-                                ? AppColors.slate400
-                                : AppColors.slate500,
+                            color: AppColors.slate400,
                           ),
                         ),
                         GestureDetector(
@@ -358,7 +347,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.manrope(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: AppColors.primary,
                             ),
                           ),
                         ),
@@ -382,7 +371,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    Theme.of(context).colorScheme.primary.withAlpha(128),
+                    AppColors.primary.withAlpha(128),
                     Colors.transparent,
                   ],
                 ),

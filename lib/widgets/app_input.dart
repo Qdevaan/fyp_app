@@ -43,17 +43,19 @@ class _AppInputState extends State<AppInput> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Text(
-            widget.label,
-            style: GoogleFonts.manrope(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: isDark ? AppColors.slate300 : AppColors.slate600,
+        if (widget.label.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              widget.label.toUpperCase(),
+              style: GoogleFonts.manrope(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: isDark ? AppColors.slate400 : AppColors.slate500,
+              ),
             ),
           ),
-        ),
         TextFormField(
           controller: widget.controller,
           keyboardType: widget.type,
@@ -75,9 +77,7 @@ class _AppInputState extends State<AppInput> {
                 ? Icon(
                     widget.prefixIcon,
                     size: 20,
-                    color: isDark
-                        ? AppColors.slate400
-                        : AppColors.slate400,
+                    color: AppColors.slate400,
                   )
                 : null,
             suffixIcon: isPassword
@@ -90,45 +90,35 @@ class _AppInputState extends State<AppInput> {
                     onPressed: () => setState(() => _hidden = !_hidden),
                   )
                 : (widget.suffixIcon != null
-                      ? Icon(
-                          widget.suffixIcon,
-                          size: 20,
-                          color: isDark
-                              ? AppColors.slate400
-                              : AppColors.slate400,
-                        )
+                      ? Icon(widget.suffixIcon, size: 20, color: AppColors.slate400)
                       : null),
             filled: true,
-            fillColor: isDark ? AppColors.surfaceDark : Colors.white,
+            fillColor: isDark ? AppColors.glassInput : Colors.white.withAlpha(200),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 16,
             ),
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.slate700
-                    : AppColors.slate200,
+                color: isDark ? AppColors.glassBorder : AppColors.slate200,
               ),
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               borderSide: BorderSide(
-                color: isDark
-                    ? AppColors.slate700
-                    : AppColors.slate200,
+                color: isDark ? AppColors.glassBorder : AppColors.slate200,
               ),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.primary,
+                color: AppColors.primary,
                 width: 2,
               ),
             ),
             errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               borderSide: const BorderSide(color: AppColors.error),
             ),
           ),

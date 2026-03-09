@@ -11,6 +11,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../widgets/app_logo.dart';
 import '../theme/design_tokens.dart';
+import '../widgets/glass_morphism.dart';
 
 class ProfileCompletionScreen extends StatefulWidget {
   const ProfileCompletionScreen({super.key});
@@ -159,12 +160,13 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   }
 
   void _showCountryPicker() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       builder: (context) {
         String searchQuery = '';
@@ -244,16 +246,14 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                                 color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
+                                    ? AppColors.primary
                                     : null,
                               ),
                             ),
                             trailing: isSelected
                                 ? Icon(
                                     Icons.check,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
+                                    color: AppColors.primary,
                                   )
                                 : null,
                             onTap: () {
@@ -347,29 +347,30 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     IconData? icon,
   }) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(76),
+      fillColor: isDark ? AppColors.glassInput : theme.colorScheme.surfaceContainerHighest.withAlpha(76),
       prefixIcon: icon != null
           ? Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant)
           : null,
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         borderSide: BorderSide(
-          color: theme.colorScheme.outline.withAlpha(51),
+          color: isDark ? AppColors.glassBorder : theme.colorScheme.outline.withAlpha(51),
         ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.5),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -400,21 +401,20 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       backgroundColor: isDark
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          if (isDark) const MeshGradientBackground(),
+          SafeArea(
         child: Column(
           children: [
             // Consistent header
             Container(
               decoration: BoxDecoration(
-                color:
-                    (isDark
-                            ? AppColors.backgroundDark
-                            : AppColors.backgroundLight)
-                        .withAlpha(230),
+                color: Colors.transparent,
                 border: Border(
                   bottom: BorderSide(
                     color: isDark
-                        ? AppColors.slate800
+                        ? AppColors.glassBorder
                         : AppColors.slate200,
                   ),
                 ),
@@ -479,12 +479,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: theme.colorScheme.primary,
+                                  color: AppColors.primary,
                                   width: 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: theme.colorScheme.primary
+                                    color: AppColors.primary
                                         .withAlpha(51),
                                     blurRadius: 15,
                                     offset: const Offset(0, 5),
@@ -516,7 +516,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: theme.colorScheme.primary,
+                                    color: AppColors.primary,
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: theme.scaffoldBackgroundColor,
@@ -614,7 +614,9 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
             ),
           ],
         ),
-      ),
+        ),
+      ],
+    ),
     );
   }
 }

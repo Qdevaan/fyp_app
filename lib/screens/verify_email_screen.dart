@@ -53,7 +53,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Verification email sent!'),
-              backgroundColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: AppColors.primary,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -77,27 +77,54 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       backgroundColor: isDark
           ? AppColors.backgroundDark
           : AppColors.backgroundLight,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          if (isDark) ...[
+            Positioned(
+              top: -120,
+              left: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -120,
+              right: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+          ],
+          SafeArea(
         child: Column(
           children: [
             // Consistent header
             Container(
               decoration: BoxDecoration(
-                color:
-                    (isDark
-                            ? AppColors.backgroundDark
-                            : AppColors.backgroundLight)
-                        .withAlpha(230),
+                color: Colors.transparent,
                 border: Border(
                   bottom: BorderSide(
                     color: isDark
-                        ? AppColors.slate800
+                        ? AppColors.glassBorder
                         : AppColors.slate200,
                   ),
                 ),
@@ -143,13 +170,18 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: primary.withAlpha(26),
+                            color: isDark
+                                ? AppColors.glassWhite
+                                : AppColors.primary.withAlpha(26),
                             shape: BoxShape.circle,
+                            border: isDark
+                                ? Border.all(color: AppColors.glassBorder)
+                                : null,
                           ),
                           child: Icon(
                             Icons.mark_email_unread_rounded,
                             size: 64,
-                            color: primary,
+                            color: AppColors.primary,
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -157,8 +189,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           'Verify your email',
                           textAlign: TextAlign.center,
                           style: GoogleFonts.manrope(
-                            fontSize: 26,
-                            fontWeight: FontWeight.w800,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w200,
                             color: isDark
                                 ? Colors.white
                                 : AppColors.slate900,
@@ -208,6 +240,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
             ),
           ],
         ),
+      ),
+        ],
       ),
     );
   }

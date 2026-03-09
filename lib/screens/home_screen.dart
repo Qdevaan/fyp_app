@@ -204,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
             home.profile?['avatar_url'] ?? user?.userMetadata?['avatar_url'];
 
         return Scaffold(
+          backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
           body: home.loading
               ? const Center(child: CircularProgressIndicator())
               : GestureDetector(
@@ -217,7 +218,40 @@ class _HomeScreenState extends State<HomeScreen> {
                       }
                     }
                   },
-                  child: SafeArea(
+                  child: Stack(
+                    children: [
+                      // Mesh gradient
+                      if (isDark) ...[
+                        Positioned(
+                          top: -120,
+                          left: -120,
+                          child: Container(
+                            width: 400,
+                            height: 400,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: -120,
+                          right: -120,
+                          child: Container(
+                            width: 400,
+                            height: 400,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                      SafeArea(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -242,9 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
+                                          color: AppColors.primary,
                                           width: 2,
                                         ),
                                       ),
@@ -298,7 +330,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           color: isDark
-                                              ? AppColors.surfaceDark
+                                              ? AppColors.glassWhite
                                               : Colors.grey.shade100,
                                         ),
                                         child: Icon(
@@ -384,12 +416,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       ShaderMask(
                                         shaderCallback: (bounds) =>
-                                            LinearGradient(
+                                            const LinearGradient(
                                           colors: [
-                                            Theme.of(context)
-                                                .colorScheme
-                                                .primary,
-                                            const Color(0xFF93C5FD),
+                                            AppColors.primary,
+                                            Color(0xFF93C5FD),
                                           ],
                                         ).createShader(bounds),
                                         child: Text(
@@ -550,9 +580,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     padding: const EdgeInsets.fromLTRB(
                                         16, 8, 16, 8),
                                     child: _InsightCard(
-                                      accentColor: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
+                                      accentColor: AppColors.primary,
                                       title: 'No insights yet',
                                       badge: 'Waiting',
                                       description:
@@ -622,6 +650,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       ],
                     ),
                   ),
+                    ],
+                  ),
                 ),
         );
       },
@@ -634,14 +664,13 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor:
-            isDark ? AppColors.slate800 : Colors.white,
+            isDark ? AppColors.surfaceDark : Colors.white,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
           side: BorderSide(
-            color: Theme.of(context)
-                .colorScheme
-                .primary
-                .withAlpha(26),
+            color: isDark
+                ? AppColors.glassBorder
+                : Colors.grey.shade200,
             width: 1,
           ),
         ),
@@ -701,21 +730,18 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushNamed(context, '/connections');
             },
             style: TextButton.styleFrom(
-              backgroundColor: Theme.of(context)
-                  .colorScheme
-                  .primary
-                  .withAlpha(38),
+              backgroundColor: AppColors.primary.withAlpha(38),
               padding: const EdgeInsets.symmetric(
                   horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.full),
               ),
             ),
             child: Text(
               'Connect',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.primary,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -728,41 +754,18 @@ class _HomeScreenState extends State<HomeScreen> {
       BuildContext context, bool isDark, bool isConnected) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? const [
-                  AppColors.slate900,
-                  AppColors.slate800,
-                  AppColors.slate900,
-                ]
-              : const [
-                  Color(0xFFEFF6FF),
-                  Color(0xFFDBEAFE),
-                  Color(0xFFEFF6FF),
-                ],
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        color: isDark ? AppColors.glassWhite : Colors.white,
+        border: Border.all(
+          color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
         ),
         boxShadow: [
           BoxShadow(
-            color: Theme.of(context)
-                .colorScheme
-                .primary
-                .withAlpha(isDark ? 38 : 26),
-            blurRadius: 20,
-            spreadRadius: 0,
+            color: AppColors.primary.withAlpha(isDark ? 38 : 20),
+            blurRadius: 24,
+            spreadRadius: -4,
           ),
         ],
-        border: isDark
-            ? null
-            : Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withAlpha(46),
-                width: 1,
-              ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -822,18 +825,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? Colors.white.withAlpha(26)
-                        : Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withAlpha(31),
-                    borderRadius: BorderRadius.circular(10),
+                        ? AppColors.glassWhite
+                        : AppColors.primary.withAlpha(26),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   child: Icon(
                     Icons.mic,
                     color: isDark
                         ? Colors.white
-                        : Theme.of(context).colorScheme.primary,
+                        : AppColors.primary,
                     size: 22,
                   ),
                 ),
@@ -858,15 +858,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, AppColors.primaryGlow],
+                      ),
                       borderRadius:
-                          BorderRadius.circular(AppRadius.md),
+                          BorderRadius.circular(AppRadius.full),
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withAlpha(51),
+                          color: AppColors.primary.withAlpha(51),
                           blurRadius: 12,
                         ),
                       ],
@@ -898,13 +897,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 48,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? Colors.white.withAlpha(13)
+                          ? AppColors.glassWhite
                           : Colors.black.withAlpha(10),
                       borderRadius:
-                          BorderRadius.circular(AppRadius.md),
+                          BorderRadius.circular(AppRadius.full),
                       border: Border.all(
                         color: isDark
-                            ? Colors.white.withAlpha(26)
+                            ? AppColors.glassBorder
                             : Colors.black.withAlpha(20),
                       ),
                     ),
@@ -967,7 +966,7 @@ class _PulseDotState extends State<_PulseDot>
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: AppColors.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -977,7 +976,7 @@ class _PulseDotState extends State<_PulseDot>
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
+              color: AppColors.primary,
               shape: BoxShape.circle,
             ),
           ),
@@ -1012,11 +1011,11 @@ class _QuickActionCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? AppColors.surfaceDark : Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.md),
+          color: isDark ? AppColors.glassWhite : Colors.white,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
           border: Border.all(
             color: isDark
-                ? Colors.white.withAlpha(13)
+                ? AppColors.glassBorder
                 : Colors.grey.shade200,
           ),
         ),
@@ -1082,10 +1081,10 @@ class _InsightCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        color: isDark ? AppColors.glassWhite : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border:
-            Border(left: BorderSide(color: accentColor, width: 4)),
+            Border(left: BorderSide(color: accentColor, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1178,10 +1177,10 @@ class _NotificationCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.slate900 : Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(14),
+        color: isDark ? AppColors.glassWhite : Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border:
-            Border(left: BorderSide(color: accentColor, width: 4)),
+            Border(left: BorderSide(color: accentColor, width: 3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

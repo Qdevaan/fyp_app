@@ -45,8 +45,11 @@ class GroupedContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        color: isDark ? AppColors.glassWhite : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
+        border: Border.all(
+          color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
+        ),
       ),
       child: Column(children: children),
     );
@@ -116,7 +119,7 @@ class ProfileTileState extends State<ProfileTile> {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withAlpha(51),
+                color: AppColors.primary.withAlpha(51),
               ),
               child: ClipOval(
                 child: avatarUrl != null
@@ -141,7 +144,7 @@ class ProfileTileState extends State<ProfileTile> {
                           style: GoogleFonts.manrope(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -299,7 +302,7 @@ class ToggleTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Theme.of(context).colorScheme.primary,
+            activeColor: AppColors.primary,
           ),
         ],
       ),

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../theme/design_tokens.dart';
+import '../widgets/glass_morphism.dart';
 
 /// Displays the user's knowledge graph entities (people, places, orgs, etc.)
 /// backed by the `entities`, `entity_attributes`, and `entity_relations` tables.
@@ -147,8 +148,11 @@ class _EntityScreenState extends State<EntityScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? AppColors.surfaceDark
+            ? AppColors.backgroundDark
             : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+        ),
         title: Text(
           'Delete Entity?',
           style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
@@ -247,7 +251,10 @@ class _EntityScreenState extends State<EntityScreen> {
         backgroundColor: isDark
             ? AppColors.backgroundDark
             : AppColors.backgroundLight,
-        body: SafeArea(
+        body: Stack(
+          children: [
+            if (isDark) const MeshGradientBackground(),
+            SafeArea(
           child: Column(
             children: [
               // ---- Header ----
@@ -318,11 +325,13 @@ class _EntityScreenState extends State<EntityScreen> {
                     ),
                     filled: true,
                     fillColor: isDark
-                        ? AppColors.surfaceDark
+                        ? AppColors.glassInput
                         : Colors.grey.shade100,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      borderSide: isDark
+                          ? const BorderSide(color: AppColors.glassBorder)
+                          : BorderSide.none,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
                       vertical: 12,
@@ -412,6 +421,8 @@ class _EntityScreenState extends State<EntityScreen> {
               ),
             ],
           ),
+          ),
+          ],
         ),
       ),
     );
@@ -459,9 +470,9 @@ class _EntityCardState extends State<_EntityCard> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: isDark ? AppColors.slate800 : Colors.white,
+        backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         ),
         builder: (_) => DraggableScrollableSheet(
           expand: false,
@@ -555,11 +566,11 @@ class _EntityCardState extends State<_EntityCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: widget.isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        color: widget.isDark ? AppColors.glassWhite : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(
           color: widget.isDark
-              ? Colors.white.withAlpha(18)
+              ? AppColors.glassBorder
               : Colors.grey.shade200,
         ),
       ),
@@ -568,7 +579,7 @@ class _EntityCardState extends State<_EntityCard> {
           // ---- Header row ----
           InkWell(
             onTap: () => setState(() => _expanded = !_expanded),
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
@@ -786,7 +797,7 @@ class _TypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = color ?? Theme.of(context).colorScheme.primary;
+    final activeColor = color ?? AppColors.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -796,10 +807,10 @@ class _TypeChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected
               ? activeColor.withAlpha(46)
-              : (isDark ? AppColors.surfaceDark : Colors.grey.shade100),
-          borderRadius: BorderRadius.circular(20),
+              : (isDark ? AppColors.glassWhite : Colors.grey.shade100),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
-            color: selected ? activeColor : Colors.transparent,
+            color: selected ? activeColor : (isDark ? AppColors.glassBorder : Colors.transparent),
             width: 1.5,
           ),
         ),
@@ -834,10 +845,10 @@ class _AttributeChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.slate800 : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
+        color: isDark ? AppColors.glassWhite : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: isDark ? Colors.white.withAlpha(20) : Colors.grey.shade200,
+          color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
         ),
       ),
       child: RichText(

@@ -1,27 +1,38 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Design-system colors matching the Stitch UI mockups.
+/// Design-system colors matching the Stitch glassmorphism UI mockups.
 /// Based on Tailwind CSS Slate palette + brand colors.
 class AppColors {
-  // Primary
-  static const Color primary = Color(0xFF13A4EC);
-  static const Color primaryDark = Color(0xFF0B8BC9);
+  // Primary — Cyan accent from Stitch
+  static const Color primary = Color(0xFF13BDEC);
+  static const Color primaryDark = Color(0xFF0B9AC9);
   static const Color primaryLight = Color(0xFF6ECBF5);
+  static const Color primaryGlow = Color(0xFF00D2FF);
 
-  // Backgrounds
-  static const Color backgroundDark = Color(0xFF101C22);
-  static const Color backgroundLight = Color(0xFFF6F7F8);
+  // Backgrounds — dark mesh gradient base
+  static const Color backgroundDark = Color(0xFF101E22);
+  static const Color backgroundLight = Color(0xFFF6F8F8);
 
-  // Surfaces (cards / panels)
+  // Surfaces (glass cards / panels)
   static const Color surfaceDark = Color(0xFF192B33);
   static const Color surfaceDarkHighlight = Color(0xFF233C48);
   static const Color surfaceLight = Color(0xFFFFFFFF);
 
+  // Glass colors
+  static const Color glassWhite = Color(0x08FFFFFF); // rgba(255,255,255,0.03)
+  static const Color glassBorder = Color(0x1AFFFFFF); // rgba(255,255,255,0.1)
+  static const Color glassBorderLight = Color(0x0DFFFFFF); // rgba(255,255,255,0.05)
+  static const Color glassInput = Color(0x0DFFFFFF); // rgba(255,255,255,0.05)
+  static const Color glassPrimary = Color(0x2613BDEC); // rgba(19,189,236,0.15)
+  static const Color glassPrimaryBorder = Color(0x4D13BDEC); // rgba(19,189,236,0.3)
+
   // Chat bubbles
   static const Color bubbleDark = Color(0xFF1C2A33);
-  static const Color bubbleUser = Color(0x1A13A4EC); // 10% primary
+  static const Color bubbleUser = Color(0x1A13BDEC); // 10% primary
+  static const Color bubbleUserBorder = Color(0x3313BDEC); // 20% primary
 
-  // Tailwind Slate scale — used across dark / light ternaries
+  // Tailwind Slate scale
   static const Color slate50 = Color(0xFFF8FAFC);
   static const Color slate100 = Color(0xFFF1F5F9);
   static const Color slate200 = Color(0xFFE2E8F0);
@@ -43,6 +54,9 @@ class AppColors {
   static const Color error = Color(0xFFEF4444);
   static const Color warning = Color(0xFFF59E0B);
   static const Color accent = Color(0xFF818CF8); // indigo-400
+  static const Color orange = Color(0xFFF97316);
+  static const Color purple = Color(0xFFA855F7);
+  static const Color amber = Color(0xFFF59E0B);
 }
 
 class AppRadius {
@@ -73,19 +87,52 @@ class AppDurations {
 }
 
 class AppTypography {
-  static TextStyle title(BuildContext context) => Theme.of(
-    context,
-  ).textTheme.headlineMedium!.copyWith(fontWeight: FontWeight.bold);
-  static TextStyle subtitle(BuildContext context) => Theme.of(
-    context,
-  ).textTheme.titleMedium!.copyWith(fontWeight: FontWeight.w600);
-  static TextStyle label(BuildContext context) => Theme.of(
-    context,
-  ).textTheme.bodyLarge!.copyWith(fontWeight: FontWeight.w600);
-  static TextStyle body(BuildContext context) => Theme.of(
-    context,
-  ).textTheme.bodyMedium!;
-  static TextStyle caption(BuildContext context) => Theme.of(
-    context,
-  ).textTheme.bodySmall!;
+  static TextStyle hero(BuildContext context) => GoogleFonts.manrope(
+    fontSize: 36,
+    fontWeight: FontWeight.w200,
+    color: Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : AppColors.slate900,
+  );
+
+  static TextStyle title(BuildContext context) => GoogleFonts.manrope(
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    color: Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : AppColors.slate900,
+  );
+
+  static TextStyle subtitle(BuildContext context) => GoogleFonts.manrope(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : AppColors.slate900,
+  );
+
+  static TextStyle label(BuildContext context) => GoogleFonts.manrope(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    letterSpacing: 1.2,
+    color: Theme.of(context).brightness == Brightness.dark
+        ? AppColors.slate400
+        : AppColors.slate500,
+  );
+
+  static TextStyle body(BuildContext context) => GoogleFonts.manrope(
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    color: Theme.of(context).brightness == Brightness.dark
+        ? AppColors.slate300
+        : AppColors.slate600,
+  );
+
+  static TextStyle caption(BuildContext context) => GoogleFonts.manrope(
+    fontSize: 12,
+    fontWeight: FontWeight.w400,
+    color: Theme.of(context).brightness == Brightness.dark
+        ? AppColors.slate500
+        : AppColors.slate400,
+  );
 }

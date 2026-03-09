@@ -1,9 +1,11 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../theme/design_tokens.dart';
+import '../widgets/glass_morphism.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/deepgram_service.dart';
@@ -87,8 +89,11 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         builder: (ctx) => AlertDialog(
           backgroundColor:
               Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.surfaceDark
+                  ? AppColors.backgroundDark
                   : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xxl),
+          ),
           title: Text('End Session?',
               style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
           content: Text('Your conversation will be saved.',
@@ -178,9 +183,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
             height: 280,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Theme.of(context)
-                  .colorScheme
-                  .primary
+              color: AppColors.primary
                   .withAlpha(isActive ? 20 : 31),
             ),
           ),
@@ -375,10 +378,8 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                                   end: Alignment.bottomRight,
                                   colors: isServerOnline
                                       ? [
-                                          Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                          const Color(0xFF1E88E5)
+                                          AppColors.primary,
+                                          AppColors.primaryGlow,
                                         ]
                                       : [
                                           Colors.grey.shade500,
@@ -388,9 +389,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                                 boxShadow: isServerOnline
                                     ? [
                                         BoxShadow(
-                                            color: Theme.of(context)
-                                                .colorScheme
-                                                .primary
+                                            color: AppColors.primary
                                                 .withAlpha(89),
                                             blurRadius: 30,
                                             spreadRadius: 5)
@@ -524,9 +523,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                     children: [
                       Icon(Icons.graphic_eq,
                           size: 52,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
+                          color: AppColors.primary
                               .withAlpha(102)),
                       const SizedBox(height: 10),
                       Text("Listening...",
@@ -559,16 +556,15 @@ class _NewSessionScreenState extends State<NewSessionScreen>
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           decoration: BoxDecoration(
             color: isDark
-                ? AppColors.surfaceDark.withAlpha(242)
+                ? AppColors.glassWhite
                 : Colors.white.withAlpha(242),
             borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withAlpha(38),
-                  blurRadius: 20,
-                  offset: const Offset(0, -5))
-            ],
+                const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+            border: isDark
+                ? const Border(
+                    top: BorderSide(color: AppColors.glassBorder),
+                  )
+                : null,
           ),
           child: Column(
             children: [
@@ -577,15 +573,11 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context)
-                      .colorScheme
-                      .primary
+                  color: AppColors.primary
                       .withAlpha(isDark ? 26 : 13),
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  borderRadius: BorderRadius.circular(AppRadius.xxl),
                   border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
+                      color: AppColors.primary
                           .withAlpha(38)),
                 ),
                 child: Column(
@@ -595,16 +587,12 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                       children: [
                         Icon(Icons.auto_awesome,
                             size: 14,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary),
+                            color: AppColors.primary),
                         const SizedBox(width: 6),
                         Text(
                           'AI INSIGHT',
                           style: GoogleFonts.manrope(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .primary,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w800,
                             fontSize: 11,
                             letterSpacing: 1.2,
@@ -633,8 +621,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                 Column(
                   children: [
                     CircularProgressIndicator(
-                        color:
-                            Theme.of(context).colorScheme.primary),
+                        color: AppColors.primary),
                     const SizedBox(height: 10),
                     Text("Saving Memories...",
                         style: GoogleFonts.manrope(
@@ -651,7 +638,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDark
-                            ? AppColors.surfaceDarkHighlight
+                            ? AppColors.glassWhite
                             : Colors.grey.shade200,
                       ),
                       child: Icon(Icons.mic_off,
@@ -686,7 +673,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDark
-                            ? AppColors.surfaceDarkHighlight
+                            ? AppColors.glassWhite
                             : Colors.grey.shade200,
                       ),
                       child: Icon(Icons.settings,
@@ -786,11 +773,9 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         sections.add(_buildSectionCard(
             "CONFIRMATION",
             apologyMatch.group(1)!.trim(),
-            Theme.of(context)
-                .colorScheme
-                .primary
+            AppColors.primary
                 .withAlpha(38),
-            Theme.of(context).colorScheme.primary,
+            AppColors.primary,
             Icons.info_outline,
             isDark));
       }
@@ -873,11 +858,11 @@ class _CheckItem extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 40),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        color: isDark ? AppColors.glassWhite : Colors.white,
+        borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(
             color: isDark
-                ? Colors.white.withAlpha(13)
+                ? AppColors.glassBorder
                 : Colors.grey.shade200),
       ),
       child: Row(

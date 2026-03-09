@@ -22,9 +22,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
   void _openSortSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppColors.slate800 : Colors.white,
+      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       builder: (_) {
         return StatefulBuilder(
@@ -76,7 +76,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       leading: Icon(
                         icon,
                         color: selected
-                            ? Theme.of(context).colorScheme.primary
+                            ? AppColors.primary
                             : (isDark
                                   ? AppColors.slate400
                                   : Colors.grey.shade500),
@@ -90,7 +90,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                               ? FontWeight.w700
                               : FontWeight.w500,
                           color: selected
-                              ? Theme.of(context).colorScheme.primary
+                              ? AppColors.primary
                               : (isDark
                                     ? AppColors.slate300
                                     : AppColors.slate700),
@@ -99,7 +99,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       trailing: selected
                           ? Icon(
                               Icons.check_circle_rounded,
-                              color: Theme.of(context).colorScheme.primary,
+                              color: AppColors.primary,
                               size: 20,
                             )
                           : null,
@@ -122,9 +122,10 @@ class _SessionsScreenState extends State<SessionsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = Theme.of(context).colorScheme.primary;
+    final primary = AppColors.primary;
 
     return Scaffold(
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: SafeArea(
         child: Column(
           children: [
@@ -241,13 +242,13 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? Theme.of(context).colorScheme.primary
-              : (isDark ? AppColors.surfaceDark : Colors.white),
-          borderRadius: BorderRadius.circular(20),
+              ? AppColors.primary
+              : (isDark ? AppColors.glassWhite : Colors.white),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
             color: selected
-                ? Theme.of(context).colorScheme.primary
-                : (isDark ? AppColors.slate700 : Colors.grey.shade300),
+                ? AppColors.primary
+                : (isDark ? AppColors.glassBorder : Colors.grey.shade300),
           ),
         ),
         child: Text(
@@ -432,11 +433,11 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceDark : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    color: isDark ? AppColors.glassWhite : Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.xxl),
                     border: Border.all(
                       color: isDark
-                          ? Colors.white.withAlpha(13)
+                          ? AppColors.glassBorder
                           : Colors.grey.shade200,
                     ),
                   ),
@@ -446,14 +447,12 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.primary.withAlpha(51),
+                          color: AppColors.primary.withAlpha(51),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
                           Icons.mic,
-                          color: Theme.of(context).colorScheme.primary,
+                          color: AppColors.primary,
                           size: 22,
                         ),
                       ),
@@ -648,11 +647,11 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.surfaceDark : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    color: isDark ? AppColors.glassWhite : Colors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.xxl),
                     border: Border.all(
                       color: isDark
-                          ? Colors.white.withAlpha(13)
+                          ? AppColors.glassBorder
                           : Colors.grey.shade200,
                     ),
                   ),
