@@ -1,8 +1,10 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../theme/design_tokens.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/glass_morphism.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -24,36 +26,64 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _startInitialization() async {
-    // Short delay to let the UI render first
-    await Future.delayed(AppDurations.normal);
+    try {
+      // Short delay to let the UI render first
+      await Future.delayed(AppDurations.normal);
 
-    if (mounted) {
-      setState(() {
-        _progress = 0.3;
-        _loadingText = 'Loading...';
-      });
-    }
-    await _requestStartupPermissions();
+      if (mounted) {
+        setState(() {
+          _progress = 0.3;
+          _loadingText = 'Loading...';
+        });
+      }
+      
+      try {
+        await _requestStartupPermissions();
+      } catch (e) {
+        debugPrint('Permissions error: $e');
+      }
 
-    if (mounted) {
-      setState(() {
-        _progress = 0.6;
-        _loadingText = 'Connecting...';
-      });
-    }
-    await _checkConnectivity();
+      if (mounted) {
+        setState(() {
+          _progress = 0.6;
+          _loadingText = 'Connecting...';
+        });
+      }
+      
+      try {
+        await _checkConnectivity();
+      } catch (e) {
+        debugPrint('Connectivity error: $e');
+      }
 
-    if (mounted) {
-      setState(() {
-        _progress = 0.8;
-      });
-    }
-    await _determineAuthState();
-
-    if (mounted) {
-      setState(() {
-        _progress = 1.0;
-      });
+      if (mounted) {
+        setState(() {
+          _progress = 0.8;
+        });
+      }
+      
+      try {
+        await _determineAuthState();
+      } catch (e) {
+        debugPrint('Auth error: $e');
+        _targetRoute = '/login';
+      }
+    } catch (e) {
+      debugPrint('Initialization error: $e');
+      _targetRoute ??= '/login';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _progress = 1.0;
+        });
+        
+        // Failsafe in case animation callback doesn't fire
+        Future.delayed(AppDurations.normal, () {
+          if (mounted && !_hasNavigated) {
+            _onLoadingComplete();
+          }
+        });
+      }
     }
   }
 
@@ -65,7 +95,7 @@ class _SplashScreenState extends State<SplashScreen> {
       Permission.photos,
       Permission.videos,
       Permission.location,
-      Permission.locationAlways,
+      // Avoid requesting locationAlways with location simultaneously as it crashes on some Android versions
       Permission.bluetooth,
       Permission.bluetoothScan,
       Permission.bluetoothConnect,
@@ -130,28 +160,85 @@ class _SplashScreenState extends State<SplashScreen> {
     required String title,
     required String message,
   }) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(title),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await openAppSettings();
-              },
-              child: const Text('Open Settings'),
-            ),
-          ],
-        );
-      },
+      builder: (ctx) => GlassDialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(26),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                        ),
+                        child: const Icon(Icons.settings_outlined, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    message,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? AppColors.slate400 : AppColors.slate600,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        child: Text(
+                          'OK',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.slate400 : AppColors.slate500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.of(ctx).pop();
+                          await openAppSettings();
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.primary.withAlpha(38),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                        ),
+                        child: const Text(
+                          'Open Settings',
+                          style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -248,7 +335,7 @@ class _SplashScreenState extends State<SplashScreen> {
                         );
                       },
                       onEnd: () {
-                        if (_progress == 1.0) {
+                        if (_progress >= 1.0) {
                           _onLoadingComplete();
                         }
                       },

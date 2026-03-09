@@ -1,9 +1,11 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../theme/design_tokens.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/voice_assistant_service.dart';
+import '../glass_morphism.dart';
 import 'settings_widgets.dart';
 
 /// Shows a "coming soon" snackbar for a feature.
@@ -20,28 +22,24 @@ void showComingSoon(BuildContext context, String feature) {
 void showContactSheet(BuildContext context, bool isDark) {
   showModalBottomSheet(
     context: context,
-    backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-    ),
+    backgroundColor: Colors.transparent,
     builder: (_) {
       final primary = AppColors.primary;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+      return GlassBottomSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.slate600 : Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.glassBorder : Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
             const SizedBox(height: 20),
             Text(
               'Contact Us',
@@ -97,76 +95,73 @@ void showThemeModePicker(BuildContext context, ThemeProvider themeProvider) {
     context: context,
     builder: (ctx) {
       final isDark = Theme.of(context).brightness == Brightness.dark;
-      return AlertDialog(
-        backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
-          side: BorderSide(
-            color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
-            width: 1,
-          ),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.primary.withAlpha(26),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                Icons.palette_outlined,
-                color: AppColors.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Select Theme Mode',
-                style: GoogleFonts.manrope(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppColors.slate900,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
+      return GlassDialog(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildThemeOption(context, themeProvider,
-                title: 'System Default',
-                icon: Icons.brightness_auto,
-                mode: ThemeMode.system,
-                isDark: isDark),
-            const SizedBox(height: 8),
-            _buildThemeOption(context, themeProvider,
-                title: 'Light',
-                icon: Icons.light_mode,
-                mode: ThemeMode.light,
-                isDark: isDark),
-            const SizedBox(height: 8),
-            _buildThemeOption(context, themeProvider,
-                title: 'Dark',
-                icon: Icons.dark_mode,
-                mode: ThemeMode.dark,
-                isDark: isDark),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Close',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w700,
-                color: isDark ? AppColors.slate400 : AppColors.slate500,
+            Row(
+              children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(26),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                        ),
+                        child: const Icon(
+                          Icons.palette_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Select Theme Mode',
+                          style: GoogleFonts.manrope(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : AppColors.slate900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  _buildThemeOption(context, themeProvider,
+                      title: 'System Default',
+                      icon: Icons.brightness_auto,
+                      mode: ThemeMode.system,
+                      isDark: isDark),
+                  const SizedBox(height: 8),
+                  _buildThemeOption(context, themeProvider,
+                      title: 'Light',
+                      icon: Icons.light_mode,
+                      mode: ThemeMode.light,
+                      isDark: isDark),
+                  const SizedBox(height: 8),
+                  _buildThemeOption(context, themeProvider,
+                      title: 'Dark',
+                      icon: Icons.dark_mode,
+                      mode: ThemeMode.dark,
+                      isDark: isDark),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Close',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ),
-        ],
       );
     },
   );
@@ -236,64 +231,110 @@ Widget _buildThemeOption(
 
 /// Shows an accent color picker dialog.
 void showColorPicker(BuildContext context, ThemeProvider themeProvider) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Select Accent Color'),
-      content: SingleChildScrollView(
-        child: Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            Colors.blueAccent,
-            Colors.redAccent,
-            Colors.greenAccent,
-            Colors.orangeAccent,
-            Colors.purpleAccent,
-            Colors.tealAccent,
-            Colors.pinkAccent,
-            Colors.amberAccent,
-            Colors.indigoAccent,
-            Colors.grey,
-          ].map((color) {
-            return GestureDetector(
-              onTap: () {
-                themeProvider.setThemeColor(color);
-                Navigator.pop(context);
-              },
-              child: CircleAvatar(
-                backgroundColor: color,
-                radius: 20,
-                child: themeProvider.seedColor.value == color.value
-                    ? const Icon(Icons.check, color: Colors.white)
-                    : null,
-              ),
-            );
-          }).toList(),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-      ],
+    builder: (ctx) => GlassDialog(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withAlpha(26),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppColors.primary.withAlpha(51)),
+                      ),
+                      child: const Icon(Icons.color_lens_outlined, color: AppColors.primary, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Accent Color',
+                      style: GoogleFonts.manrope(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: isDark ? Colors.white : AppColors.slate900,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    AppColors.primary,
+                    Colors.blueAccent,
+                    Colors.redAccent,
+                    Colors.greenAccent,
+                    Colors.orangeAccent,
+                    Colors.purpleAccent,
+                    Colors.tealAccent,
+                    Colors.pinkAccent,
+                    Colors.amberAccent,
+                    Colors.indigoAccent,
+                  ].map((color) {
+                    final isSelected = themeProvider.seedColor.value == color.value;
+                    return GestureDetector(
+                      onTap: () {
+                        themeProvider.setThemeColor(color);
+                        Navigator.pop(ctx);
+                      },
+                      child: AnimatedContainer(
+                        duration: AppDurations.fast,
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? Colors.white : Colors.transparent,
+                            width: 2.5,
+                          ),
+                          boxShadow: isSelected
+                              ? [BoxShadow(color: color.withAlpha(128), blurRadius: 8, spreadRadius: 1)]
+                              : null,
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check, color: Colors.white, size: 20)
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: Text(
+                      'Cancel',
+                      style: GoogleFonts.manrope(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
     ),
   );
 }
 
 /// Shows a voice mode picker bottom sheet (Male / Female / Jarvis).
 void showVoiceModePicker(BuildContext context, VoiceAssistantService voice) {
+  final isDarkOuter = Theme.of(context).brightness == Brightness.dark;
   showModalBottomSheet(
     context: context,
-    backgroundColor: Theme.of(context).brightness == Brightness.dark
-        ? AppColors.backgroundDark
-        : Colors.white,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-    ),
+    backgroundColor: Colors.transparent,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setSheetState) {
+        final isDark = Theme.of(ctx).brightness == Brightness.dark;
         VoiceMode selectedMode = voice.voiceMode;
 
         Widget buildCard({
@@ -373,46 +414,69 @@ void showVoiceModePicker(BuildContext context, VoiceAssistantService voice) {
           );
         }
 
-        return Padding(
-          padding: const EdgeInsets.all(24),
+        return GlassBottomSheet(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Select Voice Mode',
-                style: GoogleFonts.manrope(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  buildCard(
-                    mode: VoiceMode.male,
-                    icon: Icons.man_rounded,
-                    label: 'Male',
-                    color: Colors.blueAccent,
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: isDark ? AppColors.glassBorder : Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
-                  const SizedBox(width: 10),
-                  buildCard(
-                    mode: VoiceMode.female,
-                    icon: Icons.woman_rounded,
-                    label: 'Female',
-                    color: Colors.pinkAccent,
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(26),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                        ),
+                        child: const Icon(Icons.record_voice_over_outlined, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Select Voice Mode',
+                        style: GoogleFonts.manrope(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? Colors.white : AppColors.slate900,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  buildCard(
-                    mode: VoiceMode.neutral,
-                    icon: Icons.smart_toy_rounded,
-                    label: 'Jarvis',
-                    color: Colors.tealAccent.shade700,
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      buildCard(
+                        mode: VoiceMode.male,
+                        icon: Icons.man_rounded,
+                        label: 'Male',
+                        color: Colors.blueAccent,
+                      ),
+                      const SizedBox(width: 10),
+                      buildCard(
+                        mode: VoiceMode.female,
+                        icon: Icons.woman_rounded,
+                        label: 'Female',
+                        color: Colors.pinkAccent,
+                      ),
+                      const SizedBox(width: 10),
+                      buildCard(
+                        mode: VoiceMode.neutral,
+                        icon: Icons.smart_toy_rounded,
+                        label: 'Jarvis',
+                        color: Colors.tealAccent.shade700,
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 16),
                 ],
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
         );
       },
     ),

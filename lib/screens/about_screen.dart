@@ -1,8 +1,8 @@
-import 'dart:ui';
+﻿import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/app_logo.dart';
-import '../widgets/app_card.dart';
+import '../widgets/glass_morphism.dart';
 import '../theme/design_tokens.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -11,15 +11,16 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     const String appVersion = "1.0.4";
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      backgroundColor: theme.scaffoldBackgroundColor,
+      backgroundColor: isDark ? AppColors.backgroundDark : theme.scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Ambient Background (Static)
-          const _AmbientBackground(),
+          // Mesh gradient background
+          const MeshGradientBackground(),
 
           CustomScrollView(
             slivers: [
@@ -34,7 +35,7 @@ class AboutScreen extends StatelessWidget {
                       title: 'Project Abstract',
                     ),
                     const SizedBox(height: 16),
-                    _GlassCard(
+                    GlassCard(
                       child: Text(
                         'The aim of our project is to enhance communication skills by using AI and NLP to assist during and after conversations. It aims to recognize the tone and flow of discussions, provide real-time suggestions for impactful responses, and help users understand industry-specific jargon. By analysing conversations, it offers tailored tips to improve communication, ensuring users can refine their skills over time.',
                         style: theme.textTheme.bodyLarge?.copyWith(
@@ -45,7 +46,7 @@ class AboutScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    _GlassCard(
+                    GlassCard(
                       child: Text(
                         'The tool not only transcribes and summarizes conversations but also finds key participants, highlights key details, and provides actionable insights. It includes a "replay" feature that suggests alternative phrases or approaches, helping users reflect on what could have been said more effectively. Whether it is a formal business meeting, an informal chat, or a professional negotiation, this AI-powered assistant is designed to support users in becoming more confident and articulate communicators.',
                         style: theme.textTheme.bodyLarge?.copyWith(
@@ -62,7 +63,7 @@ class AboutScreen extends StatelessWidget {
                       title: 'Project Rationale',
                     ),
                     const SizedBox(height: 16),
-                    _GlassCard(
+                    GlassCard(
                       child: Column(
                         children: [
                           Text(
@@ -117,40 +118,42 @@ class AboutScreen extends StatelessWidget {
                         children: [
                           Text(
                             'Crafted with â¤ï¸ by the Bubbles Team',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant
-                                  .withAlpha(178),
-                              letterSpacing: 1.2,
+                            style: GoogleFonts.manrope(
+                              fontSize: 12,
+                              color: AppColors.slate400,
+                              letterSpacing: 0.8,
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.surfaceVariant
-                                  .withAlpha(128),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: theme.colorScheme.outline.withAlpha(26),
-                              ),
-                            ),
-                            child: Text(
-                              'Bubbles v$appVersion',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.bold,
+                          const SizedBox(height: 10),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.glassPrimary,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: AppColors.glassPrimaryBorder),
+                                ),
+                                child: Text(
+                                  'Bubbles v$appVersion',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Made with AI Love',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant
-                                  .withAlpha(153),
+                            style: GoogleFonts.manrope(
+                              fontSize: 11,
+                              color: AppColors.slate500,
                             ),
                           ),
                         ],
@@ -175,13 +178,18 @@ class AboutScreen extends StatelessWidget {
       expandedHeight: 300.0,
       pinned: true,
       stretch: true,
-      backgroundColor: AppColors.primary.withAlpha(230),
+      backgroundColor: isDark ? AppColors.backgroundDark.withAlpha(220) : AppColors.primary.withAlpha(200),
       foregroundColor: Colors.white,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          'About Bubbles',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w200, fontSize: 20),
+        title: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Text(
+              'About Bubbles',
+              style: GoogleFonts.manrope(fontWeight: FontWeight.w200, fontSize: 20, color: Colors.white),
+            ),
+          ),
         ),
         centerTitle: true,
         background: Stack(
@@ -262,22 +270,25 @@ class AboutScreen extends StatelessWidget {
     required IconData icon,
     required String title,
   }) {
+    final isDark = theme.brightness == Brightness.dark;
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withAlpha(26),
+            color: AppColors.primary.withAlpha(26),
             borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.primary.withAlpha(51)),
           ),
-          child: Icon(icon, color: theme.colorScheme.primary, size: 26),
+          child: Icon(icon, color: AppColors.primary, size: 26),
         ),
         const SizedBox(width: 16),
         Text(
           title,
-          style: theme.textTheme.headlineSmall?.copyWith(
+          style: GoogleFonts.manrope(
+            fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: theme.colorScheme.onSurface,
+            color: isDark ? Colors.white : AppColors.slate900,
             letterSpacing: -0.5,
           ),
         ),
@@ -297,7 +308,7 @@ class AboutScreen extends StatelessWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
-        _GlassCard(
+        GlassCard(
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
             child: Row(
@@ -338,35 +349,6 @@ class AboutScreen extends StatelessWidget {
   }
 }
 
-class _GlassCard extends StatelessWidget {
-  final Widget child;
-  final EdgeInsetsGeometry? padding;
-
-  const _GlassCard({required this.child, this.padding});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.xxl),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-        child: Container(
-          padding: padding ?? const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.glassWhite : Colors.white,
-            borderRadius: BorderRadius.circular(AppRadius.xxl),
-            border: Border.all(
-              color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
-            ),
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
 class _DeveloperInfoCard extends StatelessWidget {
   final String name;
   final String regNo;
@@ -377,7 +359,7 @@ class _DeveloperInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return _GlassCard(
+    return GlassCard(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
@@ -429,43 +411,4 @@ class _DeveloperInfoCard extends StatelessWidget {
   }
 }
 
-class _AmbientBackground extends StatelessWidget {
-  const _AmbientBackground();
 
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Stack(
-      children: [
-        Positioned(
-          top: -100,
-          right: -100,
-          child: Container(
-            width: 400,
-            height: 400,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [AppColors.primary.withAlpha(38), Colors.transparent],
-              ),
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: -100,
-          left: -100,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [AppColors.primary.withAlpha(26), Colors.transparent],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}

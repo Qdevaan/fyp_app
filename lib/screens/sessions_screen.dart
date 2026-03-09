@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -5,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../theme/design_tokens.dart';
 import '../widgets/chat_bubble.dart';
+import '../widgets/glass_morphism.dart';
 
 enum _SortOrder { newestFirst, oldestFirst }
 
@@ -22,14 +24,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
   void _openSortSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (_) {
         return StatefulBuilder(
           builder: (ctx, setModal) {
-            return Padding(
+            return GlassBottomSheet(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -37,16 +36,14 @@ class _SessionsScreenState extends State<SessionsScreen> {
                 children: [
                   Center(
                     child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? AppColors.slate600
-                            : Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.glassBorder : Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
                   const SizedBox(height: 16),
                   Text(
                     'Sort by',

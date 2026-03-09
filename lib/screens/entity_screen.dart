@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
@@ -144,34 +145,68 @@ class _EntityScreenState extends State<EntityScreen> {
   }
 
   Future<void> _deleteEntity(String entityId) async {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark
-            ? AppColors.backgroundDark
-            : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
-        ),
-        title: Text(
-          'Delete Entity?',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'This will also remove all attributes and relations for this entity.',
-          style: GoogleFonts.manrope(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
-          ),
-        ],
+      builder: (ctx) => GlassDialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withAlpha(26),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Delete Entity?',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          color: isDark ? Colors.white : AppColors.slate900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'This will also remove all attributes and relations for this entity.',
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      color: isDark ? AppColors.slate400 : AppColors.slate500,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.slate400 : AppColors.slate500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
       ),
     );
 
@@ -253,7 +288,7 @@ class _EntityScreenState extends State<EntityScreen> {
             : AppColors.backgroundLight,
         body: Stack(
           children: [
-            if (isDark) const MeshGradientBackground(),
+            const MeshGradientBackground(),
             SafeArea(
           child: Column(
             children: [
@@ -470,7 +505,7 @@ class _EntityCardState extends State<_EntityCard> {
       showModalBottomSheet(
         context: context,
         isScrollControlled: true,
-        backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
+        backgroundColor: Colors.transparent,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         ),
@@ -478,64 +513,58 @@ class _EntityCardState extends State<_EntityCard> {
           expand: false,
           initialChildSize: 0.5,
           maxChildSize: 0.85,
-          builder: (_, controller) => Padding(
+          builder: (_, controller) => GlassBottomSheet(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.slate700
-                          : Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome,
-                      size: 18,
-                      color: AppColors.accent,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'AI Summary: $entityName',
-                        style: GoogleFonts.manrope(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          color: isDark
-                              ? Colors.white
-                              : AppColors.slate900,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
+                            color: isDark ? AppColors.glassBorder : Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: controller,
-                    child: Text(
-                      summary,
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
-                        height: 1.6,
-                        color: isDark
-                            ? AppColors.slate300
-                            : AppColors.slate700,
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.auto_awesome,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'AI Summary: $entityName',
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                color: isDark ? Colors.white : AppColors.slate900,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          controller: controller,
+                          child: Text(
+                            summary,
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              height: 1.6,
+                              color: isDark ? AppColors.slate300 : AppColors.slate700,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         ),
       );

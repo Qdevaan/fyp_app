@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +10,7 @@ import '../services/connection_service.dart';
 import '../services/voice_assistant_service.dart';
 import '../providers/home_provider.dart';
 import '../widgets/app_drawer.dart';
+import '../widgets/glass_morphism.dart';
 
 // ============================================================================
 //  HOME SCREEN
@@ -50,14 +52,22 @@ class _HomeScreenState extends State<HomeScreen> {
         initialChildSize: 0.6,
         maxChildSize: 0.92,
         minChildSize: 0.35,
-        builder: (_, scrollController) => Container(
-          decoration: BoxDecoration(
-            color: isDark ? AppColors.slate800 : Colors.white,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
+        builder: (_, scrollController) => ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF0D1B1F).withAlpha(235) : Colors.white.withAlpha(242),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                border: Border(
+                  top: BorderSide(color: isDark ? AppColors.glassBorder : Colors.grey.shade200),
+                  left: BorderSide(color: isDark ? AppColors.glassBorderLight : Colors.grey.shade100),
+                  right: BorderSide(color: isDark ? AppColors.glassBorderLight : Colors.grey.shade100),
+                ),
+              ),
+              child: Column(
+                children: [
               Padding(
                 padding: const EdgeInsets.only(top: 12, bottom: 4),
                 child: Container(
@@ -183,6 +193,8 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        ),
+      ),
         ),
       ),
     );
@@ -662,90 +674,83 @@ class _HomeScreenState extends State<HomeScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor:
-            isDark ? AppColors.surfaceDark : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
-          side: BorderSide(
-            color: isDark
-                ? AppColors.glassBorder
-                : Colors.grey.shade200,
-            width: 1,
-          ),
-        ),
-        title: Row(
+      builder: (ctx) => GlassDialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withAlpha(26),
-                borderRadius: BorderRadius.circular(10),
+            Row(
+              children: [
+                Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withAlpha(26),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.wifi_off_rounded, color: AppColors.error, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Not Connected',
+                          style: GoogleFonts.manrope(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : AppColors.slate900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'You are not connected to the server. Would you like to connect now?',
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? AppColors.slate400 : AppColors.slate500,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w700,
+                            color: isDark ? AppColors.slate400 : AppColors.slate500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Navigator.pushNamed(context, '/connections');
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.primary.withAlpha(38),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                        ),
+                        child: Text(
+                          'Connect',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              child: const Icon(Icons.wifi_off_rounded,
-                  color: AppColors.error, size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Not Connected',
-                style: GoogleFonts.manrope(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? Colors.white
-                      : AppColors.slate900,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'You are not connected to the server. Would you like to connect now?',
-          style: GoogleFonts.manrope(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: isDark
-                ? AppColors.slate400
-                : AppColors.slate500,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w700,
-                color: isDark
-                    ? AppColors.slate400
-                    : AppColors.slate500,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pushNamed(context, '/connections');
-            },
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.primary.withAlpha(38),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
-            ),
-            child: Text(
-              'Connect',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

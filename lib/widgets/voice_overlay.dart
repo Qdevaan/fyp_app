@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../main.dart';
 import '../services/voice_assistant_service.dart';
 import '../theme/design_tokens.dart';
+import 'glass_morphism.dart';
 import 'voice/voice_overlay_controls.dart';
 import 'voice/voice_visual_indicator.dart';
 
@@ -116,41 +117,13 @@ class _VoiceOverlayState extends State<VoiceOverlay>
       type: MaterialType.transparency,
       child: Container(
         margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    AppColors.slate900,
-                    AppColors.slate800,
-                    AppColors.slate900,
-                  ]
-                : [Colors.white, AppColors.slate100, Colors.white],
-          ),
-          border: Border.all(
-            color: isDark
-                ? AppColors.primary.withAlpha(38)
-                : Colors.grey.shade200,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withAlpha(isDark ? 31 : 20),
-              blurRadius: 40,
-              spreadRadius: 0,
-              offset: const Offset(0, -8),
-            ),
-            BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 102 : 26),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
+        child: GlassCard(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          borderRadius: AppRadius.xxl,
+          borderColor: AppColors.primary.withAlpha(isDark ? 80 : 40),
+          backgroundColor: isDark 
+              ? AppColors.backgroundDark.withAlpha(200) 
+              : AppColors.primary.withAlpha(20), // Accent tint
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

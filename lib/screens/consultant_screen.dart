@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'dart:convert';
 import 'dart:io';
 
@@ -20,6 +21,7 @@ import '../widgets/app_logo.dart';
 import '../widgets/consultant/voice_mode.dart';
 import '../widgets/consultant/consultant_widgets.dart';
 import '../widgets/consultant/welcome_messages.dart';
+import '../widgets/glass_morphism.dart';
 
 // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 //  CONSULTANT SCREEN  (ChatGPT-style multi-chat)
@@ -162,79 +164,84 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   // -- Not-connected dialog --
   void _showNotConnectedDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.xxl)),
-        title: Row(
+      builder: (ctx) => GlassDialog(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withAlpha(26),
-                borderRadius: BorderRadius.circular(10),
+            Row(
+              children: [
+                Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.error.withAlpha(26),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.wifi_off_rounded, color: AppColors.error, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Not Connected',
+                          style: GoogleFonts.manrope(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: isDark ? Colors.white : AppColors.slate900,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'The Consultant AI requires a server connection. Please connect first in Settings.',
+                    style: GoogleFonts.manrope(
+                      fontSize: 14,
+                      color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: Text(
+                          'Cancel',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          Navigator.pushNamed(context, '/connections');
+                        },
+                        style: TextButton.styleFrom(
+                          backgroundColor: AppColors.primary.withAlpha(31),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                          ),
+                        ),
+                        child: Text(
+                          'Connect',
+                          style: GoogleFonts.manrope(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              child: const Icon(
-                Icons.wifi_off_rounded,
-                color: AppColors.error,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Not Connected',
-                style: GoogleFonts.manrope(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppColors.slate900,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'The Consultant AI requires a server connection. Please connect first in Settings.',
-          style: GoogleFonts.manrope(
-            fontSize: 14,
-            color: isDark ? AppColors.textSecondary : AppColors.textMuted,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w600,
-                color: isDark ? AppColors.textSecondary : AppColors.textMuted,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              Navigator.pushNamed(context, '/connections');
-            },
-            style: TextButton.styleFrom(
-              backgroundColor: AppColors.primary.withAlpha(31),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.full),
-              ),
-            ),
-            child: Text(
-              'Connect',
-              style: GoogleFonts.manrope(
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

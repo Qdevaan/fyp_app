@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -164,10 +165,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (context) {
         String searchQuery = '';
         return StatefulBuilder(
@@ -185,8 +183,10 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
               maxChildSize: 0.9,
               expand: false,
               builder: (context, scrollController) {
-                return Column(
-                  children: [
+                return GlassBottomSheet(
+                  padding: EdgeInsets.zero,
+                  child: Column(
+                    children: [
                     // Handle Bar
                     Center(
                       child: Container(
@@ -265,6 +265,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                       ),
                     ),
                   ],
+                ),
                 );
               },
             );
@@ -403,7 +404,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
           : AppColors.backgroundLight,
       body: Stack(
         children: [
-          if (isDark) const MeshGradientBackground(),
+          const MeshGradientBackground(),
           SafeArea(
         child: Column(
           children: [

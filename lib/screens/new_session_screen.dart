@@ -86,30 +86,88 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     if (_session.isSessionActive) {
       final confirm = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
-          backgroundColor:
-              Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.backgroundDark
-                  : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.xxl),
-          ),
-          title: Text('End Session?',
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
-          content: Text('Your conversation will be saved.',
-              style: GoogleFonts.manrope()),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
-                child: const Text('Cancel')),
-            FilledButton(
-              style:
-                  FilledButton.styleFrom(backgroundColor: AppColors.error),
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('End Session'),
+        builder: (ctx) {
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.xxl),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF0D1B1F).withAlpha(235) : Colors.white.withAlpha(242),
+                    borderRadius: BorderRadius.circular(AppRadius.xxl),
+                    border: Border.all(
+                      color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withAlpha(26),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.stop_circle_outlined, color: AppColors.error, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'End Session?',
+                            style: GoogleFonts.manrope(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 18,
+                              color: isDark ? Colors.white : AppColors.slate900,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Your conversation will be saved.',
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          color: isDark ? AppColors.slate400 : AppColors.slate500,
+                          height: 1.5,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? AppColors.slate400 : AppColors.slate500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FilledButton(
+                            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('End Session'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-          ],
-        ),
+          );
+        },
       );
       if (confirm != true) return;
 

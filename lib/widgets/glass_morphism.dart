@@ -11,10 +11,15 @@ class MeshGradientBackground extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (!isDark) return child ?? const SizedBox.shrink();
+    
+    // Adapted for Light mode too using the accent color
+    final bgColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
+    final blurColor1 = AppColors.primary.withAlpha(isDark ? 38 : 60); // 15% / ~25%
+    final blurColor2 = AppColors.primary.withAlpha(isDark ? 26 : 40); // 10% / ~15%
+    final radialBase = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
     return Container(
-      decoration: const BoxDecoration(color: AppColors.backgroundDark),
+      decoration: BoxDecoration(color: bgColor),
       child: Stack(
         children: [
           // Top-left glow
@@ -28,7 +33,7 @@ class MeshGradientBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.primary.withAlpha(38), // 15%
+                    blurColor1,
                     Colors.transparent,
                   ],
                 ),
@@ -46,7 +51,7 @@ class MeshGradientBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.primary.withAlpha(26), // 10%
+                    blurColor2,
                     Colors.transparent,
                   ],
                 ),
@@ -61,8 +66,8 @@ class MeshGradientBackground extends StatelessWidget {
                   center: Alignment.center,
                   radius: 1.2,
                   colors: [
-                    AppColors.backgroundDark,
-                    AppColors.backgroundDark.withAlpha(0),
+                    radialBase.withAlpha(100),
+                    radialBase.withAlpha(0),
                   ],
                 ),
               ),
@@ -101,9 +106,9 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = backgroundColor ??
-        (isDark ? AppColors.glassWhite : Colors.white.withAlpha(200));
+        (isDark ? AppColors.glassWhite : AppColors.primary.withAlpha(8)); // Slightly accent-tinted base
     final border = borderColor ??
-        (isDark ? AppColors.glassBorder : Colors.grey.shade200);
+        (isDark ? AppColors.glassBorder : AppColors.primary.withAlpha(20)); // Tinted border
 
     return GestureDetector(
       onTap: onTap,
@@ -148,10 +153,10 @@ class GlassPanel extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.glassWhite : Colors.white.withAlpha(220),
+            color: isDark ? AppColors.glassWhite : AppColors.primary.withAlpha(12),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: isDark ? AppColors.glassBorderLight : Colors.grey.shade100,
+              color: isDark ? AppColors.glassBorderLight : AppColors.primary.withAlpha(20),
               width: 1,
             ),
           ),
@@ -183,11 +188,11 @@ class GlassTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = active
-        ? AppColors.glassPrimary
-        : (isDark ? AppColors.glassWhite : Colors.white.withAlpha(180));
+        ? AppColors.primary.withAlpha(isDark ? 38 : 60)
+        : (isDark ? AppColors.glassWhite : AppColors.primary.withAlpha(8));
     final border = active
-        ? AppColors.glassPrimaryBorder
-        : (isDark ? AppColors.glassBorderLight : Colors.grey.shade200);
+        ? AppColors.primary.withAlpha(isDark ? 76 : 100)
+        : (isDark ? AppColors.glassBorderLight : AppColors.primary.withAlpha(20));
 
     return GestureDetector(
       onTap: onTap,
@@ -204,6 +209,80 @@ class GlassTile extends StatelessWidget {
             padding: padding,
             child: child,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A standard glassmorphic dialog wrapper.
+class GlassDialog extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  final double borderRadius;
+
+  const GlassDialog({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(24),
+    this.borderRadius = AppRadius.xxl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: GlassCard(
+        padding: padding,
+        borderRadius: borderRadius,
+        borderColor: AppColors.primary.withAlpha(isDark ? 80 : 40),
+        backgroundColor: isDark 
+            ? AppColors.backgroundDark.withAlpha(200) 
+            : AppColors.primary.withAlpha(15), 
+        blur: 20,
+        child: child,
+      ),
+    );
+  }
+}
+
+/// A standard glassmorphic bottom sheet wrapper.
+class GlassBottomSheet extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+  
+  const GlassBottomSheet({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(24),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isDark 
+                ? AppColors.backgroundDark.withAlpha(220) 
+                : AppColors.primary.withAlpha(20),
+            border: Border(
+              top: BorderSide(
+                color: AppColors.primary.withAlpha(isDark ? 80 : 40),
+                width: 1,
+              ),
+            ),
+          ),
+          padding: padding,
+          child: child,
         ),
       ),
     );

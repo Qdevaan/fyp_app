@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/design_tokens.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'glass_morphism.dart';
 
 /// Extracted from HomeScreen's _showNotificationsPanel().
 /// Shows a draggable bottom sheet with highlights and events.
@@ -44,11 +45,8 @@ class NotificationsPanel extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, ScrollController scrollController) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.slate800 : Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+    return GlassBottomSheet(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           // Handle

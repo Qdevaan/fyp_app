@@ -1,4 +1,5 @@
 ﻿import 'dart:async';
+import 'dart:ui';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +12,7 @@ import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../widgets/social_button.dart';
 import '../widgets/app_logo.dart';
+import '../widgets/glass_morphism.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -54,41 +56,100 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _showThemeSelectionDialog() async {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Select Theme',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-        ),
-        content: Column(
+      builder: (ctx) => GlassDialog(
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ListTile(
-              leading: const Icon(Icons.brightness_auto),
-              title: Text('System Default', style: GoogleFonts.manrope()),
-              onTap: () {
-                themeProvider.setThemeMode(ThemeMode.system);
-                Navigator.pop(context);
-              },
+            Row(
+              children: [
+                Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withAlpha(26),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                        ),
+                        child: const Icon(Icons.palette_outlined, color: AppColors.primary, size: 20),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Select Theme',
+                        style: GoogleFonts.manrope(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          color: isDark ? Colors.white : AppColors.slate900,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildThemeListTile(ctx, themeProvider, isDark,
+                      icon: Icons.brightness_auto,
+                      label: 'System Default',
+                      mode: ThemeMode.system),
+                  _buildThemeListTile(ctx, themeProvider, isDark,
+                      icon: Icons.light_mode,
+                      label: 'Light',
+                      mode: ThemeMode.light),
+                  _buildThemeListTile(ctx, themeProvider, isDark,
+                      icon: Icons.dark_mode,
+                      label: 'Dark',
+                      mode: ThemeMode.dark),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildThemeListTile(
+    BuildContext ctx,
+    ThemeProvider themeProvider,
+    bool isDark, {
+    required IconData icon,
+    required String label,
+    required ThemeMode mode,
+  }) {
+    final isSelected = themeProvider.themeMode == mode;
+    return GestureDetector(
+      onTap: () {
+        themeProvider.setThemeMode(mode);
+        Navigator.pop(ctx);
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withAlpha(26) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? AppColors.primary.withAlpha(76) : (isDark ? Colors.white10 : Colors.black12),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.black87),
             ),
-            ListTile(
-              leading: const Icon(Icons.light_mode),
-              title: Text('Light', style: GoogleFonts.manrope()),
-              onTap: () {
-                themeProvider.setThemeMode(ThemeMode.light);
-                Navigator.pop(context);
-              },
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: GoogleFonts.manrope(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  color: isSelected ? AppColors.primary : (isDark ? Colors.white : Colors.black87),
+                ),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.dark_mode),
-              title: Text('Dark', style: GoogleFonts.manrope()),
-              onTap: () {
-                themeProvider.setThemeMode(ThemeMode.dark);
-                Navigator.pop(context);
-              },
-            ),
+            if (isSelected)
+              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
           ],
         ),
       ),
