@@ -140,9 +140,13 @@ class AppDrawer extends StatelessWidget {
         statusColor = AppColors.warning;
         statusText = "Connecting...";
         break;
+      case ConnectionStatus.offline:
+        statusColor = Colors.grey;
+        statusText = "No Internet";
+        break;
       default:
         statusColor = AppColors.error;
-        statusText = "Offline";
+        statusText = "Server Offline";
     }
 
     return Container(

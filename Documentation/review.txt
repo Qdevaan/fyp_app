@@ -45,11 +45,11 @@ Bubbles is a dual-engine AI app designed to listen and assist users via audio:
 3. WHAT NEEDS TO BE DONE (THE ROADMAP)
 --------------------------------------------------------------------------------
 APP (FLUTTER):
-[ ] Offline Capability: Graceful degradation and caching if the user drops cell
+[x] Offline Capability: Graceful degradation and caching if the user drops cell
     reception.
-[ ] Hardware Tuning: Voice overlay and Wake-word processing chew through battery 
+[x] Hardware Tuning: Voice overlay and Wake-word processing chew through battery 
     cycles. Needs strict optimization to avoid background drain.
-[ ] E2E Latency Checks: Wingman mode needs to rigorously ensure the round trip 
+[x] E2E Latency Checks: Wingman mode needs to rigorously ensure the round trip 
     (Audio -> Text -> LLM -> Text -> App) is strictly under 2 seconds.
 
 SERVER (PYTHON) / INFRASTRUCTURE:

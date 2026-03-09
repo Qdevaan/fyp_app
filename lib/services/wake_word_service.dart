@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,6 +26,27 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
   VoidCallback? onWakeWordDetected;
 
   // ─── Initialisation ───────────────────────────────────
+
+  WakeWordService() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive || state == AppLifecycleState.hidden) {
+      if (_isListening) {
+        _wasListeningBeforePause = true;
+        stopListening();
+        debugPrint('🎙️ Porcupine: Paused listening due to app backgrounding');
+      }
+    } else if (state == AppLifecycleState.resumed) {
+      if (_wasListeningBeforePause && !_isListening && _isInitialized) {
+        startListening();
+        _wasListeningBeforePause = false;
+        debugPrint('🎙️ Porcupine: Resumed listening after app foregrounding');
+      }
+    }
+  }
 
   /// Creates the PorcupineManager from the custom .ppn asset.
   /// Must be called once before [startListening].
@@ -139,6 +160,7 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _porcupineManager?.delete();
     _porcupineManager = null;
     _isInitialized = false;

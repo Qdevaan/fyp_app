@@ -256,7 +256,15 @@ class VoiceAssistantService extends ChangeNotifier {
 
     try {
       final userId = _getUserId();
+      
+      // Start E2E Latency Stopwatch
+      final stopwatch = Stopwatch()..start();
+      
       final response = await _sendVoiceCommand(userId, command);
+      
+      stopwatch.stop();
+      final double latencySeconds = stopwatch.elapsedMilliseconds / 1000.0;
+      debugPrint('[LATENCY] Wingman round trip: ${latencySeconds.toStringAsFixed(2)}s');
 
       if (response != null) {
         _lastResponse = response['response'] ?? "I'm not sure how to help with that.";
