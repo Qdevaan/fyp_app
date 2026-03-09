@@ -25,6 +25,9 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
   /// Callback fired when the wake word is detected.
   VoidCallback? onWakeWordDetected;
 
+  /// Optional callback for user-facing error notifications.
+  void Function(String message)? onError;
+
   // ─── Initialisation ───────────────────────────────────
 
   WakeWordService() {
@@ -83,14 +86,58 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
         [keywordPath],
         _onWakeWordDetected,
         sensitivities: [0.7], // 0.0 (least sensitive) to 1.0 (most sensitive)
-        errorCallback: _onError,
+        errorCallback: _onPorcupineError,
       );
       _isInitialized = true;
       debugPrint('🎙️ Porcupine: Initialized successfully');
     } on PorcupineException catch (e) {
       debugPrint('❌ Porcupine init error: ${e.message}');
+      onError?.call('Wake word init failed: ${e.message}');
+      // Retry once after a short delay
+      _isInitializing = false;
+      await Future.delayed(const Duration(seconds: 2));
+      await _retryInit();
+      return;
     } catch (e) {
       debugPrint('❌ Porcupine unexpected error: $e');
+      onError?.call('Wake word init failed unexpectedly');
+    } finally {
+      _isInitializing = false;
+    }
+  }
+
+  Future<void> _retryInit() async {
+    if (_isInitialized || _isInitializing) return;
+    debugPrint('🔄 Porcupine: Retrying initialization...');
+    _isInitializing = true;
+
+    final accessKey = dotenv.env['PICOVOICE_ACCESS_KEY'] ?? '';
+    if (accessKey.isEmpty) {
+      _isInitializing = false;
+      return;
+    }
+
+    try {
+      final keywordPath = await _extractAssetToFile(
+        'assets/wake_word/hey-bubbles_en_android_v4_0_0.ppn',
+        'hey-bubbles.ppn',
+      );
+      if (keywordPath == null) {
+        _isInitializing = false;
+        return;
+      }
+      _porcupineManager = await PorcupineManager.fromKeywordPaths(
+        accessKey,
+        [keywordPath],
+        _onWakeWordDetected,
+        sensitivities: [0.7],
+        errorCallback: _onPorcupineError,
+      );
+      _isInitialized = true;
+      debugPrint('🎙️ Porcupine: Initialized on retry');
+    } catch (e) {
+      debugPrint('❌ Porcupine: Retry init also failed: $e');
+      onError?.call('Wake word initialization failed after retry');
     } finally {
       _isInitializing = false;
     }
@@ -101,7 +148,7 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
   Future<String?> _extractAssetToFile(String assetPath, String fileName) async {
     try {
       final byteData = await rootBundle.load(assetPath);
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await getApplicationSupportDirectory();
       final file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(
         byteData.buffer.asUint8List(
@@ -126,8 +173,9 @@ class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
     onWakeWordDetected?.call();
   }
 
-  void _onError(PorcupineException error) {
+  void _onPorcupineError(PorcupineException error) {
     debugPrint('❌ Porcupine runtime error: ${error.message}');
+    onError?.call('Wake word error: ${error.message}');
   }
 
   // ─── Listening Control ────────────────────────────────

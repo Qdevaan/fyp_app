@@ -161,6 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     IconButton(
                       onPressed: () => Navigator.pop(context),
+                      tooltip: 'Go back',
                       icon: Icon(
                         Icons.arrow_back,
                         size: 28,

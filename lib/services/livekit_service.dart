@@ -29,14 +29,17 @@ class LiveKitService extends ChangeNotifier {
     _apiService = apiService;
   }
 
+  String? _lastUserId;
+
   Future<void> connect(String userId) async {
     if (_isConnected) return;
+    _lastUserId = userId;
 
     // 1. Get Token from Server
     try {
       final tokenData = await _apiService.getLiveKitToken(userId);
       if (tokenData == null) {
-        debugPrint("Failed to get LiveKit token");
+        debugPrint("Failed to get LiveKit token — null response");
         return;
       }
 
@@ -80,6 +83,18 @@ class LiveKitService extends ChangeNotifier {
           }
         } catch (e) {
           debugPrint("Error parsing data: $e");
+        }
+      });
+
+      // 5. Listen for room disconnect and attempt reconnection
+      _listener!.on<RoomDisconnectedEvent>((event) {
+        debugPrint("LiveKit room disconnected, attempting reconnect...");
+        _isConnected = false;
+        notifyListeners();
+        if (_lastUserId != null) {
+          Future.delayed(const Duration(seconds: 2), () {
+            connect(_lastUserId!);
+          });
         }
       });
     } catch (e) {

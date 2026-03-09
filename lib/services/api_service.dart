@@ -17,8 +17,13 @@ class ApiService {
   Future<Map<String, dynamic>?> getLiveKitToken(String userId) async {
     if (_baseUrl.isEmpty) return null;
     try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/getToken?userId=$userId'),
+      final response = await http.post(
+        Uri.parse('$_baseUrl/getToken'),
+        headers: {
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true',
+        },
+        body: jsonEncode({'userId': userId}),
       );
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -101,7 +106,7 @@ class ApiService {
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
 
       var streamedResponse = await request.send().timeout(
-        const Duration(seconds: 5),
+        const Duration(seconds: 15),
       );
       var response = await http.Response.fromStream(streamedResponse);
 

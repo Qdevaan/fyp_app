@@ -79,7 +79,6 @@ class _SignupScreenState extends State<SignupScreen> {
     setState(() => _isGoogleLoading = true);
     try {
       await _authService.signInWithGoogle();
-      await Future.delayed(const Duration(seconds: 4));
       if (mounted) setState(() => _isGoogleLoading = false);
     } catch (e) {
       if (mounted) {

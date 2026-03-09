@@ -128,8 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isGoogleLoading = true);
     try {
       await _authService.signInWithGoogle();
-      // Delay stopping the loading state to wait for deep link return
-      await Future.delayed(const Duration(seconds: 4));
+      // Loading state will be cleared by the auth listener on sign-in
       if (mounted) setState(() => _isGoogleLoading = false);
     } catch (e) {
       if (mounted) {

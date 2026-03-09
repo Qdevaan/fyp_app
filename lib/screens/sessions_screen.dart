@@ -564,6 +564,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
           .eq('user_id', userId)
           .eq('mode', 'consultant')
           .order('created_at', ascending: false)
+          .limit(50)
           .then((data) => List<Map<String, dynamic>>.from(data));
     } else {
       _sessionsFuture = Future.value([]);

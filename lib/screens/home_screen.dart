@@ -326,7 +326,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Builder(
-                            builder: (context) => GestureDetector(
+                            builder: (context) => Semantics(
+                              label: 'Profile settings',
+                              button: true,
+                              child: GestureDetector(
                               onTap: () =>
                                   Navigator.pushNamed(context, '/settings'),
                               child: Container(
@@ -365,6 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ),
                           ),
+                          ),
                           Text(
                             'Bubbles',
                             style: GoogleFonts.manrope(
@@ -375,7 +379,10 @@ class _HomeScreenState extends State<HomeScreen> {
                                   : const Color(0xFF0F172A),
                             ),
                           ),
-                          GestureDetector(
+                          Semantics(
+                            label: 'Notifications',
+                            button: true,
+                            child: GestureDetector(
                             onTap: () => _showNotificationsPanel(context),
                             child: Stack(
                               children: [
@@ -429,6 +436,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                               ],
                             ),
+                          ),
                           ),
                         ],
                       ),
@@ -686,7 +694,11 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   crossAxisAlignment:
                                                       CrossAxisAlignment.start,
                                                   children: [
-                                                    Row(
+                                                    Semantics(
+                                                      label: isConnected
+                                                          ? 'Server status: connected'
+                                                          : 'Server status: disconnected',
+                                                      child: Row(
                                                       children: [
                                                         if (isConnected)
                                                           _PulseDot()
@@ -720,6 +732,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                           ),
                                                         ),
                                                       ],
+                                                    ),
                                                     ),
                                                     const SizedBox(height: 6),
                                                     Text(

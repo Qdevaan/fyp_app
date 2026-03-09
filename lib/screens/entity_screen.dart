@@ -79,7 +79,8 @@ class _EntityScreenState extends State<EntityScreen> {
             'id, display_name, canonical_name, entity_type, description, mention_count, last_seen_at',
           )
           .eq('user_id', user.id)
-          .order('mention_count', ascending: false);
+          .order('mention_count', ascending: false)
+          .limit(100);
 
       // Fetch attributes separately, then attach client-side
       final attRes = await _supabase

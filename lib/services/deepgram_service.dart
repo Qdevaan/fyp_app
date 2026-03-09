@@ -27,9 +27,14 @@ class DeepgramService extends ChangeNotifier {
   final AudioRecorder _recorder = AudioRecorder();
   WebSocketChannel? _channel;
   StreamSubscription? _audioStreamSubscription;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 3;
+  bool _intentionalDisconnect = false;
 
   Future<void> connect() async {
     if (_isConnected) return;
+    _intentionalDisconnect = false;
+    _reconnectAttempts = 0;
 
     if (_apiKey.isEmpty) {
       debugPrint("❌ DeepgramService: No API key found in .env");
@@ -78,11 +83,11 @@ class DeepgramService extends ChangeNotifier {
         },
         onError: (error) {
           debugPrint("❌ DeepgramService: WebSocket Error: $error");
-          disconnect();
+          _attemptReconnect();
         },
         onDone: () {
           debugPrint("⚠️ DeepgramService: WebSocket Closed");
-          disconnect();
+          _attemptReconnect();
         },
       );
     } catch (e) {
@@ -126,6 +131,7 @@ class DeepgramService extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    _intentionalDisconnect = true;
     _isConnected = false;
     notifyListeners();
 
@@ -136,5 +142,23 @@ class DeepgramService extends ChangeNotifier {
 
     await _channel?.sink.close();
     _channel = null;
+  }
+
+  void _attemptReconnect() {
+    if (_intentionalDisconnect) return;
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      debugPrint("❌ DeepgramService: Max reconnect attempts reached");
+      disconnect();
+      return;
+    }
+    _isConnected = false;
+    _channel = null;
+    notifyListeners();
+    _reconnectAttempts++;
+    final delay = Duration(seconds: _reconnectAttempts * 2);
+    debugPrint("🔄 DeepgramService: Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)");
+    Future.delayed(delay, () {
+      if (!_intentionalDisconnect) connect();
+    });
   }
 }

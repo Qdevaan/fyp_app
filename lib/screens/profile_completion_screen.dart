@@ -289,6 +289,19 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       return;
     }
 
+    // Age validation: user must be at least 13 years old
+    final age = DateTime.now().difference(_dob!).inDays ~/ 365;
+    if (age < 13) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('You must be at least 13 years old'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _loading = true);
 
     try {

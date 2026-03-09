@@ -181,6 +181,12 @@ class AuthService {
       final user = currentUser;
       if (user == null) throw const AuthException('User not authenticated');
 
+      // Validate file size (max 5MB)
+      final fileSize = await imageFile.length();
+      if (fileSize > 5 * 1024 * 1024) {
+        throw Exception('Image too large. Maximum size is 5MB.');
+      }
+
       final fileExt = imageFile.path.split('.').last;
       final fileName =
           '${user.id}/avatar_${DateTime.now().millisecondsSinceEpoch}.$fileExt';

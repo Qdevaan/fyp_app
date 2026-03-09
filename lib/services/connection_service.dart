@@ -113,10 +113,10 @@ class ConnectionService with ChangeNotifier {
     if (notifyResult) _updateStatus(ConnectionStatus.connecting);
 
     try {
-      debugPrint('Pinging $_serverUrl/ ...');
+      debugPrint('Pinging $_serverUrl/health ...');
       final response = await http
           .get(
-            Uri.parse('$_serverUrl/'),
+            Uri.parse('$_serverUrl/health'),
             headers: {"ngrok-skip-browser-warning": "true"},
           )
           .timeout(const Duration(seconds: 5));
@@ -153,8 +153,8 @@ class ConnectionService with ChangeNotifier {
   // --- Periodic Checks ---
   void _startPeriodicChecks() {
     _statusCheckTimer?.cancel();
-    // Check every 30 seconds to keep status green
-    _statusCheckTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
+    // Check every 60 seconds to save battery
+    _statusCheckTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
       if (!_isChecking && _serverUrl.isNotEmpty) {
         checkConnection(notifyResult: false);
       }

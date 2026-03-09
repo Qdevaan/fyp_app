@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -371,7 +372,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                     : const Color(0xFF0F172A),
                               ),
                               decoration: InputDecoration(
-                                hintText: 'https://xxxx.ngrok-free.app',
+                                hintText: 'https://your-server.ngrok-free.app',
                                 hintStyle: GoogleFonts.manrope(
                                   color: isDark
                                       ? const Color(0xFF475569)
@@ -384,6 +385,22 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                 ),
                               ),
                             ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.content_paste_rounded,
+                              color: isDark
+                                  ? const Color(0xFF64748B)
+                                  : const Color(0xFF94A3B8),
+                              size: 20,
+                            ),
+                            tooltip: 'Paste from clipboard',
+                            onPressed: () async {
+                              final data = await Clipboard.getData(Clipboard.kTextPlain);
+                              if (data?.text != null && data!.text!.isNotEmpty) {
+                                _urlController.text = data.text!;
+                              }
+                            },
                           ),
                         ],
                       ),

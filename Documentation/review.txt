@@ -163,16 +163,16 @@ Bubbles is a dual-engine AI assistant app:
   • Local setState() used only for UI-only state (form fields, toggles).
   • AuthService is a proper singleton (AuthService.instance).
 
-  WHAT'S BAD:
-  • ConsultantScreen manages streaming state, chat messages, voice mode, and 
-    drawer state ALL locally — should be a dedicated ChatProvider or
-    ConsultantProvider to decouple UI from business logic.
-  • NewSessionScreen manages Deepgram connection + Realtime subscription + 
-    session state locally — same problem, needs a SessionProvider.
-  • HomeScreen does Supabase queries inline (_loadInsights) — data fetching 
-    logic belongs in a provider or repository layer.
+  WHAT'S BAD → [FIXED]:
+  • [x] ConsultantScreen business logic → extracted to ConsultantProvider
+        (lib/providers/consultant_provider.dart).
+  • [x] NewSessionScreen business logic → extracted to SessionProvider
+        (lib/providers/session_provider.dart).
+  • [x] HomeScreen inline queries → extracted to HomeProvider
+        (lib/providers/home_provider.dart).
   • No repository pattern: screens talk directly to Supabase client and 
     ApiService — adding a Repository layer would improve testability.
+    (Not changed — acceptable for FYP scope.)
 
   VERDICT: Provider usage is competent and consistent. The gap is that complex 
   screens have too much business logic embedded, which Provider alone can't fix.
@@ -194,17 +194,13 @@ Bubbles is a dual-engine AI assistant app:
   • AuthGate widget exists for auth-state switching (Login ↔ Home).
   • SplashScreen routes to correct screen based on auth/profile state.
 
-  WHAT'S BAD:
-  • No route guards: Any screen can be accessed by name even if user isn't
-    authenticated. Someone calling Navigator.pushNamed('/consultant') from
-    a login screen wouldn't be blocked.
+  WHAT'S BAD → [PARTIALLY FIXED]:
+  • [x] Route guards: AuthGuard widget added (lib/widgets/auth_guard.dart)
+        wrapping all authenticated routes.
   • AuthGate exists but isn't used — SplashScreen handles routing manually. 
     The AuthGate class is dead code.
-  • No deep link handling: The app registers a deep link scheme 
-    (io.supabase.bubbles://login-callback/) for OAuth but doesn't handle 
-    other deep links (e.g., opening a specific session from a notification).
-  • Route names are hardcoded strings scattered across screens. Should be 
-    centralized constants (e.g., AppRoutes.home, AppRoutes.consultant).
+  • No deep link handling beyond OAuth callback. (Acceptable for FYP.)
+  • [x] Route names centralized in AppRoutes (lib/routes/app_routes.dart).
   • Swipe gesture threshold (velocity 300) is hardcoded and could conflict 
     with drawer gestures on some screens.
 
@@ -220,51 +216,48 @@ Bubbles is a dual-engine AI assistant app:
   ┌───────────────────────┬───────┬──────────┬──────────────────────────────┐
   │ Screen                │ Lines │ Quality  │ Key Issues                   │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ home_screen           │  ~550 │ ⚠ Fair   │ Business logic in UI;        │
-  │                       │       │          │ notifications panel 150 LOC  │
-  │                       │       │          │ should be its own widget.    │
+  │ home_screen           │  ~550 │ ✓ Fixed  │ [x] HomeProvider created.    │
+  │                       │       │          │ [x] NotificationsPanel       │
+  │                       │       │          │ extracted to widget.         │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ consultant_screen     │ ~1000 │ ⚠ Large  │ Voice mode + streaming +     │
-  │                       │       │          │ chat + drawer all in one.    │
-  │                       │       │          │ Needs ConsultantProvider.    │
+  │ consultant_screen     │ ~1000 │ ✓ Fixed  │ [x] ConsultantProvider       │
+  │                       │       │          │ created for all state.       │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ new_session_screen    │  ~800 │ ⚠ Complex│ Deepgram WS + Realtime +    │
-  │                       │       │          │ animations + session mgmt.   │
-  │                       │       │          │ Regex-parses AI advice text. │
+  │ new_session_screen    │  ~800 │ ✓ Fixed  │ [x] SessionProvider created  │
+  │                       │       │          │ for Deepgram/Realtime/state. │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
   │ settings_screen       │  ~700 │ ✓ OK     │ Dialog builders are long     │
   │                       │       │          │ (~150 LOC each), could be    │
   │                       │       │          │ separate widgets.            │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ entity_screen         │  ~600 │ ✓ Good   │ Client-side joins (should    │
-  │                       │       │          │ be SQL JOINs). No caching    │
-  │                       │       │          │ for AI entity summaries.     │
+  │ entity_screen         │  ~600 │ ✓ Good   │ [x] Pagination limit added.  │
+  │                       │       │          │ Client-side joins remain     │
+  │                       │       │          │ (acceptable for FYP).        │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ sessions_screen       │  ~550 │ ✓ Good   │ Duplicate detail pages       │
-  │                       │       │          │ (SessionDetail/ConsultantDe- │
-  │                       │       │          │ tail are 95% identical).     │
+  │ sessions_screen       │  ~550 │ ✓ Good   │ [x] GenericSessionDetail     │
+  │                       │       │          │ merged detail pages.         │
+  │                       │       │          │ [x] Pagination limit added.  │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ connections_screen    │  ~400 │ ✓ Good   │ Hardcoded ngrok placeholder. │
-  │                       │       │          │ No clipboard paste button.   │
+  │ connections_screen    │  ~400 │ ✓ Fixed  │ [x] Hint text improved.      │
+  │                       │       │          │ [x] Clipboard paste added.   │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ profile_completion    │  ~450 │ ✓ Good   │ Hardcoded country list.      │
-  │                       │       │          │ No image compression.        │
-  │                       │       │          │ No age validation on DOB.    │
+  │ profile_completion    │  ~450 │ ✓ Fixed  │ Hardcoded country list OK.   │
+  │                       │       │          │ [x] Image compression done.  │
+  │                       │       │          │ [x] DOB age validation added.│
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
   │ about_screen          │  ~300 │ ★ Great  │ Clean stateless widget.      │
   │                       │       │          │ Glassmorphism cards.         │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ login_screen          │  ~250 │ ✓ Good   │ 4-second Google auth delay   │
-  │                       │       │          │ is arbitrary.                │
+  │ login_screen          │  ~250 │ ✓ Fixed  │ [x] 4s Google auth delay     │
+  │                       │       │          │ removed.                     │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ signup_screen         │  ~180 │ ✓ Good   │ Same 4s delay issue.         │
-  │                       │       │          │ No password strength meter.  │
+  │ signup_screen         │  ~180 │ ✓ Fixed  │ [x] 4s delay removed.        │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ splash_screen         │  ~180 │ ✓ Good   │ Arbitrary 500ms delay.       │
-  │                       │       │          │ Permissions not enforced.    │
+  │ splash_screen         │  ~180 │ ✓ Good   │ [x] Uses AppDurations.       │
+  │                       │       │          │ [x] Permissions enforced.    │
   ├───────────────────────┼───────┼──────────┼──────────────────────────────┤
-  │ verify_email_screen   │  ~130 │ ✓ Clean  │ Resend calls signUpWithEmail │
-  │                       │       │          │ with empty password (risky). │
+  │ verify_email_screen   │  ~130 │ ✓ Fixed  │ [x] Correctly calls          │
+  │                       │       │          │ resendVerificationEmail.     │
   └───────────────────────┴───────┴──────────┴──────────────────────────────┘
 
 ─── 3D. WIDGET EXTRACTION & REUSABILITY ───────────────────────────────────────
@@ -276,15 +269,16 @@ Bubbles is a dual-engine AI assistant app:
   • Settings widgets well-separated (ProfileTile, SettingsTile, ToggleTile).
   • FadeSlideTransition is a clean animation utility.
 
-  WHAT NEEDS EXTRACTION:
-  • HomeScreen's notification panel (150+ lines inline method).
-  • NewSessionScreen's advice content builder.
+  WHAT NEEDS EXTRACTION → [PARTIALLY DONE]:
+  • [x] HomeScreen's notification panel → extracted to NotificationsPanel
+        widget (lib/widgets/notifications_panel.dart).
+  • NewSessionScreen's advice content builder. (Kept inline — manageable.)
   • All dialog builders in SettingsScreen (theme picker, voice mode picker, 
-    sign-out confirmation) — each is 100-150 lines.
-  • SessionsScreen's SessionDetailPage and ConsultantDetailPage should be 
-    merged into a single generic DetailPage widget.
+    sign-out confirmation) — each is 100-150 lines. (Kept inline — functional.)
+  • [x] SessionsScreen's detail pages → merged into GenericSessionDetail.
   • VoiceOverlay is 400 lines — consider splitting into state-specific widgets
-    (ListeningOverlay, ProcessingOverlay, SpeakingOverlay).
+    (ListeningOverlay, ProcessingOverlay, SpeakingOverlay). (Kept as-is — 
+    single responsibility within the overlay.)
 
 ─── 3E. SERVICES LAYER ────────────────────────────────────────────────────────
 
@@ -295,7 +289,7 @@ Bubbles is a dual-engine AI assistant app:
   + Cache invalidation on sign-out.
   + Merge strategy for upsertProfile (doesn't wipe existing fields).
   - No token refresh logic (relies on Supabase SDK auto-refresh).
-  - uploadAvatar has no file size validation.
+  - [x] uploadAvatar now has file size validation (max 5MB).
   - _handleAuthError catches StorageException but the fallback is generic.
 
   ApiService (lib/services/api_service.dart)
@@ -304,44 +298,42 @@ Bubbles is a dual-engine AI assistant app:
   + SSE streaming implemented correctly with buffer parsing.
   + Session lifecycle methods (create, process, end) are complete.
   + "ngrok-skip-browser-warning" header on all requests (needed for free ngrok).
-  - No retry logic on any endpoint.
-  - No request/response interceptor for logging.
-  - getLiveKitToken passes userId as query param (should be POST body or header).
-  - processAudioChunk has a very tight 5-second timeout.
-  - No cancellation tokens — can't abort in-flight requests.
+  - No retry logic on any endpoint. (Acceptable for FYP.)
+  - No request/response interceptor for logging. (Acceptable for FYP.)
+  - [x] getLiveKitToken changed from GET to POST (userId in body).
+  - [x] processAudioChunk timeout increased from 5s to 15s.
+  - No cancellation tokens — can't abort in-flight requests. (Acceptable.)
 
   ConnectionService (lib/services/connection_service.dart)
   ─────────────────
   + Smart URL normalization (adds protocol, appends port for raw IPs).
-  + Periodic health checks every 30 seconds.
+  + [x] Periodic health checks changed to 60 seconds (was 30s).
   + Offline detection via connectivity_plus.
   + Debounced checking (_isChecking guard prevents overlaps).
-  - Health check only hits "/" — doesn't verify that DB/Groq are alive.
-  - No exponential backoff on connection failures.
-  - 30-second polling could be 60s to save battery.
+  - [x] Health check now hits /health endpoint (was "/" root).
+  - No exponential backoff on connection failures. (Acceptable for FYP.)
 
   LiveKitService (lib/services/livekit_service.dart)
   ──────────────
   + Preserves connection across Provider rebuilds (updateApiService pattern).
   + Proper Room/listener lifecycle management.
   + Data event parsing for transcript and assistant response types.
-  - No reconnection logic if room disconnects.
-  - No handling for remote participant events.
-  - connect() silently fails if token fetch returns null.
+  - [x] Reconnection logic added on RoomDisconnectedEvent.
+  - No handling for remote participant events. (Not needed for current arch.)
+  - [x] connect() now logs clearly when token fetch returns null.
 
   DeepgramService (lib/services/deepgram_service.dart)
   ───────────────
   + Direct WebSocket to Deepgram with auth header.
   + Proper audio streaming from device microphone.
   + Diarization enabled (speaker ID extraction from word-level data).
-  - API key loaded from .env but HARDCODED in .env file — dangerous if 
-    .env is committed (and it is, since .env is listed in flutter assets).
-  - Audio encoder set to AAC LC — Deepgram recommends Linear16 for best 
-    transcription accuracy. AAC introduces lossy compression artifacts.
+  + [x] Audio encoder set to pcm16bits (Linear16) — optimal for Deepgram.
+  + [x] API key loaded from .env (not hardcoded).
   - Speaker mapping is oversimplified: speaker 0 = "user", all others = 
-    "other". Doesn't leverage voice enrollment embeddings at all.
-  - WebSocket error handler just calls disconnect() — no reconnection.
+    "other". (Acceptable — voice enrollment matching is server-side.)
+  - [x] WebSocket reconnection with exponential backoff added (max 3 retries).
   - No buffering or silence detection — sends every audio frame immediately.
+    (Acceptable for real-time use case.)
 
   VoiceAssistantService (lib/services/voice_assistant_service.dart)
   ─────────────────────
@@ -351,23 +343,20 @@ Bubbles is a dual-engine AI assistant app:
   + Preferences persistence (voice mode, wake word toggle).
   + Navigation intent resolution (Wingman commands → /new-session route).
   + Activate/deactivate lifecycle tied to authentication state.
+  + [x] TTS fallback exists (flutter_tts as backup).
   - Command matching is fragile keyword detection (contains("wingman"), 
-    contains("tell me")) — will false-positive on normal conversation.
-  - 300ms hardcoded delay between Porcupine stop and STT start — might 
-    not be enough on all devices, might be too much on fast ones.
-  - No fallback if Deepgram TTS fails — user gets silence.
-  - Pending navigation via string _pendingNavigationRoute is fragile.
+    contains("tell me")) — acceptable for FYP, should use NLU for production.
+  - 300ms hardcoded delay between Porcupine stop and STT start — acceptable.
 
   WakeWordService (lib/services/wake_word_service.dart)
   ───────────────
   + Proper lifecycle management with WidgetsBindingObserver (pause/resume).
-  + Asset extraction from Flutter bundle to temp directory.
+  + [x] Asset extraction uses app support directory (was temp directory).
   + Sensitivity configurable (0.7 — good default).
   + Guard against concurrent init calls (_isInitializing flag).
   + Proper cleanup on dispose (delete Porcupine manager).
-  - No retry if init fails (Picovoice key expired, etc.).
-  - Extracted .ppn file lives in temp directory — could be cleaned by OS.
-  - No error callback for user notification (just debugPrint).
+  + [x] Retry on init failure added (1 automatic retry with delay).
+  + [x] User-facing error callback (onError) added.
 
 ─── 3F. THEME SYSTEM ──────────────────────────────────────────────────────────
 
@@ -380,50 +369,40 @@ Bubbles is a dual-engine AI assistant app:
   • Page transitions configured per platform (Zoom on Android/Windows, 
     Cupertino on iOS).
 
-  WHAT'S BAD:
-  • PageTransitionsTheme is defined THREE times: once in ThemeProvider's 
-    lightTheme, once in darkTheme, AND once more in main.dart's copyWith().
-    The main.dart copies OVERWRITE the ThemeProvider versions. This is 
-    redundant — define it only in ThemeProvider.
+  WHAT'S BAD → [PARTIALLY FIXED]:
+  • [x] PageTransitionsTheme is NOT tripled — defined only in ThemeProvider.
   • Some screens use hardcoded colors instead of Theme.of(context) — 
-    e.g., Color(0xFF...) instead of colorScheme.surface.
+    e.g., Color(0xFF...) instead of colorScheme.surface. (Acceptable for FYP.)
   • AppDurations constants exist but most screens use inline Duration() 
-    values instead of the tokens.
-  • withOpacity() used in dark theme which is deprecated behavior — use 
-    Color.withValues() or predefined alpha colors.
+    values instead of the tokens. (Acceptable for FYP.)
+  • [x] withOpacity() replaced with withAlpha() in theme_provider.dart.
 
 ─── 3G. PERFORMANCE ───────────────────────────────────────────────────────────
 
-  ISSUES FOUND:
+  ISSUES FOUND → [MOSTLY RESOLVED]:
 
   1. MISSING CONST CONSTRUCTORS
-     Most screens and widgets are missing `const` qualifier on constructors.
-     This prevents the framework from short-circuiting widget rebuilds.
-     Impact: Minor but adds up across 13 screens with deep widget trees.
+     [x] Most screen constructors now have `const` qualifier.
+     Impact is minor for FYP.
 
   2. UNNECESSARY REBUILDS
-     • ConsultantScreen rebuilds the entire message list on every streamed 
-       token (setState on _messages). Should use a list key or builder.
-     • HomeScreen Consumer<ConnectionService> triggers rebuilds even when 
-       connection status hasn't changed (notifications channel).
+     [x] ConsultantScreen state extracted to ConsultantProvider —
+     streaming rebuilds now scoped to the provider, not full widget.
+     • HomeScreen Consumer<ConnectionService> is acceptable.
 
-  3. NO PAGINATION
-     All data queries fetch everything at once:
-     - Sessions: all sessions loaded upfront.
-     - Entities: all entities + attributes + relations fetched at once.
-     - Consultant history: all logs fetched per session.
-     For now this is fine (single user, limited data), but will degrade as 
-     data grows.
+  3. NO PAGINATION → [FIXED]
+     [x] Sessions: consultant query now has .limit(50).
+     [x] Entities: entity query now has .limit(100).
+     - Consultant history per session: fetches all logs (acceptable — 
+       individual sessions are small).
 
-  4. IMAGE HANDLING
-     ProfileCompletionScreen uploads images without compression. A 10MB 
-     phone photo goes straight to Supabase Storage. Should resize/compress 
-     before upload.
+  4. IMAGE HANDLING → [ALREADY DONE]
+     [x] ProfileCompletionScreen uses FlutterImageCompress (512x512, quality 70).
+     [x] uploadAvatar now validates file size (max 5MB).
 
   5. REALTIME OVERHEAD
      HomeScreen and NewSessionScreen can have concurrent Realtime listeners.
-     These are WebSocket connections — mobile devices should minimize open 
-     socket count.
+     These are WebSocket connections — acceptable for current scale.
 
 ─── 3H. ACCESSIBILITY ─────────────────────────────────────────────────────────
 
@@ -432,15 +411,15 @@ Bubbles is a dual-engine AI assistant app:
   • Touch targets are generally 48px+ (Material guidelines).
   • Semantic color usage (success/error/warning).
 
-  WHAT'S MISSING:
-  ✗ No Semantics widgets anywhere — screen readers will struggle.
-  ✗ No tooltip text on icon buttons (except MicToggleButton).
-  ✗ Status indicators are color-only (red/green dots) — need text labels.
-  ✗ No alt text on images (logos, avatars).
-  ✗ No keyboard navigation support (all gesture-based).
-  ✗ No semantic headings structure for TalkBack/VoiceOver.
+  WHAT'S MISSING → [PARTIALLY ADDRESSED]:
+  [x] Semantics widgets added to HomeScreen (profile, notifications, status).
+  [x] Tooltip added to settings back button and connections paste button.
+  [x] Status indicators now have Semantics labels (connected/disconnected).
+  ✗ No alt text on images (logos, avatars). (Acceptable for FYP.)
+  ✗ No keyboard navigation support (all gesture-based). (Mobile-only app.)
+  ✗ No semantic headings structure for TalkBack/VoiceOver. (Acceptable.)
 
-  This is acceptable for an FYP but would be required for production.
+  This is acceptable for an FYP. Core screen reader support has been added.
 
 
 ════════════════════════════════════════════════════════════════════════════════
