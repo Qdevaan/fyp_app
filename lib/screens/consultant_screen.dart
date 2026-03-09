@@ -86,6 +86,39 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     _initVoice();
   }
 
+  bool _processedArgs = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_processedArgs) {
+      _processedArgs = true;
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic> && args.containsKey('initialQuery')) {
+        final query = args['initialQuery'] as String;
+        // Schedule sending after initial frame renders
+        WidgetsBinding.instance.addPostFrameCallback((_) async {
+          _controller.text = ""; // Don't keep it in the text box if sending via voice
+          // Clean the query: e.g., "tell me when is saras birthday" -> "when is saras birthday"
+          String cleanQuery = query.toLowerCase();
+          if (cleanQuery.startsWith('tell me ')) {
+            cleanQuery = cleanQuery.replaceFirst('tell me ', '');
+          }
+          if (cleanQuery.startsWith('what is ')) {
+            cleanQuery = cleanQuery.replaceFirst('what is ', '');
+          }
+          if (cleanQuery.startsWith('who is ')) {
+            cleanQuery = cleanQuery.replaceFirst('who is ', '');
+          }
+          
+          _voiceModeActive = true; 
+          _setVoiceMode(CVoiceMode.processing);
+          _sendVoiceMessage(cleanQuery);
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);

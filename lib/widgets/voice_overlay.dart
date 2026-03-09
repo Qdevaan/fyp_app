@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../main.dart';
 import '../services/voice_assistant_service.dart';
 import '../theme/design_tokens.dart';
 
@@ -59,7 +60,10 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         final nav = assistant.consumePendingNavigation();
         if (nav != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            Navigator.of(context).pushNamed(nav);
+            BubblesApp.navigatorKey.currentState?.pushNamed(
+              nav['route'] as String,
+              arguments: nav['args'],
+            );
           });
         }
 

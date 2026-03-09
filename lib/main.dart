@@ -46,6 +46,8 @@ Future<void> main() async {
 }
 
 class BubblesApp extends StatelessWidget {
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   const BubblesApp({super.key});
 
   @override
@@ -93,6 +95,7 @@ class BubblesApp extends StatelessWidget {
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
+            navigatorKey: BubblesApp.navigatorKey,
             debugShowCheckedModeBanner: false,
             title: 'Bubbles',
 

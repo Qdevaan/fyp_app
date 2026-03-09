@@ -278,7 +278,9 @@ class VoiceAssistantService extends ChangeNotifier {
         lowerCommand.contains('wingman')) {
       _lastResponse = "Starting your Wingman session.";
       await _speak(_lastResponse);
-      _pendingNavigation = '/new-session';
+      _pendingNavigationRoute = '/new-session';
+      _pendingNavigationArgs = null;
+      hideOverlay();
       return;
     }
 
@@ -289,7 +291,9 @@ class VoiceAssistantService extends ChangeNotifier {
         lowerCommand.contains('who is')) {
       _lastResponse = "Going to Consultant mode.";
       await _speak(_lastResponse);
-      _pendingNavigation = '/consultant';
+      _pendingNavigationRoute = '/consultant';
+      _pendingNavigationArgs = {'initialQuery': command};
+      hideOverlay();
       return;
     }
 
@@ -327,7 +331,9 @@ class VoiceAssistantService extends ChangeNotifier {
 
         // Execute navigation action after speaking starts
         if (action == 'navigate' && target != null) {
-          _pendingNavigation = target;
+          _pendingNavigationRoute = target;
+          _pendingNavigationArgs = null;
+          hideOverlay();
         }
       } else {
         await _speak(
@@ -340,12 +346,18 @@ class VoiceAssistantService extends ChangeNotifier {
     }
   }
 
-  String? _pendingNavigation;
+  String? _pendingNavigationRoute;
+  Object? _pendingNavigationArgs;
 
   /// Call this from the overlay widget to get & consume pending navigation.
-  String? consumePendingNavigation() {
-    final nav = _pendingNavigation;
-    _pendingNavigation = null;
+  Map<String, dynamic>? consumePendingNavigation() {
+    if (_pendingNavigationRoute == null) return null;
+    final nav = {
+      'route': _pendingNavigationRoute,
+      'args': _pendingNavigationArgs,
+    };
+    _pendingNavigationRoute = null;
+    _pendingNavigationArgs = null;
     return nav;
   }
 
