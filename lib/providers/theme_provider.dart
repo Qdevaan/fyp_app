@@ -121,12 +121,6 @@ class ThemeProvider extends ChangeNotifier {
           TargetPlatform.windows: ZoomPageTransitionsBuilder(),
         },
       ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
-        },
-      ),
     );
   }
 
@@ -203,12 +197,6 @@ class ThemeProvider extends ChangeNotifier {
           TargetPlatform.android: ZoomPageTransitionsBuilder(),
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
           TargetPlatform.windows: ZoomPageTransitionsBuilder(),
-        },
-      ),
-      pageTransitionsTheme: const PageTransitionsTheme(
-        builders: {
-          TargetPlatform.android: ZoomPageTransitionsBuilder(),
-          TargetPlatform.iOS: ZoomPageTransitionsBuilder(),
         },
       ),
     );

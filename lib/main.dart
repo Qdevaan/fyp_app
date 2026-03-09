@@ -24,7 +24,6 @@ import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/entity_screen.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -55,7 +54,7 @@ class BubblesApp extends StatelessWidget {
       providers: [
         // 1. Connection Service (Base)
         ChangeNotifierProvider(create: (context) => ConnectionService()),
-        
+
         // 2. API Service (Depends on ConnectionService)
         ProxyProvider<ConnectionService, ApiService>(
           update: (context, connection, previous) => ApiService(connection),
@@ -64,7 +63,8 @@ class BubblesApp extends StatelessWidget {
         // 3. LiveKit Service (Depends on ApiService)
         // FIX: Reuse previous instance instead of creating new one on every update
         ChangeNotifierProxyProvider<ApiService, LiveKitService>(
-          create: (context) => LiveKitService(Provider.of<ApiService>(context, listen: false)),
+          create: (context) =>
+              LiveKitService(Provider.of<ApiService>(context, listen: false)),
           update: (context, api, previous) => previous!..updateApiService(api),
         ),
 
@@ -78,7 +78,11 @@ class BubblesApp extends StatelessWidget {
         ChangeNotifierProvider(create: (context) => WakeWordService()),
 
         // 7. Voice Assistant Service (depends on Connection + WakeWord)
-        ChangeNotifierProxyProvider2<ConnectionService, WakeWordService, VoiceAssistantService>(
+        ChangeNotifierProxyProvider2<
+          ConnectionService,
+          WakeWordService,
+          VoiceAssistantService
+        >(
           create: (context) => VoiceAssistantService(
             Provider.of<ConnectionService>(context, listen: false),
             Provider.of<WakeWordService>(context, listen: false),
@@ -91,10 +95,10 @@ class BubblesApp extends StatelessWidget {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Bubbles',
-            
+
             // Theme Mode: Follows stored settings (System/Light/Dark)
             themeMode: themeProvider.themeMode,
-            
+
             // Light Theme Configuration
             theme: themeProvider.lightTheme.copyWith(
               pageTransitionsTheme: const PageTransitionsTheme(
@@ -105,7 +109,7 @@ class BubblesApp extends StatelessWidget {
                 },
               ),
             ),
-            
+
             // Dark Theme Configuration
             darkTheme: themeProvider.darkTheme.copyWith(
               pageTransitionsTheme: const PageTransitionsTheme(
@@ -116,7 +120,7 @@ class BubblesApp extends StatelessWidget {
                 },
               ),
             ),
-    
+
             // The AuthGate manages the root state (Login -> App)
             home: const SplashScreen(),
 
@@ -124,21 +128,67 @@ class BubblesApp extends StatelessWidget {
             builder: (context, child) {
               return _VoiceOverlayWrapper(child: child ?? const SizedBox());
             },
-            
+
+            // Custom routes with animations for specific ones
+            onGenerateRoute: (settings) {
+              if (settings.name == '/settings') {
+                return PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const SettingsScreen(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(-1.0, 0.0); // Slide from left
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(
+                          begin: begin,
+                          end: end,
+                        ).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        return SlideTransition(
+                          position: offsetAnimation,
+                          child: child,
+                        );
+                      },
+                );
+              } else if (settings.name == '/entities') {
+                return PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      const EntityScreen(),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(1.0, 0.0); // Slide from right
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(
+                          begin: begin,
+                          end: end,
+                        ).chain(CurveTween(curve: curve));
+                        var offsetAnimation = animation.drive(tween);
+                        return SlideTransition(
+                          position: offsetAnimation,
+                          child: child,
+                        );
+                      },
+                );
+              }
+              return null; // Let the 'routes' map handle the rest
+            },
+
             // Routes for manual navigation
             routes: {
               '/login': (context) => const LoginScreen(),
               '/signup': (context) => const SignupScreen(),
               '/verify-email': (context) => const VerifyEmailScreen(),
-              '/profile-completion': (context) => const ProfileCompletionScreen(),
+              '/profile-completion': (context) =>
+                  const ProfileCompletionScreen(),
               '/home': (context) => const HomeScreen(),
               '/connections': (context) => const ConnectionsScreen(),
               '/new-session': (context) => const NewSessionScreen(),
               '/consultant': (context) => const ConsultantScreen(),
               '/sessions': (context) => const SessionsScreen(),
               '/about': (context) => const AboutScreen(),
-              '/settings': (context) => const SettingsScreen(),
-              '/entities': (context) => const EntityScreen(),
+              // Settings and Entities are handled in onGenerateRoute for custom transitions
             },
           );
         },

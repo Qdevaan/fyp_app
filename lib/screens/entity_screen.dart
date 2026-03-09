@@ -67,7 +67,9 @@ class _EntityScreenState extends State<EntityScreen> {
       // Fetch entities with their attributes as a joined query
       final entRes = await _supabase
           .from('entities')
-          .select('id, display_name, canonical_name, entity_type, description, mention_count, last_seen_at')
+          .select(
+            'id, display_name, canonical_name, entity_type, description, mention_count, last_seen_at',
+          )
           .eq('user_id', user.id)
           .order('mention_count', ascending: false);
 
@@ -136,13 +138,19 @@ class _EntityScreenState extends State<EntityScreen> {
         backgroundColor: Theme.of(context).brightness == Brightness.dark
             ? AppColors.surfaceDark
             : Colors.white,
-        title: Text('Delete Entity?', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+        title: Text(
+          'Delete Entity?',
+          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+        ),
         content: Text(
           'This will also remove all attributes and relations for this entity.',
           style: GoogleFonts.manrope(),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () => Navigator.pop(ctx, true),
@@ -156,9 +164,18 @@ class _EntityScreenState extends State<EntityScreen> {
 
     try {
       // Cascade: delete attributes and relations first (if no DB cascade set)
-      await _supabase.from('entity_attributes').delete().eq('entity_id', entityId);
-      await _supabase.from('entity_relations').delete().eq('source_id', entityId);
-      await _supabase.from('entity_relations').delete().eq('target_id', entityId);
+      await _supabase
+          .from('entity_attributes')
+          .delete()
+          .eq('entity_id', entityId);
+      await _supabase
+          .from('entity_relations')
+          .delete()
+          .eq('source_id', entityId);
+      await _supabase
+          .from('entity_relations')
+          .delete()
+          .eq('target_id', entityId);
       await _supabase.from('entities').delete().eq('id', entityId);
 
       setState(() {
@@ -167,13 +184,19 @@ class _EntityScreenState extends State<EntityScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Entity deleted.'), backgroundColor: AppColors.error),
+          const SnackBar(
+            content: Text('Entity deleted.'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Delete failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('Delete failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -187,9 +210,11 @@ class _EntityScreenState extends State<EntityScreen> {
     if (_search.isNotEmpty) {
       final q = _search.toLowerCase();
       list = list
-          .where((e) =>
-              (e['display_name'] as String).toLowerCase().contains(q) ||
-              ((e['description'] ?? '') as String).toLowerCase().contains(q))
+          .where(
+            (e) =>
+                (e['display_name'] as String).toLowerCase().contains(q) ||
+                ((e['description'] ?? '') as String).toLowerCase().contains(q),
+          )
           .toList();
     }
     return list;
@@ -199,120 +224,174 @@ class _EntityScreenState extends State<EntityScreen> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ---- Header ----
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Knowledge Graph',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.manrope(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: (details) {
+        if (details.primaryVelocity != null && details.primaryVelocity! > 300) {
+          // Swipe Right -> go back
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDark
+            ? AppColors.backgroundDark
+            : AppColors.backgroundLight,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // ---- Header ----
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: _loadEntities,
-                    icon: Icon(Icons.refresh, color: isDark ? Colors.white70 : Colors.grey.shade700),
-                  ),
-                ],
-              ),
-            ),
-
-            // ---- Search ----
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: TextField(
-                onChanged: (v) => setState(() => _search = v),
-                style: GoogleFonts.manrope(color: isDark ? Colors.white : Colors.black87),
-                decoration: InputDecoration(
-                  hintText: 'Search entities...',
-                  hintStyle: GoogleFonts.manrope(
-                    color: isDark ? const Color(0xFF64748B) : Colors.grey.shade500,
-                  ),
-                  prefixIcon: Icon(Icons.search, color: isDark ? const Color(0xFF64748B) : Colors.grey.shade500),
-                  filled: true,
-                  fillColor: isDark ? AppColors.surfaceDark : Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                    Expanded(
+                      child: Text(
+                        'Knowledge Graph',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.manrope(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _loadEntities,
+                      icon: Icon(
+                        Icons.refresh,
+                        color: isDark ? Colors.white70 : Colors.grey.shade700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
 
-            // ---- Type Filter ----
-            SizedBox(
-              height: 36,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _TypeChip(label: 'All', selected: _filterType == 'all', onTap: () => setState(() => _filterType = 'all'), isDark: isDark),
-                  ...['person', 'place', 'organization', 'event', 'object', 'concept'].map((t) => _TypeChip(
+              // ---- Search ----
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: TextField(
+                  onChanged: (v) => setState(() => _search = v),
+                  style: GoogleFonts.manrope(
+                    color: isDark ? Colors.white : Colors.black87,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search entities...',
+                    hintStyle: GoogleFonts.manrope(
+                      color: isDark
+                          ? const Color(0xFF64748B)
+                          : Colors.grey.shade500,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: isDark
+                          ? const Color(0xFF64748B)
+                          : Colors.grey.shade500,
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? AppColors.surfaceDark
+                        : Colors.grey.shade100,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                  ),
+                ),
+              ),
+
+              // ---- Type Filter ----
+              SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  children: [
+                    _TypeChip(
+                      label: 'All',
+                      selected: _filterType == 'all',
+                      onTap: () => setState(() => _filterType = 'all'),
+                      isDark: isDark,
+                    ),
+                    ...[
+                      'person',
+                      'place',
+                      'organization',
+                      'event',
+                      'object',
+                      'concept',
+                    ].map(
+                      (t) => _TypeChip(
                         label: t[0].toUpperCase() + t.substring(1),
                         selected: _filterType == t,
                         onTap: () => setState(() => _filterType = t),
                         color: _typeColors[t],
                         isDark: isDark,
-                      )),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // ---- Count badge ----
-            if (!_loading && _error == null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '${_filtered.length} entit${_filtered.length == 1 ? 'y' : 'ies'}',
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
-                      color: isDark ? const Color(0xFF64748B) : Colors.grey.shade500,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
               ),
 
-            // ---- List ----
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _error != null
-                      ? _ErrorView(error: _error!, onRetry: _loadEntities, isDark: isDark)
-                      : _filtered.isEmpty
-                          ? _EmptyView(isDark: isDark)
-                          : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                              itemCount: _filtered.length,
-                              itemBuilder: (ctx, i) => _EntityCard(
-                                entity: _filtered[i],
-                                isDark: isDark,
-                                typeColors: _typeColors,
-                                typeIcons: _typeIcons,
-                                onDelete: () => _deleteEntity(_filtered[i]['id'] as String),
-                              ),
-                            ),
-            ),
-          ],
+              const SizedBox(height: 8),
+
+              // ---- Count badge ----
+              if (!_loading && _error == null)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${_filtered.length} entit${_filtered.length == 1 ? 'y' : 'ies'}',
+                      style: GoogleFonts.manrope(
+                        fontSize: 13,
+                        color: isDark
+                            ? const Color(0xFF64748B)
+                            : Colors.grey.shade500,
+                      ),
+                    ),
+                  ),
+                ),
+
+              // ---- List ----
+              Expanded(
+                child: _loading
+                    ? const Center(child: CircularProgressIndicator())
+                    : _error != null
+                    ? _ErrorView(
+                        error: _error!,
+                        onRetry: _loadEntities,
+                        isDark: isDark,
+                      )
+                    : _filtered.isEmpty
+                    ? _EmptyView(isDark: isDark)
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        itemCount: _filtered.length,
+                        itemBuilder: (ctx, i) => _EntityCard(
+                          entity: _filtered[i],
+                          isDark: isDark,
+                          typeColors: _typeColors,
+                          typeIcons: _typeIcons,
+                          onDelete: () =>
+                              _deleteEntity(_filtered[i]['id'] as String),
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -379,14 +458,20 @@ class _EntityCardState extends State<_EntityCard> {
                     height: 4,
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF334155) : Colors.grey.shade300,
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                 ),
                 Row(
                   children: [
-                    const Icon(Icons.auto_awesome, size: 18, color: Color(0xFF818CF8)),
+                    const Icon(
+                      Icons.auto_awesome,
+                      size: 18,
+                      color: Color(0xFF818CF8),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -394,7 +479,9 @@ class _EntityCardState extends State<_EntityCard> {
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                       ),
                     ),
@@ -409,7 +496,9 @@ class _EntityCardState extends State<_EntityCard> {
                       style: GoogleFonts.manrope(
                         fontSize: 14,
                         height: 1.6,
-                        color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155),
+                        color: isDark
+                            ? const Color(0xFFCBD5E1)
+                            : const Color(0xFF334155),
                       ),
                     ),
                   ),
@@ -422,7 +511,10 @@ class _EntityCardState extends State<_EntityCard> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('AI query failed: $e'), backgroundColor: AppColors.error),
+          SnackBar(
+            content: Text('AI query failed: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     } finally {
@@ -480,32 +572,46 @@ class _EntityCardState extends State<_EntityCard> {
                           style: GoogleFonts.manrope(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: widget.isDark ? Colors.white : const Color(0xFF0F172A),
+                            color: widget.isDark
+                                ? Colors.white
+                                : const Color(0xFF0F172A),
                           ),
                         ),
                         Text(
                           entityType[0].toUpperCase() + entityType.substring(1),
-                          style: GoogleFonts.manrope(fontSize: 12, color: color),
+                          style: GoogleFonts.manrope(
+                            fontSize: 12,
+                            color: color,
+                          ),
                         ),
                       ],
                     ),
                   ),
                   // Mention count badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: color.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       '×$mentionCount',
-                      style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: color),
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: color,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Icon(
                     _expanded ? Icons.expand_less : Icons.expand_more,
-                    color: widget.isDark ? const Color(0xFF64748B) : Colors.grey.shade500,
+                    color: widget.isDark
+                        ? const Color(0xFF64748B)
+                        : Colors.grey.shade500,
                     size: 20,
                   ),
                 ],
@@ -520,12 +626,15 @@ class _EntityCardState extends State<_EntityCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (e['description'] != null && (e['description'] as String).isNotEmpty) ...[
+                  if (e['description'] != null &&
+                      (e['description'] as String).isNotEmpty) ...[
                     Text(
                       e['description'] as String,
                       style: GoogleFonts.manrope(
                         fontSize: 13,
-                        color: widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+                        color: widget.isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
                         height: 1.4,
                       ),
                     ),
@@ -540,11 +649,13 @@ class _EntityCardState extends State<_EntityCard> {
                       spacing: 8,
                       runSpacing: 6,
                       children: attrs
-                          .map((a) => _AttributeChip(
-                                attrKey: a['key']!,
-                                attrValue: a['value']!,
-                                isDark: widget.isDark,
-                              ))
+                          .map(
+                            (a) => _AttributeChip(
+                              attrKey: a['key']!,
+                              attrValue: a['value']!,
+                              isDark: widget.isDark,
+                            ),
+                          )
                           .toList(),
                     ),
                     const SizedBox(height: 10),
@@ -554,26 +665,28 @@ class _EntityCardState extends State<_EntityCard> {
                   if (rels.isNotEmpty) ...[
                     _SectionLabel('Relations', widget.isDark),
                     const SizedBox(height: 6),
-                    ...rels.map((r) => Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Row(
-                            children: [
-                              Icon(Icons.arrow_forward, size: 14, color: color),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  '${r['relation']} → ${r['target']}',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 13,
-                                    color: widget.isDark
-                                        ? const Color(0xFFCBD5E1)
-                                        : const Color(0xFF334155),
-                                  ),
+                    ...rels.map(
+                      (r) => Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          children: [
+                            Icon(Icons.arrow_forward, size: 14, color: color),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                '${r['relation']} → ${r['target']}',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 13,
+                                  color: widget.isDark
+                                      ? const Color(0xFFCBD5E1)
+                                      : const Color(0xFF334155),
                                 ),
                               ),
-                            ],
-                          ),
-                        )),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 10),
                   ],
 
@@ -583,21 +696,43 @@ class _EntityCardState extends State<_EntityCard> {
                     children: [
                       // Ask AI button
                       TextButton.icon(
-                        onPressed: _askingAi ? null : () => _askAboutEntity(context),
+                        onPressed: _askingAi
+                            ? null
+                            : () => _askAboutEntity(context),
                         icon: _askingAi
-                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.auto_awesome, size: 16, color: Color(0xFF818CF8)),
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.auto_awesome,
+                                size: 16,
+                                color: Color(0xFF818CF8),
+                              ),
                         label: Text(
                           'Ask AI',
-                          style: GoogleFonts.manrope(fontSize: 13, color: const Color(0xFF818CF8)),
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            color: const Color(0xFF818CF8),
+                          ),
                         ),
                       ),
                       TextButton.icon(
                         onPressed: widget.onDelete,
-                        icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          size: 16,
+                          color: AppColors.error,
+                        ),
                         label: Text(
                           'Delete',
-                          style: GoogleFonts.manrope(fontSize: 13, color: AppColors.error),
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            color: AppColors.error,
+                          ),
                         ),
                       ),
                     ],
@@ -668,7 +803,11 @@ class _AttributeChip extends StatelessWidget {
   final String attrValue;
   final bool isDark;
 
-  const _AttributeChip({required this.attrKey, required this.attrValue, required this.isDark});
+  const _AttributeChip({
+    required this.attrKey,
+    required this.attrValue,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -682,23 +821,27 @@ class _AttributeChip extends StatelessWidget {
         ),
       ),
       child: RichText(
-        text: TextSpan(children: [
-          TextSpan(
-            text: '$attrKey: ',
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+        text: TextSpan(
+          children: [
+            TextSpan(
+              text: '$attrKey: ',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+              ),
             ),
-          ),
-          TextSpan(
-            text: attrValue,
-            style: GoogleFonts.manrope(
-              fontSize: 12,
-              color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF0F172A),
+            TextSpan(
+              text: attrValue,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                color: isDark
+                    ? const Color(0xFFE2E8F0)
+                    : const Color(0xFF0F172A),
+              ),
             ),
-          ),
-        ]),
+          ],
+        ),
       ),
     );
   }
@@ -727,7 +870,11 @@ class _ErrorView extends StatelessWidget {
   final String error;
   final VoidCallback onRetry;
   final bool isDark;
-  const _ErrorView({required this.error, required this.onRetry, required this.isDark});
+  const _ErrorView({
+    required this.error,
+    required this.onRetry,
+    required this.isDark,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -741,12 +888,26 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Failed to load entities',
-              style: GoogleFonts.manrope(fontWeight: FontWeight.w700, color: isDark ? Colors.white : Colors.black87),
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white : Colors.black87,
+              ),
             ),
             const SizedBox(height: 6),
-            Text(error, style: GoogleFonts.manrope(fontSize: 12, color: AppColors.textMuted), textAlign: TextAlign.center),
+            Text(
+              error,
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 16),
-            FilledButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('Retry')),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
           ],
         ),
       ),
@@ -766,7 +927,11 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.hub_outlined, size: 52, color: isDark ? const Color(0xFF334155) : Colors.grey.shade300),
+            Icon(
+              Icons.hub_outlined,
+              size: 52,
+              color: isDark ? const Color(0xFF334155) : Colors.grey.shade300,
+            ),
             const SizedBox(height: 16),
             Text(
               'No entities yet',
@@ -780,7 +945,10 @@ class _EmptyView extends StatelessWidget {
             Text(
               'Start a Wingman session to automatically\nbuild your knowledge graph.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.manrope(fontSize: 13, color: isDark ? const Color(0xFF475569) : Colors.grey.shade400),
+              style: GoogleFonts.manrope(
+                fontSize: 13,
+                color: isDark ? const Color(0xFF475569) : Colors.grey.shade400,
+              ),
             ),
           ],
         ),
