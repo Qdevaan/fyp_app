@@ -136,8 +136,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           // Subscription
                           SettingsTile(
                             isDark: isDark,
-                            iconBg: const AppColors.accent.withAlpha(51),
-                            iconColor: const AppColors.accent,
+                            iconBg: AppColors.accent.withAlpha(51),
+                            iconColor: AppColors.accent,
                             icon: Icons.diamond_outlined,
                             title: 'Subscription',
                             trailing: Text(

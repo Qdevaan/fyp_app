@@ -136,7 +136,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
         _scrollController.animateTo(0.0,
-            duration: const AppDurations.dialog,
+            duration: AppDurations.dialog,
             curve: Curves.easeOut);
       });
     }

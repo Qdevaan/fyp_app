@@ -273,7 +273,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const AppDurations.dialog,
+          duration: AppDurations.dialog,
           curve: Curves.easeOut,
         );
       }

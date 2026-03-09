@@ -359,8 +359,8 @@ class _DrawerItem extends StatelessWidget {
       button: true,
       label: label,
       child: Material(
-      color: Colors.transparent,
-      child: InkWell(
+        color: Colors.transparent,
+        child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
@@ -387,6 +387,7 @@ class _DrawerItem extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

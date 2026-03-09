@@ -156,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ...hp.highlights.map(
                           (hl) => _NotificationCard(
                             isDark: isDark,
-                            accentColor: const AppColors.error,
+                            accentColor: AppColors.error,
                             icon: Icons.warning_amber_rounded,
                             title: hl['title'] as String? ?? 'Highlight',
                             body: hl['body'] as String? ?? '',
@@ -168,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ...hp.events.map(
                           (ev) => _NotificationCard(
                             isDark: isDark,
-                            accentColor: const AppColors.warning,
+                            accentColor: AppColors.warning,
                             icon: Icons.event_rounded,
                             title: ev['title'] as String? ?? 'Event',
                             body: ev['description'] as String? ?? '',
@@ -464,8 +464,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                         child: _QuickActionCard(
                                           icon: Icons.forum,
                                           iconColor:
-                                              const AppColors.accent,
-                                          iconBg: const AppColors.accent
+                                              AppColors.accent,
+                                          iconBg: AppColors.accent
                                               .withAlpha(51),
                                           title: 'Consultant AI',
                                           subtitle: 'Strategy & advice',
@@ -570,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               16, 4, 16, 4),
                                       child: _InsightCard(
                                         accentColor:
-                                            const AppColors.warning,
+                                            AppColors.warning,
                                         title: ev['title']
                                                 as String? ??
                                             'Event',
@@ -595,7 +595,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                               16, 4, 16, 4),
                                       child: _InsightCard(
                                         accentColor:
-                                            const AppColors.error,
+                                            AppColors.error,
                                         title: hl['title']
                                                 as String? ??
                                             'Highlight',

@@ -431,7 +431,7 @@ class MicToggleButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const AppDurations.normal,
+          duration: AppDurations.normal,
           width: 36,
           height: 36,
           margin: const EdgeInsets.only(right: 4),

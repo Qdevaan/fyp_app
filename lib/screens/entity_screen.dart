@@ -128,11 +128,13 @@ class _EntityScreenState extends State<EntityScreen> {
         };
       }).toList();
 
+      if (!mounted) return;
       setState(() {
         _entities = enriched;
         _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _loading = false;
         _error = e.toString();
@@ -292,7 +294,7 @@ class _EntityScreenState extends State<EntityScreen> {
                     if (_debounceTimer?.isActive ?? false)
                       _debounceTimer!.cancel();
                     _debounceTimer = Timer(
-                      const AppDurations.dialog,
+                      AppDurations.dialog,
                       () {
                         setState(() => _search = v);
                       },
@@ -734,7 +736,7 @@ class _EntityCardState extends State<_EntityCard> {
                           'Ask AI',
                           style: GoogleFonts.manrope(
                             fontSize: 13,
-                            color: const AppColors.accent,
+                            color: AppColors.accent,
                           ),
                         ),
                       ),

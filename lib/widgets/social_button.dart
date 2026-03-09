@@ -27,8 +27,8 @@ class SocialButton extends StatelessWidget {
       label: label,
       enabled: !loading,
       child: Material(
-      color: Colors.transparent,
-      child: InkWell(
+        color: Colors.transparent,
+        child: InkWell(
         onTap: loading ? null : onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
@@ -65,6 +65,7 @@ class SocialButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
