@@ -450,7 +450,7 @@ class _VoiceOverlayState extends State<VoiceOverlay>
       case VoiceAssistantState.listening:
         displayText = assistant.partialText.isNotEmpty
             ? '"${assistant.partialText}"'
-            : 'Go ahead, I\'m listeningâ€¦';
+            : 'Go ahead, I\'m listening...';
         textColor = isDark
             ? const Color(0xFFCBD5E1)
             : const Color(0xFF475569);

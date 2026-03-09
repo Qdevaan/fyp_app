@@ -17,17 +17,17 @@ import 'wake_word_service.dart';
 
 /// The current state of the voice assistant pipeline.
 enum VoiceAssistantState {
-  idle,       // Not active — waiting for wake word or tap
-  listening,  // Wake word detected — actively capturing command
+  idle, // Not active — waiting for wake word or tap
+  listening, // Wake word detected — actively capturing command
   processing, // Command captured — sending to server
-  speaking,   // TTS reading out the response
+  speaking, // TTS reading out the response
 }
 
 /// Voice modes the user can choose from.
 /// Each maps to a specific Deepgram Aura voice model.
 enum VoiceMode {
-  male,    // aura-arcas-en   — masculine, confident
-  female,  // aura-asteria-en — feminine, clear, energetic
+  male, // aura-arcas-en   — masculine, confident
+  female, // aura-asteria-en — feminine, clear, energetic
   neutral, // aura-orpheus-en — neutral, professional
 }
 
@@ -118,7 +118,8 @@ class VoiceAssistantService extends ChangeNotifier {
   Future<void> _loadPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     final modeIndex = prefs.getInt(_voiceModeKey) ?? VoiceMode.neutral.index;
-    _voiceMode = VoiceMode.values[modeIndex.clamp(0, VoiceMode.values.length - 1)];
+    _voiceMode =
+        VoiceMode.values[modeIndex.clamp(0, VoiceMode.values.length - 1)];
     _isWakeWordEnabled = prefs.getBool(_wakeWordKey) ?? true;
     notifyListeners();
   }
@@ -137,7 +138,9 @@ class VoiceAssistantService extends ChangeNotifier {
   void _initDeepgramTTS() {
     _deepgramApiKey = dotenv.env['DEEPGRAM_API_KEY'] ?? '';
     if (_deepgramApiKey.isEmpty) {
-      debugPrint('⚠️ Deepgram: No DEEPGRAM_API_KEY found in .env — TTS will not work');
+      debugPrint(
+        '⚠️ Deepgram: No DEEPGRAM_API_KEY found in .env — TTS will not work',
+      );
     } else {
       debugPrint('🔊 Deepgram Aura TTS initialized');
     }
@@ -194,12 +197,15 @@ class VoiceAssistantService extends ChangeNotifier {
 
   // ─── Wake Word Detected (Porcupine Callback) ─────────
 
-  void _onWakeWordDetected() {
+  void _onWakeWordDetected() async {
     debugPrint('🎙️ ✅ Wake word "Hey Bubbles" detected via Porcupine!');
 
     // Stop Porcupine while we capture the user's command
     // (avoids microphone conflict with speech_to_text)
-    _wakeWordService.stopListening();
+    await _wakeWordService.stopListening();
+    
+    // Add a tiny delay to ensure audio hardware is fully released
+    await Future.delayed(const Duration(milliseconds: 300));
 
     // Show overlay and start active command listening
     _showOverlay();
@@ -217,7 +223,7 @@ class VoiceAssistantService extends ChangeNotifier {
 
     _stt.listen(
       onResult: _onCommandResult,
-      listenMode: ListenMode.dictation,
+      listenMode: ListenMode.confirmation,
       pauseFor: const Duration(seconds: 3),
       cancelOnError: false,
       partialResults: true,
@@ -225,10 +231,25 @@ class VoiceAssistantService extends ChangeNotifier {
   }
 
   void _onCommandResult(SpeechRecognitionResult result) {
+    if (_state == VoiceAssistantState.processing) return; // Prevent multiple calls
+
     _partialText = result.recognizedWords;
     notifyListeners();
 
-    if (result.finalResult) {
+    final partialLower = _partialText.toLowerCase();
+    bool isEarlyMatch = partialLower.contains('start wingman') || 
+                        partialLower.contains('wingman session') || 
+                        partialLower.contains('new session') || 
+                        partialLower.contains('wingman') ||
+                        partialLower.contains('consultant') || 
+                        partialLower.contains('tell me') || 
+                        partialLower.contains('what is') || 
+                        partialLower.contains('who is');
+
+    if (result.finalResult || isEarlyMatch) {
+      if (isEarlyMatch) {
+        _stt.stop();
+      }
       final command = result.recognizedWords.trim();
       debugPrint('🎙️ Command captured: "$command"');
       if (command.isNotEmpty) {
@@ -248,26 +269,56 @@ class VoiceAssistantService extends ChangeNotifier {
     _partialText = command;
     notifyListeners();
 
+    final lowerCommand = command.toLowerCase();
+
+    // 1. Local intercept for Wingman
+    if (lowerCommand.contains('start wingman') ||
+        lowerCommand.contains('wingman session') ||
+        lowerCommand.contains('new session') ||
+        lowerCommand.contains('wingman')) {
+      _lastResponse = "Starting your Wingman session.";
+      await _speak(_lastResponse);
+      _pendingNavigation = '/new-session';
+      return;
+    }
+
+    // 2. Local intercept for AI Consultant
+    if (lowerCommand.contains('consultant') ||
+        lowerCommand.contains('tell me') ||
+        lowerCommand.contains('what is') ||
+        lowerCommand.contains('who is')) {
+      _lastResponse = "Going to Consultant mode.";
+      await _speak(_lastResponse);
+      _pendingNavigation = '/consultant';
+      return;
+    }
+
     // Check server connection
-    if (!_connectionService.isConnected || _connectionService.serverUrl.isEmpty) {
-      await _speak("I can't reach the server right now. Please check your connection in settings.");
+    if (!_connectionService.isConnected ||
+        _connectionService.serverUrl.isEmpty) {
+      await _speak(
+        "I can't reach the server right now. Please check your connection in settings.",
+      );
       return;
     }
 
     try {
       final userId = _getUserId();
-      
+
       // Start E2E Latency Stopwatch
       final stopwatch = Stopwatch()..start();
-      
+
       final response = await _sendVoiceCommand(userId, command);
-      
+
       stopwatch.stop();
       final double latencySeconds = stopwatch.elapsedMilliseconds / 1000.0;
-      debugPrint('[LATENCY] Wingman round trip: ${latencySeconds.toStringAsFixed(2)}s');
+      debugPrint(
+        '[LATENCY] Wingman round trip: ${latencySeconds.toStringAsFixed(2)}s',
+      );
 
       if (response != null) {
-        _lastResponse = response['response'] ?? "I'm not sure how to help with that.";
+        _lastResponse =
+            response['response'] ?? "I'm not sure how to help with that.";
         final action = response['action'] as String? ?? 'none';
         final target = response['target'] as String?;
 
@@ -279,7 +330,9 @@ class VoiceAssistantService extends ChangeNotifier {
           _pendingNavigation = target;
         }
       } else {
-        await _speak("Sorry, I had trouble processing that. Can you try again?");
+        await _speak(
+          "Sorry, I had trouble processing that. Can you try again?",
+        );
       }
     } catch (e) {
       debugPrint('❌ Voice command error: $e');
@@ -309,25 +362,29 @@ class VoiceAssistantService extends ChangeNotifier {
     _userId = id;
   }
 
-  Future<Map<String, dynamic>?> _sendVoiceCommand(String userId, String command) async {
+  Future<Map<String, dynamic>?> _sendVoiceCommand(
+    String userId,
+    String command,
+  ) async {
     try {
       final uri = Uri.parse('${_connectionService.serverUrl}/voice_command');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-        },
-        body: jsonEncode({
-          'user_id': userId,
-          'command': command,
-        }),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+            body: jsonEncode({'user_id': userId, 'command': command}),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        debugPrint('❌ Voice command server error: ${response.statusCode} ${response.body}');
+        debugPrint(
+          '❌ Voice command server error: ${response.statusCode} ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -358,16 +415,22 @@ class VoiceAssistantService extends ChangeNotifier {
     }
 
     try {
-      debugPrint('🔊 Deepgram TTS: Requesting audio with model=$_deepgramModel');
+      debugPrint(
+        '🔊 Deepgram TTS: Requesting audio with model=$_deepgramModel',
+      );
 
-      final response = await http.post(
-        Uri.parse('https://api.deepgram.com/v1/speak?model=$_deepgramModel'),
-        headers: {
-          'Authorization': 'Token $_deepgramApiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'text': text}),
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            Uri.parse(
+              'https://api.deepgram.com/v1/speak?model=$_deepgramModel',
+            ),
+            headers: {
+              'Authorization': 'Token $_deepgramApiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'text': text}),
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         // Save audio bytes to a temp file and play
@@ -376,9 +439,13 @@ class VoiceAssistantService extends ChangeNotifier {
         await audioFile.writeAsBytes(response.bodyBytes);
 
         await _audioPlayer.play(DeviceFileSource(audioFile.path));
-        debugPrint('🔊 Deepgram TTS: Playing audio (${response.bodyBytes.length} bytes)');
+        debugPrint(
+          '🔊 Deepgram TTS: Playing audio (${response.bodyBytes.length} bytes)',
+        );
       } else {
-        debugPrint('❌ Deepgram TTS error: ${response.statusCode} ${response.body}');
+        debugPrint(
+          '❌ Deepgram TTS error: ${response.statusCode} ${response.body}',
+        );
         // Still return to idle on error
         _setState(VoiceAssistantState.idle);
         if (_isActive && _isWakeWordEnabled) {
