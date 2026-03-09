@@ -139,7 +139,14 @@ class ConsultantProvider extends ChangeNotifier {
   }
 
   // ── Send message via SSE streaming ──
-  Future<void> sendMessage(String text, ApiService api) async {
+  /// [onFirstToken] fires when the first AI token arrives (useful for voice mode).
+  /// [onComplete] fires with the full response text when streaming finishes.
+  Future<void> sendMessage(
+    String text,
+    ApiService api, {
+    void Function()? onFirstToken,
+    void Function(String fullResponse)? onComplete,
+  }) async {
     if (text.isEmpty || _loading || _loadingChat) return;
 
     final user = AuthService.instance.currentUser;
@@ -177,6 +184,7 @@ class ConsultantProvider extends ChangeNotifier {
             "time": aiTime,
           });
           firstToken = false;
+          onFirstToken?.call();
         } else {
           _messages.last = {
             "role": "ai",
@@ -197,6 +205,7 @@ class ConsultantProvider extends ChangeNotifier {
       }
       _loading = false;
       notifyListeners();
+      onComplete?.call(buf.toString());
     } catch (e) {
       if (firstToken) {
         _messages.add({
@@ -213,6 +222,7 @@ class ConsultantProvider extends ChangeNotifier {
       }
       _loading = false;
       notifyListeners();
+      onComplete?.call(buf.toString());
     }
   }
 

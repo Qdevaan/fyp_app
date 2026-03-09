@@ -37,15 +37,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
       if (service.isConnected) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("✅ Connected to Brain!"),
-            backgroundColor: Colors.green,
+            content: Text("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Connected to Brain!"),
+            backgroundColor: AppColors.success,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("❌ Connection Failed. Check URL."),
-            backgroundColor: Colors.red,
+            content: Text("ÃƒÂ¢Ã‚ÂÃ…â€™ Connection Failed. Check URL."),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -118,12 +118,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     (isDark
                             ? AppColors.backgroundDark
                             : AppColors.backgroundLight)
-                        .withOpacity(0.9),
+                        .withAlpha(230),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFFE2E8F0),
+                        ? AppColors.slate800
+                        : AppColors.slate200,
                   ),
                 ),
               ),
@@ -135,7 +135,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                       onPressed: () => Navigator.pop(context),
                       icon: Icon(
                         Icons.arrow_back_rounded,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                     ),
                     Text(
@@ -143,7 +143,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                       style: GoogleFonts.manrope(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                     ),
                   ],
@@ -165,13 +165,13 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         color: isDark
-                            ? const Color(0xFF1E293B).withOpacity(0.5)
-                            : Colors.white.withOpacity(0.7),
+                            ? AppColors.slate800.withAlpha(128)
+                            : Colors.white.withAlpha(178),
                         borderRadius: BorderRadius.circular(AppRadius.xl),
                         border: Border.all(
                           color: isDark
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFE2E8F0),
+                              ? AppColors.slate700
+                              : AppColors.slate200,
                         ),
                       ),
                       child: Column(
@@ -187,8 +187,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isConnected
-                                      ? AppColors.success.withOpacity(0.15)
-                                      : AppColors.error.withOpacity(0.1),
+                                      ? AppColors.success.withAlpha(38)
+                                      : AppColors.error.withAlpha(26),
                                 ),
                               ),
                               Container(
@@ -197,8 +197,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   color: isConnected
-                                      ? AppColors.success.withOpacity(0.1)
-                                      : AppColors.error.withOpacity(0.08),
+                                      ? AppColors.success.withAlpha(26)
+                                      : AppColors.error.withAlpha(20),
                                   border: Border.all(
                                     color: isConnected
                                         ? AppColors.success
@@ -228,7 +228,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                               fontWeight: FontWeight.w800,
                               color: isDark
                                   ? Colors.white
-                                  : const Color(0xFF0F172A),
+                                  : AppColors.slate900,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -251,8 +251,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                             ),
                             decoration: BoxDecoration(
                               color: isConnected
-                                  ? AppColors.success.withOpacity(0.1)
-                                  : AppColors.error.withOpacity(0.1),
+                                  ? AppColors.success.withAlpha(26)
+                                  : AppColors.error.withAlpha(26),
                               borderRadius: BorderRadius.circular(
                                 AppRadius.full,
                               ),
@@ -335,21 +335,21 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF64748B),
+                              ? AppColors.slate400
+                              : AppColors.slate500,
                         ),
                       ),
                     ),
                     Container(
                       decoration: BoxDecoration(
                         color: isDark
-                            ? const Color(0xFF1E293B).withOpacity(0.5)
-                            : Colors.white.withOpacity(0.7),
+                            ? AppColors.slate800.withAlpha(128)
+                            : Colors.white.withAlpha(178),
                         borderRadius: BorderRadius.circular(AppRadius.lg),
                         border: Border.all(
                           color: isDark
-                              ? const Color(0xFF334155)
-                              : const Color(0xFFE2E8F0),
+                              ? AppColors.slate700
+                              : AppColors.slate200,
                         ),
                       ),
                       child: Row(
@@ -358,8 +358,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           Icon(
                             Icons.dns_rounded,
                             color: isDark
-                                ? const Color(0xFF64748B)
-                                : const Color(0xFF94A3B8),
+                                ? AppColors.slate500
+                                : AppColors.slate400,
                             size: 20,
                           ),
                           Expanded(
@@ -369,14 +369,14 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                 fontSize: 14,
                                 color: isDark
                                     ? Colors.white
-                                    : const Color(0xFF0F172A),
+                                    : AppColors.slate900,
                               ),
                               decoration: InputDecoration(
                                 hintText: 'https://your-server.ngrok-free.app',
                                 hintStyle: GoogleFonts.manrope(
                                   color: isDark
-                                      ? const Color(0xFF475569)
-                                      : const Color(0xFF94A3B8),
+                                      ? AppColors.slate600
+                                      : AppColors.slate400,
                                 ),
                                 border: InputBorder.none,
                                 contentPadding: const EdgeInsets.symmetric(
@@ -390,8 +390,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                             icon: Icon(
                               Icons.content_paste_rounded,
                               color: isDark
-                                  ? const Color(0xFF64748B)
-                                  : const Color(0xFF94A3B8),
+                                  ? AppColors.slate500
+                                  : AppColors.slate400,
                               size: 20,
                             ),
                             tooltip: 'Paste from clipboard',
@@ -512,10 +512,10 @@ class _ActionButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          color: isDark ? AppColors.slate800 : AppColors.slate100,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+            color: isDark ? AppColors.slate700 : AppColors.slate200,
           ),
         ),
         child: loading
@@ -536,8 +536,8 @@ class _ActionButton extends StatelessWidget {
                     icon,
                     size: 20,
                     color: isDark
-                        ? const Color(0xFFCBD5E1)
-                        : const Color(0xFF475569),
+                        ? AppColors.slate300
+                        : AppColors.slate600,
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -546,8 +546,8 @@ class _ActionButton extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: isDark
-                          ? const Color(0xFFCBD5E1)
-                          : const Color(0xFF475569),
+                          ? AppColors.slate300
+                          : AppColors.slate600,
                     ),
                   ),
                 ],
@@ -590,11 +590,11 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
     return Container(
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF1E293B).withOpacity(0.3)
-            : Colors.white.withOpacity(0.5),
+            ? AppColors.slate800.withAlpha(76)
+            : Colors.white.withAlpha(128),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+          color: isDark ? AppColors.slate700 : AppColors.slate200,
         ),
       ),
       child: Column(
@@ -618,18 +618,18 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
                       style: GoogleFonts.manrope(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                     ),
                   ),
                   AnimatedRotation(
                     turns: _expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 200),
+                    duration: AppDurations.tooltip,
                     child: Icon(
                       Icons.expand_more_rounded,
                       color: isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF64748B),
+                          ? AppColors.slate400
+                          : AppColors.slate500,
                     ),
                   ),
                 ],
@@ -642,8 +642,8 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
                 border: Border(
                   top: BorderSide(
                     color: isDark
-                        ? const Color(0xFF334155)
-                        : const Color(0xFFE2E8F0),
+                        ? AppColors.slate700
+                        : AppColors.slate200,
                   ),
                 ),
               ),
@@ -660,7 +660,7 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
                           height: 24,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: widget.primary.withOpacity(0.18),
+                            color: widget.primary.withAlpha(46),
                           ),
                           child: Center(
                             child: Text(
@@ -681,8 +681,8 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
                               fontSize: 13,
                               height: 1.6,
                               color: isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF64748B),
+                                  ? AppColors.slate400
+                                  : AppColors.slate500,
                             ),
                           ),
                         ),

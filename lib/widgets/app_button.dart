@@ -22,7 +22,11 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Material(
+    return Semantics(
+      button: true,
+      label: label,
+      enabled: !loading,
+      child: Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: loading ? null : onTap,
@@ -45,7 +49,7 @@ class AppButton extends StatelessWidget {
                 ? null
                 : Border.all(
                     color: isDark
-                        ? Colors.white.withOpacity(0.15)
+                        ? Colors.white.withAlpha(38)
                         : Colors.grey.shade300,
                   ),
             boxShadow: filled
@@ -53,7 +57,7 @@ class AppButton extends StatelessWidget {
                     BoxShadow(
                       color: Theme.of(
                         context,
-                      ).colorScheme.primary.withOpacity(0.25),
+                      ).colorScheme.primary.withAlpha(64),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),

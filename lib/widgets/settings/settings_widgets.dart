@@ -29,7 +29,7 @@ class SectionLabel extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
-          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          color: isDark ? AppColors.slate400 : AppColors.slate500,
         ),
       ),
     );
@@ -62,7 +62,7 @@ class TileDivider extends StatelessWidget {
     return Divider(
       height: 1,
       indent: 60,
-      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+      color: isDark ? Colors.white.withAlpha(13) : Colors.grey.shade100,
     );
   }
 }
@@ -116,7 +116,7 @@ class ProfileTileState extends State<ProfileTile> {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withAlpha(51),
               ),
               child: ClipOval(
                 child: avatarUrl != null
@@ -159,7 +159,7 @@ class ProfileTileState extends State<ProfileTile> {
                       fontWeight: FontWeight.w700,
                       color: widget.isDark
                           ? Colors.white
-                          : const Color(0xFF0F172A),
+                          : AppColors.slate900,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -180,7 +180,7 @@ class ProfileTileState extends State<ProfileTile> {
             Icon(
               Icons.chevron_right,
               color: widget.isDark
-                  ? const Color(0xFF64748B)
+                  ? AppColors.slate500
                   : Colors.grey.shade400,
             ),
           ],
@@ -234,7 +234,7 @@ class SettingsTile extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : AppColors.slate900,
                 ),
               ),
             ),
@@ -242,7 +242,7 @@ class SettingsTile extends StatelessWidget {
             Icon(
               Icons.chevron_right,
               size: 20,
-              color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400,
+              color: isDark ? AppColors.slate500 : Colors.grey.shade400,
             ),
           ],
         ),
@@ -292,7 +292,7 @@ class ToggleTile extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                color: isDark ? Colors.white : AppColors.slate900,
               ),
             ),
           ),
@@ -307,9 +307,9 @@ class ToggleTile extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 // Voice Enrollment Section
-// ─────────────────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 enum EnrollState { idle, checking, recording, uploading, success, error }
 
@@ -488,7 +488,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
   @override
   Widget build(BuildContext context) {
     final color = const Color(0xFFF472B6); // pink accent for voice
-    final bg = color.withOpacity(0.15);
+    final bg = color.withAlpha(38);
 
     switch (_state) {
       case EnrollState.checking:
@@ -518,7 +518,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.15),
+                      color: AppColors.error.withAlpha(38),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -539,7 +539,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
                             fontWeight: FontWeight.w600,
                             color: widget.isDark
                                 ? Colors.white
-                                : const Color(0xFF0F172A),
+                                : AppColors.slate900,
                           ),
                         ),
                         Text(
@@ -567,7 +567,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
               const SizedBox(height: 8),
               LinearProgressIndicator(
                 value: (7 - _countdown) / 7,
-                backgroundColor: AppColors.error.withOpacity(0.1),
+                backgroundColor: AppColors.error.withAlpha(26),
                 color: AppColors.error,
                 borderRadius: BorderRadius.circular(4),
               ),
@@ -617,7 +617,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.15),
+                  color: AppColors.success.withAlpha(38),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -653,7 +653,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: AppColors.error.withAlpha(26),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
@@ -734,13 +734,13 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
                           fontWeight: FontWeight.w500,
                           color: widget.isDark
                               ? Colors.white
-                              : const Color(0xFF0F172A),
+                              : AppColors.slate900,
                         ),
                       ),
                       Text(
                         isEnrolled
                             ? 'Enrolled on ${_formatDate(_enrolledAt)}'
-                            : 'Not enrolled — tap to record',
+                            : 'Not enrolled Ã¢â‚¬â€ tap to record',
                         style: GoogleFonts.manrope(
                           fontSize: 12,
                           color: isEnrolled
@@ -758,7 +758,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.12),
+                      color: AppColors.success.withAlpha(31),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -784,7 +784,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
                   Icons.chevron_right,
                   size: 20,
                   color: widget.isDark
-                      ? const Color(0xFF64748B)
+                      ? AppColors.slate500
                       : Colors.grey.shade400,
                 ),
               ],
@@ -795,7 +795,7 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
   }
 }
 
-// ── Contact row used in the contact bottom sheet ──────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬ Contact row used in the contact bottom sheet Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 class ContactRow extends StatelessWidget {
   final bool isDark;
   final IconData icon;
@@ -816,7 +816,7 @@ class ContactRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+        color: isDark ? AppColors.slate900 : AppColors.slate50,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -825,7 +825,7 @@ class ContactRow extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
+              color: iconColor.withAlpha(31),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: iconColor, size: 20),
@@ -840,8 +840,8 @@ class ContactRow extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: isDark
-                      ? const Color(0xFF64748B)
-                      : const Color(0xFF94A3B8),
+                      ? AppColors.slate500
+                      : AppColors.slate400,
                 ),
               ),
               const SizedBox(height: 2),
@@ -850,7 +850,7 @@ class ContactRow extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : AppColors.slate900,
                 ),
               ),
             ],

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -14,20 +15,50 @@ class ApiService {
   String get _baseUrl => _connectionService.serverUrl;
   bool get isConnected => _connectionService.isConnected;
 
+  // ── Retry with exponential backoff ──
+  static const int _maxRetries = 3;
+  static const Duration _baseDelay = Duration(milliseconds: 500);
+
+  /// Retries [action] up to [_maxRetries] times with exponential backoff + jitter.
+  /// Only retries on network / timeout errors – not on successful HTTP responses.
+  Future<T> _withRetry<T>(Future<T> Function() action, {int? maxRetries}) async {
+    final retries = maxRetries ?? _maxRetries;
+    for (int attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await action();
+      } on TimeoutException {
+        if (attempt == retries) rethrow;
+      } on http.ClientException {
+        if (attempt == retries) rethrow;
+      } catch (e) {
+        // Don't retry on non-network errors (e.g. FormatException)
+        if (e is! TimeoutException && e is! http.ClientException) rethrow;
+      }
+      final delay = _baseDelay * pow(2, attempt).toInt();
+      final jitter = Duration(milliseconds: Random().nextInt(delay.inMilliseconds ~/ 2 + 1));
+      await Future.delayed(delay + jitter);
+      debugPrint('Retry attempt ${attempt + 1}/$retries');
+    }
+    throw TimeoutException('All $retries retries exhausted');
+  }
+
   Future<Map<String, dynamic>?> getLiveKitToken(String userId) async {
     if (_baseUrl.isEmpty) return null;
     try {
-      final response = await http.post(
-        Uri.parse('$_baseUrl/getToken'),
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-        },
-        body: jsonEncode({'userId': userId}),
-      );
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      }
+      return await _withRetry(() async {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/getToken'),
+          headers: {
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true',
+          },
+          body: jsonEncode({'userId': userId}),
+        ).timeout(const Duration(seconds: 10));
+        if (response.statusCode == 200) {
+          return jsonDecode(response.body) as Map<String, dynamic>;
+        }
+        return null;
+      });
     } catch (e) {
       debugPrint("Token Error: $e");
     }
@@ -131,29 +162,29 @@ class ApiService {
     if (_baseUrl.isEmpty) return false;
 
     try {
-      var uri = Uri.parse("$_baseUrl/save_session");
+      return await _withRetry(() async {
+        var uri = Uri.parse("$_baseUrl/save_session");
+        String fullTranscript = logs
+            .map((l) => "${l['speaker']}: ${l['text']}")
+            .join("\n");
 
-      // Flatten logs for context
-      String fullTranscript = logs
-          .map((l) => "${l['speaker']}: ${l['text']}")
-          .join("\n");
+        var response = await http
+            .post(
+              uri,
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              body: jsonEncode({
+                "user_id": userId,
+                "transcript": fullTranscript,
+                "logs": logs,
+              }),
+            )
+            .timeout(const Duration(seconds: 15));
 
-      var response = await http
-          .post(
-            uri,
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-            body: jsonEncode({
-              "user_id": userId,
-              "transcript": fullTranscript,
-              "logs": logs,
-            }),
-          )
-          .timeout(const Duration(seconds: 15));
-
-      return response.statusCode == 200;
+        return response.statusCode == 200;
+      });
     } catch (e) {
       debugPrint("Save Session Error: $e");
       return false;
@@ -166,6 +197,7 @@ class ApiService {
     if (_baseUrl.isEmpty) return "Please connect to the server first.";
 
     try {
+      return await _withRetry(() async {
       var uri = Uri.parse("$_baseUrl/ask_consultant");
       var response = await http
           .post(
@@ -176,13 +208,14 @@ class ApiService {
             },
             body: jsonEncode({"user_id": userId, "question": question}),
           )
-          .timeout(const Duration(seconds: 30)); // Llama 70B can be slow
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        return data['answer'];
+        return data['answer'] as String;
       }
       return "Brain Error: ${response.statusCode}";
+      });
     } catch (e) {
       return "Connection Error: $e";
     }
@@ -198,6 +231,7 @@ class ApiService {
     if (_baseUrl.isEmpty) return null;
 
     try {
+      return await _withRetry(() async {
       var uri = Uri.parse("$_baseUrl/process_transcript_wingman");
       final body = <String, dynamic>{
         "user_id": userId,
@@ -218,8 +252,10 @@ class ApiService {
 
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
-        return data['advice'];
+        return data['advice'] as String?;
       }
+      return null;
+      });
     } catch (e) {
       debugPrint("Wingman API Error: $e");
     }
@@ -231,19 +267,22 @@ class ApiService {
   Future<String?> createLiveSession(String userId) async {
     if (_baseUrl.isEmpty) return null;
     try {
-      final res = await http
-          .post(
-            Uri.parse("$_baseUrl/start_session"),
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-            body: jsonEncode({"user_id": userId, "mode": "live_wingman"}),
-          )
-          .timeout(const Duration(seconds: 10));
-      if (res.statusCode == 200) {
-        return jsonDecode(res.body)['session_id'] as String?;
-      }
+      return await _withRetry(() async {
+        final res = await http
+            .post(
+              Uri.parse("$_baseUrl/start_session"),
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              body: jsonEncode({"user_id": userId, "mode": "live_wingman"}),
+            )
+            .timeout(const Duration(seconds: 10));
+        if (res.statusCode == 200) {
+          return jsonDecode(res.body)['session_id'] as String?;
+        }
+        return null;
+      });
     } catch (e) {
       debugPrint("createLiveSession error: $e");
     }
@@ -254,16 +293,18 @@ class ApiService {
   Future<void> endLiveSession(String sessionId, String userId) async {
     if (_baseUrl.isEmpty) return;
     try {
-      await http
-          .post(
-            Uri.parse("$_baseUrl/end_session"),
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-            body: jsonEncode({"session_id": sessionId, "user_id": userId}),
-          )
-          .timeout(const Duration(seconds: 30));
+      await _withRetry(() async {
+        await http
+            .post(
+              Uri.parse("$_baseUrl/end_session"),
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              body: jsonEncode({"session_id": sessionId, "user_id": userId}),
+            )
+            .timeout(const Duration(seconds: 30));
+      });
     } catch (e) {
       debugPrint("endLiveSession error: $e");
     }

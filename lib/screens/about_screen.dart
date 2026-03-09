@@ -37,7 +37,7 @@ class AboutScreen extends StatelessWidget {
                         'The aim of our project is to enhance communication skills by using AI and NLP to assist during and after conversations. It aims to recognize the tone and flow of discussions, provide real-time suggestions for impactful responses, and help users understand industry-specific jargon. By analysing conversations, it offers tailored tips to improve communication, ensuring users can refine their skills over time.',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           height: 1.6,
-                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          color: theme.colorScheme.onSurface.withAlpha(204),
                         ),
                         textAlign: TextAlign.justify,
                       ),
@@ -48,7 +48,7 @@ class AboutScreen extends StatelessWidget {
                         'The tool not only transcribes and summarizes conversations but also finds key participants, highlights key details, and provides actionable insights. It includes a "replay" feature that suggests alternative phrases or approaches, helping users reflect on what could have been said more effectively. Whether it is a formal business meeting, an informal chat, or a professional negotiation, this AI-powered assistant is designed to support users in becoming more confident and articulate communicators.',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           height: 1.6,
-                          color: theme.colorScheme.onSurface.withOpacity(0.8),
+                          color: theme.colorScheme.onSurface.withAlpha(204),
                         ),
                         textAlign: TextAlign.justify,
                       ),
@@ -67,9 +67,7 @@ class AboutScreen extends StatelessWidget {
                             'As a student, sometime after a conversation ends, I realize the words that I used were not appropriate for the conversation and I could have done it in a better way, or how could I have delivered my message more clearly and made my conversation more engaging? But then, after some time passes, I forget all the points that I wanted to keep in mind.',
                             style: theme.textTheme.bodyLarge?.copyWith(
                               height: 1.6,
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.8,
-                              ),
+                              color: theme.colorScheme.onSurface.withAlpha(204),
                             ),
                             textAlign: TextAlign.justify,
                           ),
@@ -78,9 +76,7 @@ class AboutScreen extends StatelessWidget {
                             'The purpose of our project is to create a smart assistant that can not only capture, summarize, and analyze conversations in real-time but also assist people in improving their communication skills. The system will determine the tone of the conversation, map the flow of the conversation, provide instant responses, suggest strong phrases, and comment on the clarity, structure, and engagement of the conversation.',
                             style: theme.textTheme.bodyLarge?.copyWith(
                               height: 1.6,
-                              color: theme.colorScheme.onSurface.withOpacity(
-                                0.8,
-                              ),
+                              color: theme.colorScheme.onSurface.withAlpha(204),
                             ),
                             textAlign: TextAlign.justify,
                           ),
@@ -118,10 +114,10 @@ class AboutScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            'Crafted with ❤️ by the Bubbles Team',
+                            'Crafted with â¤ï¸ by the Bubbles Team',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant
-                                  .withOpacity(0.7),
+                                  .withAlpha(178),
                               letterSpacing: 1.2,
                             ),
                           ),
@@ -133,12 +129,10 @@ class AboutScreen extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.surfaceVariant
-                                  .withOpacity(0.5),
+                                  .withAlpha(128),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: theme.colorScheme.outline.withOpacity(
-                                  0.1,
-                                ),
+                                color: theme.colorScheme.outline.withAlpha(26),
                               ),
                             ),
                             child: Text(
@@ -154,7 +148,7 @@ class AboutScreen extends StatelessWidget {
                             'Made with AI Love',
                             style: theme.textTheme.labelSmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant
-                                  .withOpacity(0.6),
+                                  .withAlpha(153),
                             ),
                           ),
                         ],
@@ -178,7 +172,7 @@ class AboutScreen extends StatelessWidget {
       expandedHeight: 300.0,
       pinned: true,
       stretch: true,
-      backgroundColor: theme.colorScheme.primary.withOpacity(0.9),
+      backgroundColor: theme.colorScheme.primary.withAlpha(230),
       foregroundColor: theme.colorScheme.onPrimary,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
@@ -213,8 +207,8 @@ class AboutScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      Colors.white.withOpacity(0.2),
-                      Colors.white.withOpacity(0.0),
+                      Colors.white.withAlpha(51),
+                      Colors.white.withAlpha(0),
                     ],
                   ),
                 ),
@@ -230,8 +224,8 @@ class AboutScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      theme.colorScheme.tertiary.withOpacity(0.3),
-                      theme.colorScheme.tertiary.withOpacity(0.0),
+                      theme.colorScheme.tertiary.withAlpha(76),
+                      theme.colorScheme.tertiary.withAlpha(0),
                     ],
                   ),
                 ),
@@ -247,7 +241,7 @@ class AboutScreen extends StatelessWidget {
                 Text(
                   'AI-powered Conversational Assistant',
                   style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.onPrimary.withOpacity(0.9),
+                    color: theme.colorScheme.onPrimary.withAlpha(230),
                     letterSpacing: 1.0,
                     fontWeight: FontWeight.w500,
                   ),
@@ -270,7 +264,7 @@ class AboutScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.1),
+            color: theme.colorScheme.primary.withAlpha(26),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Icon(icon, color: theme.colorScheme.primary, size: 26),
@@ -357,14 +351,14 @@ class _GlassCard extends StatelessWidget {
         child: Container(
           padding: padding ?? const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: theme.colorScheme.surface.withOpacity(0.7),
+            color: theme.colorScheme.surface.withAlpha(178),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: theme.colorScheme.outline.withOpacity(0.1),
+              color: theme.colorScheme.outline.withAlpha(26),
             ),
             boxShadow: [
               BoxShadow(
-                color: theme.shadowColor.withOpacity(0.05),
+                color: theme.shadowColor.withAlpha(13),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -396,7 +390,7 @@ class _DeveloperInfoCard extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.5),
+                color: theme.colorScheme.primary.withAlpha(128),
                 width: 2,
               ),
             ),
@@ -456,7 +450,7 @@ class _AmbientBackground extends StatelessWidget {
             height: 400,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+              color: theme.colorScheme.primaryContainer.withAlpha(76),
             ),
           ),
         ),
@@ -469,7 +463,7 @@ class _AmbientBackground extends StatelessWidget {
             height: 300,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
+              color: theme.colorScheme.secondaryContainer.withAlpha(76),
             ),
           ),
         ),

@@ -101,7 +101,7 @@ class AppDrawer extends StatelessWidget {
                   ),
                   child: Divider(
                     color: isDark
-                        ? Colors.white.withOpacity(0.05)
+                        ? Colors.white.withAlpha(13)
                         : Colors.grey.shade200,
                     height: 1,
                   ),
@@ -190,7 +190,7 @@ class AppDrawer extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          colors: [AppColors.slate900, AppColors.slate800],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(24),
@@ -207,7 +207,7 @@ class AppDrawer extends StatelessWidget {
                   border: Border.all(
                     color: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.5),
+                    ).colorScheme.primary.withAlpha(128),
                     width: 2,
                   ),
                 ),
@@ -218,7 +218,7 @@ class AppDrawer extends StatelessWidget {
                       : null,
                   backgroundColor: Theme.of(
                     context,
-                  ).colorScheme.primary.withOpacity(0.2),
+                  ).colorScheme.primary.withAlpha(51),
                   child: photoUrl == null
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
@@ -241,7 +241,7 @@ class AppDrawer extends StatelessWidget {
                     color: statusColor,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF0F172A),
+                      color: AppColors.slate900,
                       width: 2,
                     ),
                   ),
@@ -281,7 +281,7 @@ class AppDrawer extends StatelessWidget {
                     vertical: 3,
                   ),
                   decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.2),
+                    color: statusColor.withAlpha(51),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -304,14 +304,17 @@ class AppDrawer extends StatelessWidget {
   Widget _buildFooter(BuildContext context, bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-      child: GestureDetector(
+      child: Semantics(
+        button: true,
+        label: 'Logout',
+        child: GestureDetector(
         onTap: onLogout,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
           decoration: BoxDecoration(
-            color: AppColors.error.withOpacity(0.1),
+            color: AppColors.error.withAlpha(26),
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.error.withOpacity(0.2)),
+            border: Border.all(color: AppColors.error.withAlpha(51)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -329,6 +332,7 @@ class AppDrawer extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -351,7 +355,10 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
@@ -362,7 +369,7 @@ class _DrawerItem extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isDark ? const Color(0xFF94A3B8) : Colors.grey.shade600,
+                color: isDark ? AppColors.slate400 : Colors.grey.shade600,
                 size: 22,
               ),
               const SizedBox(width: 16),
@@ -372,7 +379,7 @@ class _DrawerItem extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? Colors.white : AppColors.slate900,
                   ),
                 ),
               ),

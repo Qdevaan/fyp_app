@@ -189,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 12),
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
+              duration: const AppDurations.dialog,
               child: Text(
                 _loadingText,
                 key: ValueKey<String>(_loadingText),

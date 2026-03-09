@@ -194,7 +194,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                         decoration: BoxDecoration(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurfaceVariant.withOpacity(0.3),
+                          ).colorScheme.onSurfaceVariant.withAlpha(76),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -216,7 +216,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                           fillColor: Theme.of(context)
                               .colorScheme
                               .surfaceContainerHighest
-                              .withOpacity(0.3),
+                              .withAlpha(76),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(AppRadius.lg),
                             borderSide: BorderSide.none,
@@ -350,7 +350,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: theme.colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      fillColor: theme.colorScheme.surfaceContainerHighest.withAlpha(76),
       prefixIcon: icon != null
           ? Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant)
           : null,
@@ -361,7 +361,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide(
-          color: theme.colorScheme.outline.withOpacity(0.2),
+          color: theme.colorScheme.outline.withAlpha(51),
         ),
       ),
       focusedBorder: OutlineInputBorder(
@@ -410,12 +410,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                     (isDark
                             ? AppColors.backgroundDark
                             : AppColors.backgroundLight)
-                        .withOpacity(0.9),
+                        .withAlpha(230),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFFE2E8F0),
+                        ? AppColors.slate800
+                        : AppColors.slate200,
                   ),
                 ),
               ),
@@ -426,7 +426,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                     IconButton(
                       icon: Icon(
                         Icons.arrow_back_rounded,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
@@ -435,7 +435,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                       style: GoogleFonts.manrope(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                     ),
                   ],
@@ -485,7 +485,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                                 boxShadow: [
                                   BoxShadow(
                                     color: theme.colorScheme.primary
-                                        .withOpacity(0.2),
+                                        .withAlpha(51),
                                     blurRadius: 15,
                                     offset: const Offset(0, 5),
                                   ),
@@ -503,7 +503,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                                         color: theme
                                             .colorScheme
                                             .onSurfaceVariant
-                                            .withOpacity(0.5),
+                                            .withAlpha(128),
                                       )
                                     : null,
                               ),

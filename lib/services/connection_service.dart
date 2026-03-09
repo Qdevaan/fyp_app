@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +14,11 @@ class ConnectionService with ChangeNotifier {
   ConnectionStatus _status = ConnectionStatus.disconnected;
   Timer? _statusCheckTimer;
   bool _isChecking = false;
+
+  // -- Exponential backoff for periodic checks --
+  int _consecutiveFailures = 0;
+  static const int _baseIntervalSec = 60;
+  static const int _maxIntervalSec = 300; // cap at 5 minutes
 
   // -- Connectivity --
   final Connectivity _connectivity = Connectivity();
@@ -109,7 +115,6 @@ class ConnectionService with ChangeNotifier {
 
     if (_isChecking) return false;
     _isChecking = true;
-    // Only show "connecting" spinner on explicit checks, not background ones
     if (notifyResult) _updateStatus(ConnectionStatus.connecting);
 
     try {
@@ -123,24 +128,32 @@ class ConnectionService with ChangeNotifier {
 
       debugPrint('Ping response: ${response.statusCode}');
 
-      // Strictly check for 200 OK on the health endpoint
       if (response.statusCode == 200) {
+        _consecutiveFailures = 0;
+        _reschedulePeriodicChecks();
         _updateStatus(ConnectionStatus.connected);
-        if (notifyResult)
+        if (notifyResult) {
           debugPrint('Connection successful! (Status: ${response.statusCode})');
+        }
         return true;
       } else {
         debugPrint('Server returned error status: ${response.statusCode}');
-        _updateStatus(ConnectionStatus.error);
+        _onCheckFailed();
         return false;
       }
     } catch (e) {
       debugPrint('Connection check failed: $e');
-      _updateStatus(ConnectionStatus.error);
+      _onCheckFailed();
       return false;
     } finally {
       _isChecking = false;
     }
+  }
+
+  void _onCheckFailed() {
+    _consecutiveFailures++;
+    _reschedulePeriodicChecks();
+    _updateStatus(ConnectionStatus.error);
   }
 
   void _updateStatus(ConnectionStatus newStatus) {
@@ -150,11 +163,19 @@ class ConnectionService with ChangeNotifier {
     }
   }
 
-  // --- Periodic Checks ---
+  // --- Periodic Checks with Exponential Backoff ---
   void _startPeriodicChecks() {
+    _reschedulePeriodicChecks();
+  }
+
+  void _reschedulePeriodicChecks() {
     _statusCheckTimer?.cancel();
-    // Check every 60 seconds to save battery
-    _statusCheckTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+    // Exponential backoff: 60s, 120s, 240s, capped at 300s
+    final intervalSec = min(
+      _baseIntervalSec * pow(2, _consecutiveFailures).toInt(),
+      _maxIntervalSec,
+    );
+    _statusCheckTimer = Timer.periodic(Duration(seconds: intervalSec), (timer) {
       if (!_isChecking && _serverUrl.isNotEmpty) {
         checkConnection(notifyResult: false);
       }

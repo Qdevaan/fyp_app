@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../theme/design_tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,11 +27,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
   bool _isEmailLoading = false;
   bool _isGoogleLoading = false;
+  double _passwordStrength = 0;
   late final StreamSubscription<AuthState> _authSubscription;
 
   @override
   void initState() {
     super.initState();
+    _passCtrl.addListener(_updatePasswordStrength);
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
     ) {
@@ -45,10 +48,38 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void dispose() {
     _authSubscription.cancel();
+    _passCtrl.removeListener(_updatePasswordStrength);
     _emailCtrl.dispose();
     _passCtrl.dispose();
     _confirmPassCtrl.dispose();
     super.dispose();
+  }
+
+  void _updatePasswordStrength() {
+    final pw = _passCtrl.text;
+    double score = 0;
+    if (pw.length >= 6) score += 0.2;
+    if (pw.length >= 10) score += 0.1;
+    if (pw.contains(RegExp(r'[A-Z]'))) score += 0.2;
+    if (pw.contains(RegExp(r'[0-9]'))) score += 0.2;
+    if (pw.contains(RegExp(r'[!@#\$%\^&\*\(\)_\+\-=\[\]{};:,.<>?/\\|`~]'))) score += 0.2;
+    if (pw.length >= 14) score += 0.1;
+    setState(() => _passwordStrength = score.clamp(0.0, 1.0));
+  }
+
+  String get _strengthLabel {
+    if (_passwordStrength <= 0) return '';
+    if (_passwordStrength < 0.3) return 'Weak';
+    if (_passwordStrength < 0.6) return 'Fair';
+    if (_passwordStrength < 0.8) return 'Good';
+    return 'Strong';
+  }
+
+  Color get _strengthColor {
+    if (_passwordStrength < 0.3) return AppColors.error;
+    if (_passwordStrength < 0.6) return AppColors.warning;
+    if (_passwordStrength < 0.8) return AppColors.primary;
+    return AppColors.success;
   }
 
   Future<void> _signupWithEmail() async {
@@ -107,7 +138,7 @@ class _SignupScreenState extends State<SignupScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(0.15),
+                color: theme.colorScheme.primary.withAlpha(38),
               ),
             ),
           ),
@@ -119,7 +150,7 @@ class _SignupScreenState extends State<SignupScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.purple.withOpacity(0.08),
+                color: Colors.purple.withAlpha(20),
               ),
             ),
           ),
@@ -161,7 +192,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   fontWeight: FontWeight.w800,
                                   color: isDark
                                       ? Colors.white
-                                      : const Color(0xFF0F172A),
+                                      : AppColors.slate900,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -171,8 +202,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                   fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                   color: isDark
-                                      ? const Color(0xFF94A3B8)
-                                      : const Color(0xFF64748B),
+                                      ? AppColors.slate400
+                                      : AppColors.slate500,
                                 ),
                               ),
                             ],
@@ -203,6 +234,35 @@ class _SignupScreenState extends State<SignupScreen> {
                                 ? null
                                 : 'Min 6 characters',
                           ),
+                          if (_passCtrl.text.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(AppRadius.full),
+                                    child: LinearProgressIndicator(
+                                      value: _passwordStrength,
+                                      backgroundColor: isDark
+                                          ? AppColors.slate700
+                                          : AppColors.slate200,
+                                      color: _strengthColor,
+                                      minHeight: 4,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  _strengthLabel,
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: _strengthColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 16),
 
                           AppInput(
@@ -278,8 +338,8 @@ class _SignupScreenState extends State<SignupScreen> {
                                 'Already have an account?',
                                 style: GoogleFonts.manrope(
                                   color: isDark
-                                      ? const Color(0xFFCBD5E1)
-                                      : const Color(0xFF64748B),
+                                      ? AppColors.slate300
+                                      : AppColors.slate500,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),

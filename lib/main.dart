@@ -9,6 +9,9 @@ import 'services/deepgram_service.dart';
 import 'services/voice_assistant_service.dart';
 import 'services/wake_word_service.dart';
 import 'providers/theme_provider.dart';
+import 'providers/consultant_provider.dart';
+import 'providers/session_provider.dart';
+import 'providers/home_provider.dart';
 import 'widgets/voice_overlay.dart';
 import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
@@ -94,6 +97,15 @@ class BubblesApp extends StatelessWidget {
           ),
           update: (context, connection, wakeWord, previous) => previous!,
         ),
+
+        // 8. Consultant Provider (chat state)
+        ChangeNotifierProvider(create: (_) => ConsultantProvider()),
+
+        // 9. Session Provider (live wingman state)
+        ChangeNotifierProvider(create: (_) => SessionProvider()),
+
+        // 10. Home Provider (home screen data)
+        ChangeNotifierProvider(create: (_) => HomeProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

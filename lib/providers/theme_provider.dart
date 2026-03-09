@@ -64,18 +64,18 @@ class ThemeProvider extends ChangeNotifier {
             secondary: _seedColor,
             onSecondary: Colors.white,
             surface: AppColors.surfaceLight,
-            onSurface: const Color(0xFF0F172A),
+            onSurface: AppColors.slate900,
           ),
       scaffoldBackgroundColor: AppColors.backgroundLight,
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.backgroundLight,
-        foregroundColor: const Color(0xFF0F172A),
+        foregroundColor: AppColors.slate900,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.manrope(
           fontWeight: FontWeight.w800,
           fontSize: 20,
-          color: const Color(0xFF0F172A),
+          color: AppColors.slate900,
         ),
       ),
       cardTheme: CardThemeData(
@@ -136,8 +136,8 @@ class ThemeProvider extends ChangeNotifier {
       useMaterial3: true,
       brightness: Brightness.dark,
       textTheme: _manropeTextTheme.apply(
-        bodyColor: const Color(0xFFE2E8F0),
-        displayColor: const Color(0xFFE2E8F0),
+        bodyColor: AppColors.slate200,
+        displayColor: AppColors.slate200,
       ),
       colorScheme:
           ColorScheme.fromSeed(
@@ -149,7 +149,7 @@ class ThemeProvider extends ChangeNotifier {
             secondary: _seedColor,
             onSecondary: Colors.white,
             surface: AppColors.surfaceDark,
-            onSurface: const Color(0xFFE2E8F0),
+            onSurface: AppColors.slate200,
           ),
       scaffoldBackgroundColor: AppColors.backgroundDark,
       appBarTheme: AppBarTheme(

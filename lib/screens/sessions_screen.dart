@@ -22,7 +22,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
   void _openSortSheet(BuildContext context, bool isDark) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      backgroundColor: isDark ? AppColors.slate800 : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -41,7 +41,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       height: 4,
                       decoration: BoxDecoration(
                         color: isDark
-                            ? const Color(0xFF475569)
+                            ? AppColors.slate600
                             : Colors.grey.shade300,
                         borderRadius: BorderRadius.circular(2),
                       ),
@@ -53,7 +53,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                     style: GoogleFonts.manrope(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : const Color(0xFF0F172A),
+                      color: isDark ? Colors.white : AppColors.slate900,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -78,7 +78,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                         color: selected
                             ? Theme.of(context).colorScheme.primary
                             : (isDark
-                                  ? const Color(0xFF94A3B8)
+                                  ? AppColors.slate400
                                   : Colors.grey.shade500),
                         size: 20,
                       ),
@@ -92,8 +92,8 @@ class _SessionsScreenState extends State<SessionsScreen> {
                           color: selected
                               ? Theme.of(context).colorScheme.primary
                               : (isDark
-                                    ? const Color(0xFFCBD5E1)
-                                    : const Color(0xFF334155)),
+                                    ? AppColors.slate300
+                                    : AppColors.slate700),
                         ),
                       ),
                       trailing: selected
@@ -149,7 +149,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                           fontWeight: FontWeight.w800,
                           color: isDark
                               ? Colors.white
-                              : const Color(0xFF0F172A),
+                              : AppColors.slate900,
                         ),
                       ),
                     ),
@@ -163,7 +163,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       color: _sortOrder != _SortOrder.newestFirst
                           ? primary
                           : (isDark
-                                ? const Color(0xFFCBD5E1)
+                                ? AppColors.slate300
                                 : Colors.grey.shade700),
                     ),
                   ),
@@ -237,7 +237,7 @@ class _FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: AppDurations.tooltip,
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: selected
@@ -247,7 +247,7 @@ class _FilterChip extends StatelessWidget {
           border: Border.all(
             color: selected
                 ? Theme.of(context).colorScheme.primary
-                : (isDark ? const Color(0xFF334155) : Colors.grey.shade300),
+                : (isDark ? AppColors.slate700 : Colors.grey.shade300),
           ),
         ),
         child: Text(
@@ -257,7 +257,7 @@ class _FilterChip extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: selected
                 ? Colors.white
-                : (isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700),
+                : (isDark ? AppColors.slate300 : Colors.grey.shade700),
           ),
         ),
       ),
@@ -311,7 +311,7 @@ class _SectionHeader extends StatelessWidget {
           fontSize: 11,
           fontWeight: FontWeight.w700,
           letterSpacing: 1.2,
-          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+          color: isDark ? AppColors.slate400 : AppColors.slate500,
         ),
       ),
     );
@@ -436,7 +436,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                       color: isDark
-                          ? Colors.white.withOpacity(0.05)
+                          ? Colors.white.withAlpha(13)
                           : Colors.grey.shade200,
                     ),
                   ),
@@ -448,7 +448,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                         decoration: BoxDecoration(
                           color: Theme.of(
                             context,
-                          ).colorScheme.primary.withOpacity(0.2),
+                          ).colorScheme.primary.withAlpha(51),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
@@ -469,7 +469,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                                 fontWeight: FontWeight.w700,
                                 color: isDark
                                     ? Colors.white
-                                    : const Color(0xFF0F172A),
+                                    : AppColors.slate900,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -485,7 +485,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                                   decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.primary.withOpacity(0.15),
+                                    ).colorScheme.primary.withAlpha(38),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -505,8 +505,8 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     color: isDark
-                                        ? const Color(0xFF94A3B8)
-                                        : const Color(0xFF64748B),
+                                        ? AppColors.slate400
+                                        : AppColors.slate500,
                                   ),
                                 ),
                               ],
@@ -517,7 +517,7 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                       Icon(
                         Icons.chevron_right,
                         color: isDark
-                            ? const Color(0xFF64748B)
+                            ? AppColors.slate500
                             : Colors.grey.shade400,
                         size: 20,
                       ),
@@ -652,7 +652,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                       color: isDark
-                          ? Colors.white.withOpacity(0.05)
+                          ? Colors.white.withAlpha(13)
                           : Colors.grey.shade200,
                     ),
                   ),
@@ -662,7 +662,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: Colors.purple.withOpacity(0.15),
+                          color: Colors.purple.withAlpha(38),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: const Icon(
@@ -683,7 +683,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                                 fontWeight: FontWeight.w700,
                                 color: isDark
                                     ? Colors.white
-                                    : const Color(0xFF0F172A),
+                                    : AppColors.slate900,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -697,7 +697,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: Colors.purple.withOpacity(0.15),
+                                    color: Colors.purple.withAlpha(38),
                                     borderRadius: BorderRadius.circular(6),
                                   ),
                                   child: Text(
@@ -715,8 +715,8 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     color: isDark
-                                        ? const Color(0xFF94A3B8)
-                                        : const Color(0xFF64748B),
+                                        ? AppColors.slate400
+                                        : AppColors.slate500,
                                   ),
                                 ),
                               ],
@@ -727,7 +727,7 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                       Icon(
                         Icons.chevron_right,
                         color: isDark
-                            ? const Color(0xFF64748B)
+                            ? AppColors.slate500
                             : Colors.grey.shade400,
                         size: 20,
                       ),
@@ -755,7 +755,7 @@ Widget _buildEmptyState(String message, IconData icon) {
             Icon(
               icon,
               size: 52,
-              color: isDark ? const Color(0xFF334155) : Colors.grey.shade300,
+              color: isDark ? AppColors.slate700 : Colors.grey.shade300,
             ),
             const SizedBox(height: 14),
             Text(
@@ -763,8 +763,8 @@ Widget _buildEmptyState(String message, IconData icon) {
               style: GoogleFonts.manrope(
                 fontSize: 15,
                 color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF64748B),
+                    ? AppColors.slate400
+                    : AppColors.slate500,
               ),
             ),
           ],
@@ -834,7 +834,7 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
                           fontWeight: FontWeight.w700,
                           color: isDark
                               ? Colors.white
-                              : const Color(0xFF0F172A),
+                              : AppColors.slate900,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

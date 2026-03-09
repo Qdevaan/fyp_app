@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,25 +8,23 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../theme/design_tokens.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/connection_service.dart';
+import '../providers/consultant_provider.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/consultant/voice_mode.dart';
 import '../widgets/consultant/consultant_widgets.dart';
 import '../widgets/consultant/welcome_messages.dart';
 
-// â”€â”€â”€ Voice mode state for the consultant â”€â”€â”€â”€â”€â”€â”€â”€
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 //  CONSULTANT SCREEN  (ChatGPT-style multi-chat)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  State managed by ConsultantProvider; voice mode stays local.
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 class ConsultantScreen extends StatefulWidget {
   const ConsultantScreen({super.key});
 
@@ -40,29 +37,22 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
-  final _supabase = Supabase.instance.client;
 
-  // â”€â”€ Current chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  String? _currentSessionId;
-  final List<Map<String, String>> _messages = [];
-  bool _loading = false;
   bool _showScrollToBottom = false;
 
-  // â”€â”€ Drawer / past chats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  List<Map<String, dynamic>> _pastChats = [];
-  bool _drawerLoading = false;
-  bool _drawerLoaded = false;
-  bool _loadingChat = false; // loading messages for a selected past chat
-
-  // â”€â”€ Hands-free voice mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Hands-free voice mode (lifecycle-coupled, stays local) --
   CVoiceMode _voiceMode = CVoiceMode.off;
   final SpeechToText _stt = SpeechToText();
   bool _sttReady = false;
   final AudioPlayer _ttsPlayer = AudioPlayer();
   String _voicePartial = '';
-  bool _voiceModeActive = false; // true when the loop should keep running
+  bool _voiceModeActive = false;
   late final AnimationController _micPulse;
   late final Animation<double> _micPulseAnim;
+
+  /// Quick access to the provider without listening.
+  ConsultantProvider get _chat =>
+      Provider.of<ConsultantProvider>(context, listen: false);
 
   String _getWelcomeMessage() {
     final messages = List<String>.from(consultantWelcomeMessages);
@@ -75,7 +65,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_scrollListener);
-    _messages.add({"role": "ai", "text": _getWelcomeMessage()});
+
+    // Set welcome message via provider after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _chat.setWelcomeMessage(_getWelcomeMessage());
+    });
 
     // Mic pulse animation (used when listening)
     _micPulse = AnimationController(
@@ -100,11 +94,8 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       final args = ModalRoute.of(context)?.settings.arguments;
       if (args is Map<String, dynamic> && args.containsKey('initialQuery')) {
         final query = args['initialQuery'] as String;
-        // Schedule sending after initial frame renders
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          _controller.text =
-              ""; // Don't keep it in the text box if sending via voice
-          // Clean the query: e.g., "tell me when is saras birthday" -> "when is saras birthday"
+          _controller.text = "";
           String cleanQuery = query.toLowerCase();
           if (cleanQuery.startsWith('tell me ')) {
             cleanQuery = cleanQuery.replaceFirst('tell me ', '');
@@ -115,7 +106,6 @@ class _ConsultantScreenState extends State<ConsultantScreen>
           if (cleanQuery.startsWith('who is ')) {
             cleanQuery = cleanQuery.replaceFirst('who is ', '');
           }
-
           _voiceModeActive = true;
           _setVoiceMode(CVoiceMode.processing);
           _sendVoiceMessage(cleanQuery);
@@ -151,135 +141,44 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     if (show != _showScrollToBottom) setState(() => _showScrollToBottom = show);
   }
 
-  // â”€â”€ New / clear chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- New / clear chat (delegates to provider) --
   void _newChat() {
     Navigator.pop(context); // close drawer
-    setState(() {
-      _currentSessionId = null;
-      _messages
-        ..clear()
-        ..add({"role": "ai", "text": _getWelcomeMessage()});
-    });
+    _chat.newChat(_getWelcomeMessage());
   }
 
-  // â”€â”€ Load sidebar chat list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Load sidebar chat list (delegates to provider) --
   Future<void> _loadPastChats() async {
-    if (_drawerLoading) return;
-    final user = AuthService.instance.currentUser;
-    if (user == null) return;
-
-    setState(() => _drawerLoading = true);
-    try {
-      // Fetch all rows grouped by session_id; first question = title
-      final rows = List<Map<String, dynamic>>.from(
-        await _supabase
-            .from('consultant_logs')
-            .select('session_id, question, created_at')
-            .eq('user_id', user.id)
-            .not('session_id', 'is', null)
-            .order('created_at', ascending: true),
-      );
-
-      final Map<String, Map<String, dynamic>> seen = {};
-      for (final r in rows) {
-        final sid = r['session_id'] as String?;
-        if (sid == null) continue;
-        seen.putIfAbsent(
-          sid,
-          () => {
-            'session_id': sid,
-            'title': r['question'] as String? ?? 'Chat',
-            'created_at': r['created_at'] as String? ?? '',
-          },
-        );
-      }
-
-      // Sort most-recent first
-      final list = seen.values.toList()
-        ..sort(
-          (a, b) =>
-              (b['created_at'] as String).compareTo(a['created_at'] as String),
-        );
-
-      if (mounted) {
-        setState(() {
-          _pastChats = list;
-          _drawerLoading = false;
-          _drawerLoaded = true;
-        });
-      }
-    } catch (e) {
-      debugPrint('_loadPastChats error: $e');
-      if (mounted) setState(() => _drawerLoading = false);
-    }
+    await _chat.loadPastChats();
   }
 
-  // â”€â”€ Load messages for a selected past chat â”€
+  // -- Load messages for a selected past chat (delegates to provider) --
   Future<void> _loadChatById(String sessionId) async {
-    if (_loadingChat) return;
-    final user = AuthService.instance.currentUser;
-    if (user == null) return;
-
     Navigator.pop(context); // close drawer immediately
-    setState(() {
-      _loadingChat = true;
-      _messages.clear();
-    });
-
-    try {
-      final rows = List<Map<String, dynamic>>.from(
-        await _supabase
-            .from('consultant_logs')
-            .select('question, answer, created_at')
-            .eq('session_id', sessionId)
-            .eq('user_id', user.id)
-            .order('created_at', ascending: true),
-      );
-
-      if (mounted) {
-        setState(() {
-          _currentSessionId = sessionId;
-          for (final r in rows) {
-            if (r['question'] != null)
-              _messages.add({"role": "user", "text": r['question'] as String});
-            if (r['answer'] != null)
-              _messages.add({"role": "ai", "text": r['answer'] as String});
-          }
-          if (_messages.isEmpty) {
-            _messages.add({
-              "role": "ai",
-              "text": "This conversation appears to be empty.",
-            });
-          }
-          _loadingChat = false;
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-      }
-    } catch (e) {
-      debugPrint('_loadChatById error: $e');
-      if (mounted) setState(() => _loadingChat = false);
-    }
+    await _chat.loadChatById(sessionId);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
-  // â”€â”€ Not-connected dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Not-connected dialog --
   void _showNotConnectedDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+        backgroundColor: isDark ? AppColors.slate800 : Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.redAccent.withOpacity(0.1),
+                color: AppColors.error.withAlpha(26),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
                 Icons.wifi_off_rounded,
-                color: Colors.redAccent,
+                color: AppColors.error,
                 size: 20,
               ),
             ),
@@ -290,7 +189,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                 style: GoogleFonts.manrope(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
+                  color: isDark ? Colors.white : AppColors.slate900,
                 ),
               ),
             ),
@@ -300,7 +199,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
           'The Consultant AI requires a server connection. Please connect first in Settings.',
           style: GoogleFonts.manrope(
             fontSize: 14,
-            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
+            color: isDark ? AppColors.textSecondary : AppColors.textMuted,
             height: 1.5,
           ),
         ),
@@ -311,9 +210,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               'Cancel',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.w600,
-                color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF64748B),
+                color: isDark ? AppColors.textSecondary : AppColors.textMuted,
               ),
             ),
           ),
@@ -323,9 +220,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               Navigator.pushNamed(context, '/connections');
             },
             style: TextButton.styleFrom(
-              backgroundColor: Theme.of(
-                context,
-              ).colorScheme.primary.withOpacity(0.12),
+              backgroundColor: cs.primary.withAlpha(31),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -335,7 +230,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               'Connect',
               style: GoogleFonts.manrope(
                 fontWeight: FontWeight.w700,
-                color: Theme.of(context).colorScheme.primary,
+                color: cs.primary,
               ),
             ),
           ),
@@ -344,12 +239,12 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     );
   }
 
-  // â”€â”€ Send message (SSE streaming) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  void _sendMessage() async {
+  // -- Send message (delegates streaming to provider) --
+  void _sendMessage() {
     final text = _controller.text.trim();
-    if (text.isEmpty || _loading || _loadingChat) return;
+    final chat = _chat;
+    if (text.isEmpty || chat.loading || chat.loadingChat) return;
 
-    // Connection check
     final conn = Provider.of<ConnectionService>(context, listen: false);
     if (!conn.isConnected) {
       _showNotConnectedDialog();
@@ -361,100 +256,16 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Not logged in."),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
     }
 
-    setState(() {
-      _messages.add({"role": "user", "text": text, "time": _nowTime()});
-      _loading = true;
-      _controller.clear();
-    });
-    _scrollToBottom();
-
+    _controller.clear();
     final api = Provider.of<ApiService>(context, listen: false);
-    final buf = StringBuffer();
-    bool firstToken = true;
-
-    try {
-      final stream = api.askConsultantStream(
-        user.id,
-        text,
-        sessionId: _currentSessionId,
-        onSessionCreated: (sid) {
-          if (mounted) {
-            setState(() {
-              _currentSessionId = sid;
-              _drawerLoaded =
-                  false; // stale â€” will reload on next drawer open
-            });
-          }
-        },
-      );
-
-      final aiTime = _nowTime();
-      await for (final token in stream) {
-        if (!mounted) break;
-        buf.write(token);
-        if (firstToken) {
-          setState(() {
-            _loading = false;
-            _messages.add({
-              "role": "ai",
-              "text": buf.toString(),
-              "streaming": "true",
-              "time": aiTime,
-            });
-          });
-          firstToken = false;
-        } else {
-          setState(
-            () => _messages.last = {
-              "role": "ai",
-              "text": buf.toString(),
-              "streaming": "true",
-              "time": aiTime,
-            },
-          );
-        }
-        _scrollToBottom();
-      }
-
-      if (mounted) {
-        setState(() {
-          if (_messages.isNotEmpty && _messages.last['streaming'] == 'true') {
-            _messages.last = {
-              "role": "ai",
-              "text": buf.toString(),
-              "time": _messages.last['time'] ?? _nowTime(),
-            };
-          }
-          _loading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          if (firstToken) {
-            _messages.add({
-              "role": "ai",
-              "text": "Error connecting to consultant: $e",
-              "time": _nowTime(),
-            });
-          } else {
-            _messages.last = {
-              "role": "ai",
-              "text": buf.isEmpty ? "Error: $e" : buf.toString(),
-              "time": _messages.last['time'] ?? _nowTime(),
-            };
-          }
-          _loading = false;
-        });
-        _scrollToBottom();
-      }
-    }
+    chat.sendMessage(text, api);
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
@@ -462,32 +273,21 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const AppDurations.dialog,
           curve: Curves.easeOut,
         );
       }
     });
   }
 
-  // â”€â”€ Current time helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  String _nowTime() {
-    final dt = DateTime.now();
-    final h = dt.hour;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final period = h >= 12 ? 'PM' : 'AM';
-    final hour12 = h == 0 ? 12 : (h > 12 ? h - 12 : h);
-    return '$hour12:$m $period';
-  }
-
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
   //  HANDS-FREE VOICE MODE
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
   Future<void> _initVoice() async {
     _sttReady = await _stt.initialize(
-      onError: (e) => debugPrint('ðŸŽ™ï¸ STT error: ${e.errorMsg}'),
+      onError: (e) => debugPrint('STT error: ${e.errorMsg}'),
     );
-    // When TTS audio ends, auto-restart listening if still in voice mode
     _ttsPlayer.onPlayerComplete.listen((_) {
       if (_voiceModeActive && mounted) {
         _setVoiceMode(CVoiceMode.listening);
@@ -501,7 +301,6 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     setState(() => _voiceMode = mode);
   }
 
-  /// Toggle hands-free mode on / off.
   void _toggleVoiceMode() {
     if (_voiceMode == CVoiceMode.off) {
       _startVoiceMode();
@@ -515,7 +314,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Microphone not available.'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -533,10 +332,9 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     setState(() => _voicePartial = '');
   }
 
-  /// Interrupt mid-speak / mid-listen and start listening instead.
   void _interruptAndListen() {
     if (_voiceMode == CVoiceMode.speaking) {
-      _ttsPlayer.stop(); // onPlayerComplete will NOT fire when stopped manually
+      _ttsPlayer.stop();
       _setVoiceMode(CVoiceMode.listening);
       _startSTT();
     }
@@ -560,7 +358,6 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     if (result.finalResult) {
       final text = result.recognizedWords.trim();
       if (text.isEmpty) {
-        // Nothing heard â€” keep listening
         _startSTT();
         return;
       }
@@ -571,7 +368,6 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   Future<void> _sendVoiceMessage(String text) async {
     if (!mounted || !_voiceModeActive) return;
 
-    // Connection check
     final conn = Provider.of<ConnectionService>(context, listen: false);
     if (!conn.isConnected) {
       _stopVoiceMode();
@@ -579,107 +375,32 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       return;
     }
 
-    final user = AuthService.instance.currentUser;
-    if (user == null) return;
-
     setState(() {
       _voicePartial = '';
-      _messages.add({'role': 'user', 'text': text, 'time': _nowTime()});
       _voiceMode = CVoiceMode.processing;
-      _loading = true;
     });
-    _scrollToBottom();
 
     final api = Provider.of<ApiService>(context, listen: false);
-    final buf = StringBuffer();
-    bool firstToken = true;
-
-    try {
-      final stream = api.askConsultantStream(
-        user.id,
-        text,
-        sessionId: _currentSessionId,
-        onSessionCreated: (sid) {
-          if (mounted) {
-            setState(() {
-              _currentSessionId = sid;
-              _drawerLoaded = false;
-            });
-          }
-        },
-      );
-
-      final aiTime = _nowTime();
-      await for (final token in stream) {
-        if (!mounted || !_voiceModeActive) break;
-        buf.write(token);
-        if (firstToken) {
-          setState(() {
-            _loading = false;
-            _messages.add({
-              'role': 'ai',
-              'text': buf.toString(),
-              'streaming': 'true',
-              'time': aiTime,
-            });
-            _voiceMode =
-                CVoiceMode.speaking; // show speaking state while streaming
-          });
-          firstToken = false;
-        } else {
-          setState(
-            () => _messages.last = {
-              'role': 'ai',
-              'text': buf.toString(),
-              'streaming': 'true',
-              'time': aiTime,
-            },
-          );
+    await _chat.sendMessage(
+      text,
+      api,
+      onFirstToken: () {
+        if (mounted && _voiceModeActive) {
+          _setVoiceMode(CVoiceMode.speaking);
         }
-        _scrollToBottom();
-      }
-
-      if (mounted) {
-        setState(() {
-          _loading = false;
-          if (_messages.isNotEmpty && _messages.last['streaming'] == 'true') {
-            _messages.last = {
-              'role': 'ai',
-              'text': buf.toString(),
-              'time': _messages.last['time'] ?? _nowTime(),
-            };
-          }
-        });
-      }
-
-      // Speak the completed response
-      if (_voiceModeActive && buf.isNotEmpty) {
-        await _speakText(buf.toString());
-      }
-    } catch (e) {
-      if (mounted && _voiceModeActive) {
-        setState(() {
-          if (firstToken) {
-            _messages.add({
-              'role': 'ai',
-              'text': 'Error: $e',
-              'time': _nowTime(),
-            });
-          }
-          _loading = false;
-          _voiceMode = CVoiceMode.listening;
-        });
-        _startSTT();
-      }
-    }
+      },
+      onComplete: (fullResponse) async {
+        if (_voiceModeActive && fullResponse.isNotEmpty) {
+          await _speakText(fullResponse);
+        }
+      },
+    );
+    _scrollToBottom();
   }
 
-  /// Calls Deepgram Aura TTS and plays the audio.
-  /// After playback ends, `onPlayerComplete` restarts listening automatically.
   Future<void> _speakText(String text) async {
     if (!_voiceModeActive || !mounted) return;
 
-    // Strip markdown for TTS (basic)
     final plain = text
         .replaceAll(RegExp(r'\*\*(.+?)\*\*'), r'$1')
         .replaceAll(RegExp(r'\*(.+?)\*'), r'$1')
@@ -690,7 +411,6 @@ class _ConsultantScreenState extends State<ConsultantScreen>
 
     final apiKey = dotenv.env['DEEPGRAM_API_KEY'] ?? '';
     if (apiKey.isEmpty) {
-      debugPrint('âš ï¸ No Deepgram API key â€” skipping TTS');
       if (_voiceModeActive && mounted) {
         _setVoiceMode(CVoiceMode.listening);
         _startSTT();
@@ -703,9 +423,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     try {
       final response = await http
           .post(
-            Uri.parse(
-              'https://api.deepgram.com/v1/speak?model=aura-orpheus-en',
-            ),
+            Uri.parse('https://api.deepgram.com/v1/speak?model=aura-orpheus-en'),
             headers: {
               'Authorization': 'Token $apiKey',
               'Content-Type': 'application/json',
@@ -719,16 +437,15 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         final file = File('${dir.path}/consultant_tts.mp3');
         await file.writeAsBytes(response.bodyBytes);
         await _ttsPlayer.play(DeviceFileSource(file.path));
-        // onPlayerComplete in _initVoice handles restarting STT
       } else {
-        debugPrint('âŒ TTS error: ${response.statusCode}');
+        debugPrint('TTS error: ${response.statusCode}');
         if (_voiceModeActive && mounted) {
           _setVoiceMode(CVoiceMode.listening);
           _startSTT();
         }
       }
     } catch (e) {
-      debugPrint('âŒ TTS network error: $e');
+      debugPrint('TTS network error: $e');
       if (_voiceModeActive && mounted) {
         _setVoiceMode(CVoiceMode.listening);
         _startSTT();
@@ -736,12 +453,10 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Helpers --
   String _chatTitle(Map<String, dynamic> chat) {
     final q = chat['title'] as String? ?? 'Chat';
-    return q.length > 48 ? '${q.substring(0, 48)}â€¦' : q;
+    return q.length > 48 ? '${q.substring(0, 48)}\u2026' : q;
   }
 
   String _formatDate(String? iso) {
@@ -765,15 +480,14 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     }
   }
 
-  // â”€â”€ Drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  Widget _buildDrawer(bool isDark) {
+  // -- Drawer (reads from provider) --
+  Widget _buildDrawer(bool isDark, ConsultantProvider chat) {
     final primary = Theme.of(context).colorScheme.primary;
     return Drawer(
-      backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
+      backgroundColor: isDark ? AppColors.slate900 : Colors.white,
       child: SafeArea(
         child: Column(
           children: [
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 12, 8),
               child: Row(
@@ -786,7 +500,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                       style: GoogleFonts.manrope(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                     ),
                   ),
@@ -798,19 +512,16 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                 ],
               ),
             ),
-
             Divider(
-              color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade200,
+              color: isDark ? AppColors.slate800 : Colors.grey.shade200,
               height: 1,
             ),
-
-            // New Chat tile
             ListTile(
               leading: Container(
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: primary.withOpacity(0.12),
+                  color: primary.withAlpha(31),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(Icons.add, color: primary, size: 20),
@@ -825,13 +536,12 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               ),
               onTap: _newChat,
             ),
-
-            if (_drawerLoading)
+            if (chat.drawerLoading)
               const Padding(
                 padding: EdgeInsets.all(24),
                 child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
               )
-            else if (_drawerLoaded && _pastChats.isEmpty)
+            else if (chat.drawerLoaded && chat.pastChats.isEmpty)
               Padding(
                 padding: const EdgeInsets.all(24),
                 child: Text(
@@ -840,24 +550,24 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                   style: GoogleFonts.manrope(
                     fontSize: 13,
                     color: isDark
-                        ? const Color(0xFF475569)
+                        ? AppColors.slate600
                         : Colors.grey.shade400,
                     height: 1.5,
                   ),
                 ),
               )
-            else if (_drawerLoaded)
+            else if (chat.drawerLoaded)
               Expanded(
                 child: ListView.builder(
                   padding: const EdgeInsets.only(top: 4, bottom: 16),
-                  itemCount: _pastChats.length,
+                  itemCount: chat.pastChats.length,
                   itemBuilder: (_, i) {
-                    final chat = _pastChats[i];
-                    final sid = chat['session_id'] as String;
-                    final isActive = sid == _currentSessionId;
+                    final c = chat.pastChats[i];
+                    final sid = c['session_id'] as String;
+                    final isActive = sid == chat.currentSessionId;
                     return ChatHistoryTile(
-                      title: _chatTitle(chat),
-                      date: _formatDate(chat['created_at'] as String?),
+                      title: _chatTitle(c),
+                      date: _formatDate(c['created_at'] as String?),
                       isActive: isActive,
                       isDark: isDark,
                       onTap: () => _loadChatById(sid),
@@ -871,302 +581,303 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     );
   }
 
-  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // -- Build --
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      drawer: _buildDrawer(isDark),
-      onDrawerChanged: (isOpen) {
-        if (isOpen && !_drawerLoaded && !_drawerLoading) _loadPastChats();
-      },
-      body: SafeArea(
-        child: Column(
-          children: [
-            // â”€â”€ TOP BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            Container(
-              decoration: BoxDecoration(
-                color:
-                    (isDark
+    return Consumer<ConsultantProvider>(
+      builder: (context, chat, _) {
+        return Scaffold(
+          key: _scaffoldKey,
+          drawer: _buildDrawer(isDark, chat),
+          onDrawerChanged: (isOpen) {
+            if (isOpen && !chat.drawerLoaded && !chat.drawerLoading) {
+              _loadPastChats();
+            }
+          },
+          body: SafeArea(
+            child: Column(
+              children: [
+                // -- TOP BAR --
+                Container(
+                  decoration: BoxDecoration(
+                    color: (isDark
                             ? AppColors.backgroundDark
                             : AppColors.backgroundLight)
-                        .withOpacity(0.9),
-                border: Border(
-                  bottom: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFFE2E8F0),
-                  ),
-                ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: Row(
-                  children: [
-                    // Drawer / menu button
-                    IconButton(
-                      onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                      icon: Icon(
-                        Icons.menu_rounded,
+                        .withAlpha(230),
+                    border: Border(
+                      bottom: BorderSide(
                         color: isDark
-                            ? const Color(0xFF94A3B8)
-                            : const Color(0xFF64748B),
+                            ? AppColors.slate800
+                            : AppColors.slate200,
                       ),
                     ),
-                    // Title
-                    Expanded(
-                      child: Text(
-                        'Consultant',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.manrope(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: isDark
-                              ? Colors.white
-                              : const Color(0xFF0F172A),
-                        ),
-                      ),
-                    ),
-                    // Hands-free mic toggle
-                    MicToggleButton(
-                      voiceMode: _voiceMode,
-                      onTap: () {
-                        if (_voiceMode == CVoiceMode.speaking) {
-                          _interruptAndListen();
-                        } else {
-                          _toggleVoiceMode();
-                        }
-                      },
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // â”€â”€ CONNECTION BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            Consumer<ConnectionService>(
-              builder: (_, conn, __) => conn.isConnected
-                  ? const SizedBox.shrink()
-                  : GestureDetector(
-                      onTap: () => Navigator.pushNamed(context, '/connections'),
-                      child: Container(
-                        width: double.infinity,
-                        color: Colors.redAccent.withOpacity(0.12),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.wifi_off_rounded,
-                              color: Colors.redAccent,
-                              size: 15,
+                  ),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                    child: Row(
+                      children: [
+                        Semantics(
+                          label: 'Open conversations menu',
+                          child: IconButton(
+                            onPressed: () =>
+                                _scaffoldKey.currentState?.openDrawer(),
+                            icon: Icon(
+                              Icons.menu_rounded,
+                              color: isDark
+                                  ? AppColors.textSecondary
+                                  : AppColors.textMuted,
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Not connected to server - tap to connect',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.redAccent,
-                                ),
-                              ),
-                            ),
-                            const Icon(
-                              Icons.chevron_right_rounded,
-                              color: Colors.redAccent,
-                              size: 16,
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-            ),
-
-            // â”€â”€ CHAT AREA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            Expanded(
-              child: Stack(
-                children: [
-                  _loadingChat
-                      ? const Center(child: CircularProgressIndicator())
-                      : ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                          itemCount: _messages.length + (_loading ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (_loading && index == _messages.length) {
-                              return TypingIndicator(isDark: isDark);
+                        Expanded(
+                          child: Text(
+                            'Consultant',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.manrope(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.slate900,
+                            ),
+                          ),
+                        ),
+                        MicToggleButton(
+                          voiceMode: _voiceMode,
+                          onTap: () {
+                            if (_voiceMode == CVoiceMode.speaking) {
+                              _interruptAndListen();
+                            } else {
+                              _toggleVoiceMode();
                             }
-                            final msg = _messages[index];
-                            final isUser = msg['role'] == "user";
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 24),
-                              child: isUser
-                                  ? UserBubble(
-                                      text: msg['text']!,
-                                      isDark: isDark,
-                                      time: msg['time'],
-                                    )
-                                  : AiBubble(
-                                      text: msg['text']!,
-                                      isDark: isDark,
-                                      streaming: msg['streaming'] == 'true',
-                                      time: msg['time'],
-                                    ),
-                            );
                           },
+                          isDark: isDark,
                         ),
-
-                  // Scroll-to-bottom fab
-                  if (_showScrollToBottom)
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: GestureDetector(
-                        onTap: _scrollToBottom,
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.primary.withOpacity(0.3),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.keyboard_arrow_down,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
+                      ],
                     ),
-                ],
-              ),
-            ),
-
-            // â”€â”€ VOICE STATUS BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            if (_voiceMode != CVoiceMode.off)
-              VoiceStatusBanner(
-                voiceMode: _voiceMode,
-                partial: _voicePartial,
-                isDark: isDark,
-                micPulseAnim: _micPulseAnim,
-                onStop: _stopVoiceMode,
-              ),
-
-            // â”€â”€ INPUT AREA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.backgroundDark
-                    : AppColors.backgroundLight,
-                border: Border(
-                  top: BorderSide(
-                    color: isDark
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFFE2E8F0),
                   ),
                 ),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: isDark
-                            ? const Color(0xFF1E293B)
-                            : const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(28),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _controller,
-                              maxLines: 4,
-                              minLines: 1,
-                              style: GoogleFonts.manrope(
-                                fontSize: 14,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF0F172A),
+
+                // -- CONNECTION BANNER --
+                Consumer<ConnectionService>(
+                  builder: (_, conn, __) => conn.isConnected
+                      ? const SizedBox.shrink()
+                      : Semantics(
+                          label: 'Not connected to server. Tap to connect.',
+                          child: GestureDetector(
+                            onTap: () =>
+                                Navigator.pushNamed(context, '/connections'),
+                            child: Container(
+                              width: double.infinity,
+                              color: AppColors.error.withAlpha(31),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                              decoration: InputDecoration(
-                                hintText: 'Ask about your conversations...',
-                                hintStyle: GoogleFonts.manrope(
-                                  color: isDark
-                                      ? const Color(0xFF64748B)
-                                      : const Color(0xFF94A3B8),
-                                ),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 20,
-                                  vertical: 14,
-                                ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.wifi_off_rounded,
+                                      color: AppColors.error, size: 15),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      'Not connected to server - tap to connect',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.error,
+                                      ),
+                                    ),
+                                  ),
+                                  const Icon(Icons.chevron_right_rounded,
+                                      color: AppColors.error, size: 16),
+                                ],
                               ),
-                              onSubmitted: (_) => _sendMessage(),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  GestureDetector(
-                    onTap: (_loading || _loadingChat) ? null : _sendMessage,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: (_loading || _loadingChat)
-                            ? (isDark
-                                  ? AppColors.surfaceDark
-                                  : Colors.grey.shade300)
-                            : Theme.of(context).colorScheme.primary,
-                        shape: BoxShape.circle,
-                        boxShadow: (_loading || _loadingChat)
-                            ? null
-                            : [
-                                BoxShadow(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
+                        ),
+                ),
+
+                // -- CHAT AREA --
+                Expanded(
+                  child: Stack(
+                    children: [
+                      chat.loadingChat
+                          ? const Center(child: CircularProgressIndicator())
+                          : ListView.builder(
+                              controller: _scrollController,
+                              padding:
+                                  const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                              itemCount: chat.messages.length +
+                                  (chat.loading ? 1 : 0),
+                              itemBuilder: (context, index) {
+                                if (chat.loading &&
+                                    index == chat.messages.length) {
+                                  return TypingIndicator(isDark: isDark);
+                                }
+                                final msg = chat.messages[index];
+                                final isUser = msg['role'] == "user";
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 24),
+                                  child: isUser
+                                      ? UserBubble(
+                                          text: msg['text']!,
+                                          isDark: isDark,
+                                          time: msg['time'],
+                                        )
+                                      : AiBubble(
+                                          text: msg['text']!,
+                                          isDark: isDark,
+                                          streaming:
+                                              msg['streaming'] == 'true',
+                                          time: msg['time'],
+                                        ),
+                                );
+                              },
+                            ),
+                      if (_showScrollToBottom)
+                        Positioned(
+                          bottom: 16,
+                          right: 16,
+                          child: Semantics(
+                            label: 'Scroll to bottom',
+                            child: GestureDetector(
+                              onTap: _scrollToBottom,
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: cs.primary,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: cs.primary.withAlpha(77),
+                                      blurRadius: 8,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                      ),
-                      child: const Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 20,
+                                child: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // -- VOICE STATUS BANNER --
+                if (_voiceMode != CVoiceMode.off)
+                  VoiceStatusBanner(
+                    voiceMode: _voiceMode,
+                    partial: _voicePartial,
+                    isDark: isDark,
+                    micPulseAnim: _micPulseAnim,
+                    onStop: _stopVoiceMode,
+                  ),
+
+                // -- INPUT AREA --
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? AppColors.backgroundDark
+                        : AppColors.backgroundLight,
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark
+                            ? AppColors.slate800
+                            : AppColors.slate200,
                       ),
                     ),
                   ),
-                ],
-              ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.slate800
+                                : AppColors.slate100,
+                            borderRadius: BorderRadius.circular(28),
+                          ),
+                          child: TextField(
+                            controller: _controller,
+                            maxLines: 4,
+                            minLines: 1,
+                            style: GoogleFonts.manrope(
+                              fontSize: 14,
+                              color: isDark
+                                  ? Colors.white
+                                  : AppColors.slate900,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Ask about your conversations...',
+                              hintStyle: GoogleFonts.manrope(
+                                color: isDark
+                                    ? AppColors.textMuted
+                                    : AppColors.textSecondary,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 14,
+                              ),
+                            ),
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Semantics(
+                        label: 'Send message',
+                        child: GestureDetector(
+                          onTap: (chat.loading || chat.loadingChat)
+                              ? null
+                              : _sendMessage,
+                          child: Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: (chat.loading || chat.loadingChat)
+                                  ? (isDark
+                                      ? AppColors.surfaceDark
+                                      : Colors.grey.shade300)
+                                  : cs.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: (chat.loading || chat.loadingChat)
+                                  ? null
+                                  : [
+                                      BoxShadow(
+                                        color: cs.primary.withAlpha(77),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                            ),
+                            child: const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
-
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  DRAWER TILE
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

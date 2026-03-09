@@ -50,7 +50,7 @@ class _AppInputState extends State<AppInput> {
             style: GoogleFonts.manrope(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFFCBD5E1) : const Color(0xFF475569),
+              color: isDark ? AppColors.slate300 : AppColors.slate600,
             ),
           ),
         ),
@@ -63,21 +63,21 @@ class _AppInputState extends State<AppInput> {
           onTap: widget.onTap,
           style: GoogleFonts.manrope(
             fontSize: 15,
-            color: isDark ? Colors.white : const Color(0xFF0F172A),
+            color: isDark ? Colors.white : AppColors.slate900,
           ),
           decoration: InputDecoration(
             hintText: widget.hintText ?? 'Enter ${widget.label.toLowerCase()}',
             hintStyle: GoogleFonts.manrope(
               fontSize: 15,
-              color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+              color: isDark ? AppColors.slate500 : AppColors.slate400,
             ),
             prefixIcon: widget.prefixIcon != null
                 ? Icon(
                     widget.prefixIcon,
                     size: 20,
                     color: isDark
-                        ? const Color(0xFF94A3B8)
-                        : const Color(0xFF94A3B8),
+                        ? AppColors.slate400
+                        : AppColors.slate400,
                   )
                 : null,
             suffixIcon: isPassword
@@ -85,7 +85,7 @@ class _AppInputState extends State<AppInput> {
                     icon: Icon(
                       _hidden ? Icons.visibility_off : Icons.visibility,
                       size: 20,
-                      color: const Color(0xFF94A3B8),
+                      color: AppColors.slate400,
                     ),
                     onPressed: () => setState(() => _hidden = !_hidden),
                   )
@@ -94,8 +94,8 @@ class _AppInputState extends State<AppInput> {
                           widget.suffixIcon,
                           size: 20,
                           color: isDark
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFF94A3B8),
+                              ? AppColors.slate400
+                              : AppColors.slate400,
                         )
                       : null),
             filled: true,
@@ -108,16 +108,16 @@ class _AppInputState extends State<AppInput> {
               borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: BorderSide(
                 color: isDark
-                    ? const Color(0xFF334155)
-                    : const Color(0xFFE2E8F0),
+                    ? AppColors.slate700
+                    : AppColors.slate200,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: BorderSide(
                 color: isDark
-                    ? const Color(0xFF334155)
-                    : const Color(0xFFE2E8F0),
+                    ? AppColors.slate700
+                    : AppColors.slate200,
               ),
             ),
             focusedBorder: OutlineInputBorder(

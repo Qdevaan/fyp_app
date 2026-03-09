@@ -156,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 350,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                color: Theme.of(context).colorScheme.primary.withAlpha(38),
               ),
             ),
           ),
@@ -168,7 +168,7 @@ class _LoginScreenState extends State<LoginScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.purple.withOpacity(0.08),
+                color: Colors.purple.withAlpha(20),
               ),
             ),
           ),
@@ -184,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const SizedBox(height: 60),
 
-                    // Header — Logo + Title
+                    // Header Ã¢â‚¬â€ Logo + Title
                     Column(
                       children: [
                         const AppLogo(size: 80),
@@ -196,7 +196,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontWeight: FontWeight.w800,
                             color: isDark
                                 ? Colors.white
-                                : const Color(0xFF0F172A),
+                                : AppColors.slate900,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -206,8 +206,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B),
+                                ? AppColors.slate400
+                                : AppColors.slate500,
                           ),
                         ),
                       ],
@@ -245,8 +245,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: isDark
-                                      ? const Color(0xFFCBD5E1)
-                                      : const Color(0xFF475569),
+                                      ? AppColors.slate300
+                                      : AppColors.slate600,
                                 ),
                               ),
                             ),
@@ -300,8 +300,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         Expanded(
                           child: Divider(
                             color: isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFE2E8F0),
+                                ? AppColors.slate700
+                                : AppColors.slate200,
                           ),
                         ),
                         Padding(
@@ -311,16 +311,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.manrope(
                               fontSize: 12,
                               color: isDark
-                                  ? const Color(0xFF64748B)
-                                  : const Color(0xFF94A3B8),
+                                  ? AppColors.slate500
+                                  : AppColors.slate400,
                             ),
                           ),
                         ),
                         Expanded(
                           child: Divider(
                             color: isDark
-                                ? const Color(0xFF334155)
-                                : const Color(0xFFE2E8F0),
+                                ? AppColors.slate700
+                                : AppColors.slate200,
                           ),
                         ),
                       ],
@@ -347,8 +347,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: GoogleFonts.manrope(
                             fontSize: 14,
                             color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B),
+                                ? AppColors.slate400
+                                : AppColors.slate500,
                           ),
                         ),
                         GestureDetector(
@@ -382,7 +382,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                    Theme.of(context).colorScheme.primary.withAlpha(128),
                     Colors.transparent,
                   ],
                 ),

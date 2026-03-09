@@ -22,7 +22,11 @@ class SocialButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Material(
+    return Semantics(
+      button: true,
+      label: label,
+      enabled: !loading,
+      child: Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: loading ? null : onTap,
@@ -33,7 +37,7 @@ class SocialButton extends StatelessWidget {
             color: isDark ? AppColors.surfaceDark : Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0),
+              color: isDark ? AppColors.slate700 : AppColors.slate200,
             ),
           ),
           child: Row(
@@ -54,8 +58,8 @@ class SocialButton extends StatelessWidget {
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: isDark
-                      ? const Color(0xFFE2E8F0)
-                      : const Color(0xFF475569),
+                      ? AppColors.slate200
+                      : AppColors.slate600,
                 ),
               ),
             ],

@@ -93,12 +93,12 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     (isDark
                             ? AppColors.backgroundDark
                             : AppColors.backgroundLight)
-                        .withOpacity(0.9),
+                        .withAlpha(230),
                 border: Border(
                   bottom: BorderSide(
                     color: isDark
-                        ? const Color(0xFF1E293B)
-                        : const Color(0xFFE2E8F0),
+                        ? AppColors.slate800
+                        : AppColors.slate200,
                   ),
                 ),
               ),
@@ -109,7 +109,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     IconButton(
                       icon: Icon(
                         Icons.arrow_back_rounded,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
@@ -118,7 +118,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       style: GoogleFonts.manrope(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : const Color(0xFF0F172A),
+                        color: isDark ? Colors.white : AppColors.slate900,
                       ),
                     ),
                   ],
@@ -143,7 +143,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                         Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: primary.withOpacity(0.1),
+                            color: primary.withAlpha(26),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -161,7 +161,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                             fontWeight: FontWeight.w800,
                             color: isDark
                                 ? Colors.white
-                                : const Color(0xFF0F172A),
+                                : AppColors.slate900,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -173,8 +173,8 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                             fontWeight: FontWeight.w500,
                             height: 1.6,
                             color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF64748B),
+                                ? AppColors.slate400
+                                : AppColors.slate500,
                           ),
                         ),
                       ],

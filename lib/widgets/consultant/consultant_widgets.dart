@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme/design_tokens.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../../widgets/app_logo.dart';
@@ -36,7 +37,7 @@ class ChatHistoryTile extends StatelessWidget {
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
             border: isActive
-                ? Border.all(color: primary.withOpacity(0.3))
+                ? Border.all(color: primary.withAlpha(76))
                 : null,
           ),
           child: Row(
@@ -57,8 +58,8 @@ class ChatHistoryTile extends StatelessWidget {
                         color: isActive
                             ? primary
                             : (isDark
-                                  ? const Color(0xFFCBD5E1)
-                                  : const Color(0xFF334155)),
+                                  ? AppColors.slate300
+                                  : AppColors.slate700),
                         height: 1.3,
                       ),
                     ),
@@ -69,7 +70,7 @@ class ChatHistoryTile extends StatelessWidget {
                         style: GoogleFonts.manrope(
                           fontSize: 11,
                           color: isDark
-                              ? const Color(0xFF475569)
+                              ? AppColors.slate600
                               : Colors.grey.shade400,
                         ),
                       ),
@@ -124,8 +125,8 @@ class UserBubble extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                     color: isDark
-                        ? const Color(0xFF64748B)
-                        : const Color(0xFF94A3B8),
+                        ? AppColors.slate500
+                        : AppColors.slate400,
                   ),
                 ),
               ),
@@ -148,7 +149,7 @@ class UserBubble extends StatelessWidget {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: primary.withOpacity(0.2),
+                      color: primary.withAlpha(51),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -172,8 +173,8 @@ class UserBubble extends StatelessWidget {
                     style: GoogleFonts.manrope(
                       fontSize: 10,
                       color: isDark
-                          ? const Color(0xFF475569)
-                          : const Color(0xFF94A3B8),
+                          ? AppColors.slate600
+                          : AppColors.slate400,
                     ),
                   ),
                 ),
@@ -203,7 +204,7 @@ class AiBubble extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // AI Avatar – app logo
+        // AI Avatar ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ app logo
         AppLogo(size: 32),
         const SizedBox(width: 12),
         Expanded(
@@ -220,18 +221,18 @@ class AiBubble extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                     color: isDark
-                        ? const Color(0xFF64748B)
-                        : const Color(0xFF94A3B8),
+                        ? AppColors.slate500
+                        : AppColors.slate400,
                   ),
                 ),
               ),
-              // Bubble – flat top-left corner
+              // Bubble ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ flat top-left corner
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF1E293B)
-                      : const Color(0xFFE2E8F0),
+                      ? AppColors.slate800
+                      : AppColors.slate200,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(3),
                     topRight: Radius.circular(16),
@@ -240,13 +241,13 @@ class AiBubble extends StatelessWidget {
                   ),
                 ),
                 child: MarkdownBody(
-                  data: streaming ? '$text ◌' : text,
+                  data: streaming ? '$text ÃƒÂ¢Ã¢â‚¬â€Ã…â€™' : text,
                   styleSheet: MarkdownStyleSheet(
                     p: GoogleFonts.manrope(
                       fontSize: 14,
                       color: isDark
-                          ? const Color(0xFFE2E8F0)
-                          : const Color(0xFF1E293B),
+                          ? AppColors.slate200
+                          : AppColors.slate800,
                       height: 1.6,
                     ),
                     strong: GoogleFonts.manrope(
@@ -256,7 +257,7 @@ class AiBubble extends StatelessWidget {
                     em: GoogleFonts.manrope(
                       fontStyle: FontStyle.italic,
                       color: isDark
-                          ? const Color(0xFFCBD5E1)
+                          ? AppColors.slate300
                           : Colors.grey.shade700,
                     ),
                   ),
@@ -271,8 +272,8 @@ class AiBubble extends StatelessWidget {
                     style: GoogleFonts.manrope(
                       fontSize: 10,
                       color: isDark
-                          ? const Color(0xFF475569)
-                          : const Color(0xFF94A3B8),
+                          ? AppColors.slate600
+                          : AppColors.slate400,
                     ),
                   ),
                 ),
@@ -309,8 +310,8 @@ class TypingIndicator extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.8,
                     color: isDark
-                        ? const Color(0xFF64748B)
-                        : const Color(0xFF94A3B8),
+                        ? AppColors.slate500
+                        : AppColors.slate400,
                   ),
                 ),
               ),
@@ -321,8 +322,8 @@ class TypingIndicator extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? const Color(0xFF1E293B)
-                      : const Color(0xFFE2E8F0),
+                      ? AppColors.slate800
+                      : AppColors.slate200,
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(3),
                     topRight: Radius.circular(16),
@@ -395,7 +396,7 @@ class BouncingDotState extends State<BouncingDot>
         width: 6,
         height: 6,
         decoration: BoxDecoration(
-          color: const Color(0xFF64748B),
+          color: AppColors.slate500,
           shape: BoxShape.circle,
         ),
       ),
@@ -403,9 +404,9 @@ class BouncingDotState extends State<BouncingDot>
   }
 }
 
-// ────────────────────────────────────────────
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 //  MIC TOGGLE BUTTON (top-bar)
-// ────────────────────────────────────────────
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 class MicToggleButton extends StatelessWidget {
   final CVoiceMode voiceMode;
   final VoidCallback onTap;
@@ -430,13 +431,13 @@ class MicToggleButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
+          duration: const AppDurations.normal,
           width: 36,
           height: 36,
           margin: const EdgeInsets.only(right: 4),
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: isActive ? primary.withOpacity(0.15) : Colors.transparent,
+            color: isActive ? primary.withAlpha(38) : Colors.transparent,
             border: Border.all(
               color: isActive ? primary : Colors.transparent,
               width: 1.5,
@@ -449,7 +450,7 @@ class MicToggleButton extends StatelessWidget {
             size: 20,
             color: isActive
                 ? primary
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                : (isDark ? AppColors.slate400 : AppColors.slate500),
           ),
         ),
       ),
@@ -457,9 +458,9 @@ class MicToggleButton extends StatelessWidget {
   }
 }
 
-// ────────────────────────────────────────────
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 //  VOICE STATUS BANNER (above input, when active)
-// ────────────────────────────────────────────
+// ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬ÃƒÂ¢Ã¢â‚¬ÂÃ¢â€šÂ¬
 class VoiceStatusBanner extends StatelessWidget {
   final CVoiceMode voiceMode;
   final String partial;
@@ -479,12 +480,12 @@ class VoiceStatusBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     final label = switch (voiceMode) {
-      CVoiceMode.listening => partial.isEmpty ? 'Listening…' : partial,
-      CVoiceMode.processing => 'Thinking…',
-      CVoiceMode.speaking => 'Speaking — tap mic to interrupt',
+      CVoiceMode.listening => partial.isEmpty ? 'ListeningÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : partial,
+      CVoiceMode.processing => 'ThinkingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦',
+      CVoiceMode.speaking => 'Speaking ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â tap mic to interrupt',
       CVoiceMode.off => '',
     };
-    final bg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+    final bg = isDark ? AppColors.slate900 : AppColors.slate100;
 
     return Container(
       color: bg,
@@ -505,7 +506,7 @@ class VoiceStatusBanner extends StatelessWidget {
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: primary.withOpacity(0.15),
+                color: primary.withAlpha(38),
               ),
               child: Icon(
                 voiceMode == CVoiceMode.speaking
@@ -528,10 +529,10 @@ class VoiceStatusBanner extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 color: voiceMode == CVoiceMode.listening && partial.isNotEmpty
-                    ? (isDark ? Colors.white : const Color(0xFF0F172A))
+                    ? (isDark ? Colors.white : AppColors.slate900)
                     : (isDark
-                          ? const Color(0xFF94A3B8)
-                          : const Color(0xFF64748B)),
+                          ? AppColors.slate400
+                          : AppColors.slate500),
                 fontStyle: voiceMode == CVoiceMode.listening && partial.isEmpty
                     ? FontStyle.italic
                     : FontStyle.normal,
@@ -546,12 +547,12 @@ class VoiceStatusBanner extends StatelessWidget {
               height: 28,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.redAccent.withOpacity(0.12),
+                color: AppColors.error.withAlpha(31),
               ),
               child: const Icon(
                 Icons.close_rounded,
                 size: 16,
-                color: Colors.redAccent,
+                color: AppColors.error,
               ),
             ),
           ),

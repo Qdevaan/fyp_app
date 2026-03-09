@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme/design_tokens.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Extracted from HomeScreen's _showNotificationsPanel().
@@ -45,7 +46,7 @@ class NotificationsPanel extends StatelessWidget {
   Widget _buildContent(BuildContext context, ScrollController scrollController) {
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        color: isDark ? AppColors.slate800 : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -72,7 +73,7 @@ class NotificationsPanel extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? Colors.white : AppColors.slate900,
                   ),
                 ),
                 const Spacer(),
@@ -113,7 +114,7 @@ class NotificationsPanel extends StatelessWidget {
                           style: GoogleFonts.manrope(
                             fontSize: 15,
                             color: isDark
-                                ? const Color(0xFF64748B)
+                                ? AppColors.slate500
                                 : Colors.grey.shade500,
                           ),
                         ),
@@ -124,7 +125,7 @@ class NotificationsPanel extends StatelessWidget {
                           style: GoogleFonts.manrope(
                             fontSize: 12,
                             color: isDark
-                                ? const Color(0xFF475569)
+                                ? AppColors.slate600
                                 : Colors.grey.shade400,
                           ),
                         ),
@@ -139,7 +140,7 @@ class NotificationsPanel extends StatelessWidget {
                         ...highlights.map(
                           (hl) => _NotificationCard(
                             isDark: isDark,
-                            accentColor: const Color(0xFFEF4444),
+                            accentColor: const AppColors.error,
                             icon: Icons.warning_amber_rounded,
                             title: hl['title'] as String? ?? 'Highlight',
                             body: hl['body'] as String? ?? '',
@@ -151,7 +152,7 @@ class NotificationsPanel extends StatelessWidget {
                         ...events.map(
                           (ev) => _NotificationCard(
                             isDark: isDark,
-                            accentColor: const Color(0xFFF59E0B),
+                            accentColor: const AppColors.warning,
                             icon: Icons.event_rounded,
                             title: ev['title'] as String? ?? 'Event',
                             body: ev['description'] as String? ?? '',
@@ -213,7 +214,7 @@ class _NotificationCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : Colors.grey.shade50,
+        color: isDark ? AppColors.slate900 : Colors.grey.shade50,
         borderRadius: BorderRadius.circular(14),
         border: Border(left: BorderSide(color: accentColor, width: 4)),
       ),
@@ -230,7 +231,7 @@ class _NotificationCard extends StatelessWidget {
                   style: GoogleFonts.manrope(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: isDark ? Colors.white : const Color(0xFF0F172A),
+                    color: isDark ? Colors.white : AppColors.slate900,
                   ),
                 ),
               ),
@@ -239,7 +240,7 @@ class _NotificationCard extends StatelessWidget {
                 style: GoogleFonts.manrope(
                   fontSize: 11,
                   color: isDark
-                      ? const Color(0xFF64748B)
+                      ? AppColors.slate500
                       : Colors.grey.shade400,
                 ),
               ),
@@ -254,8 +255,8 @@ class _NotificationCard extends StatelessWidget {
               style: GoogleFonts.manrope(
                 fontSize: 13,
                 color: isDark
-                    ? const Color(0xFF94A3B8)
-                    : const Color(0xFF64748B),
+                    ? AppColors.slate400
+                    : AppColors.slate500,
                 height: 1.4,
               ),
             ),
