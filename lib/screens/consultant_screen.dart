@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -21,9 +21,9 @@ import '../services/connection_service.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/consultant/voice_mode.dart';
 import '../widgets/consultant/consultant_widgets.dart';
+import '../widgets/consultant/welcome_messages.dart';
 
 // â”€â”€â”€ Voice mode state for the consultant â”€â”€â”€â”€â”€â”€â”€â”€
-
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  CONSULTANT SCREEN  (ChatGPT-style multi-chat)
@@ -64,24 +64,28 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   late final AnimationController _micPulse;
   late final Animation<double> _micPulseAnim;
 
-  static const _welcomeMsg =
-      "Hello! I'm your Consultant AI.\import '../widgets/consultant/voice_mode.dart';\nimport '../widgets/consultant/consultant_widgets.dart';\nn\nI have access to your **knowledge graph**, **session memories**, and **past summaries**. Ask me anything about your conversations, relationships, or decisions.";
+  String _getWelcomeMessage() {
+    final messages = List<String>.from(consultantWelcomeMessages);
+    messages.shuffle();
+    return messages.first;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_scrollListener);
-    _messages.add({"role": "ai", "text": _welcomeMsg});
+    _messages.add({"role": "ai", "text": _getWelcomeMessage()});
 
     // Mic pulse animation (used when listening)
     _micPulse = AnimationController(
       vsync: this as TickerProvider,
       duration: const Duration(milliseconds: 900),
     )..repeat(reverse: true);
-    _micPulseAnim = Tween<double>(begin: 1.0, end: 1.25).animate(
-      CurvedAnimation(parent: _micPulse, curve: Curves.easeInOut),
-    );
+    _micPulseAnim = Tween<double>(
+      begin: 1.0,
+      end: 1.25,
+    ).animate(CurvedAnimation(parent: _micPulse, curve: Curves.easeInOut));
 
     _initVoice();
   }
@@ -98,7 +102,8 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         final query = args['initialQuery'] as String;
         // Schedule sending after initial frame renders
         WidgetsBinding.instance.addPostFrameCallback((_) async {
-          _controller.text = ""; // Don't keep it in the text box if sending via voice
+          _controller.text =
+              ""; // Don't keep it in the text box if sending via voice
           // Clean the query: e.g., "tell me when is saras birthday" -> "when is saras birthday"
           String cleanQuery = query.toLowerCase();
           if (cleanQuery.startsWith('tell me ')) {
@@ -110,8 +115,8 @@ class _ConsultantScreenState extends State<ConsultantScreen>
           if (cleanQuery.startsWith('who is ')) {
             cleanQuery = cleanQuery.replaceFirst('who is ', '');
           }
-          
-          _voiceModeActive = true; 
+
+          _voiceModeActive = true;
           _setVoiceMode(CVoiceMode.processing);
           _sendVoiceMessage(cleanQuery);
         });
@@ -140,7 +145,8 @@ class _ConsultantScreenState extends State<ConsultantScreen>
 
   void _scrollListener() {
     if (!_scrollController.hasClients) return;
-    final diff = _scrollController.position.maxScrollExtent - _scrollController.offset;
+    final diff =
+        _scrollController.position.maxScrollExtent - _scrollController.offset;
     final show = diff > 200;
     if (show != _showScrollToBottom) setState(() => _showScrollToBottom = show);
   }
@@ -152,7 +158,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       _currentSessionId = null;
       _messages
         ..clear()
-        ..add({"role": "ai", "text": _welcomeMsg});
+        ..add({"role": "ai", "text": _getWelcomeMessage()});
     });
   }
 
@@ -178,16 +184,22 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       for (final r in rows) {
         final sid = r['session_id'] as String?;
         if (sid == null) continue;
-        seen.putIfAbsent(sid, () => {
-          'session_id': sid,
-          'title': r['question'] as String? ?? 'Chat',
-          'created_at': r['created_at'] as String? ?? '',
-        });
+        seen.putIfAbsent(
+          sid,
+          () => {
+            'session_id': sid,
+            'title': r['question'] as String? ?? 'Chat',
+            'created_at': r['created_at'] as String? ?? '',
+          },
+        );
       }
 
       // Sort most-recent first
       final list = seen.values.toList()
-        ..sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
+        ..sort(
+          (a, b) =>
+              (b['created_at'] as String).compareTo(a['created_at'] as String),
+        );
 
       if (mounted) {
         setState(() {
@@ -228,11 +240,16 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         setState(() {
           _currentSessionId = sessionId;
           for (final r in rows) {
-            if (r['question'] != null) _messages.add({"role": "user", "text": r['question'] as String});
-            if (r['answer'] != null) _messages.add({"role": "ai", "text": r['answer'] as String});
+            if (r['question'] != null)
+              _messages.add({"role": "user", "text": r['question'] as String});
+            if (r['answer'] != null)
+              _messages.add({"role": "ai", "text": r['answer'] as String});
           }
           if (_messages.isEmpty) {
-            _messages.add({"role": "ai", "text": "This conversation appears to be empty."});
+            _messages.add({
+              "role": "ai",
+              "text": "This conversation appears to be empty.",
+            });
           }
           _loadingChat = false;
         });
@@ -260,7 +277,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                 color: Colors.redAccent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 20),
+              child: const Icon(
+                Icons.wifi_off_rounded,
+                color: Colors.redAccent,
+                size: 20,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -286,10 +307,15 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Cancel',
-                style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B))),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? const Color(0xFF94A3B8)
+                    : const Color(0xFF64748B),
+              ),
+            ),
           ),
           TextButton(
             onPressed: () {
@@ -297,14 +323,21 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               Navigator.pushNamed(context, '/connections');
             },
             style: TextButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+              backgroundColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.12),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: Text('Connect',
-                style: GoogleFonts.manrope(
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary)),
+            child: Text(
+              'Connect',
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
         ],
       ),
@@ -326,7 +359,10 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     final user = AuthService.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Not logged in."), backgroundColor: Colors.redAccent),
+        const SnackBar(
+          content: Text("Not logged in."),
+          backgroundColor: Colors.redAccent,
+        ),
       );
       return;
     }
@@ -351,7 +387,8 @@ class _ConsultantScreenState extends State<ConsultantScreen>
           if (mounted) {
             setState(() {
               _currentSessionId = sid;
-              _drawerLoaded = false; // stale â€” will reload on next drawer open
+              _drawerLoaded =
+                  false; // stale â€” will reload on next drawer open
             });
           }
         },
@@ -364,11 +401,23 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         if (firstToken) {
           setState(() {
             _loading = false;
-            _messages.add({"role": "ai", "text": buf.toString(), "streaming": "true", "time": aiTime});
+            _messages.add({
+              "role": "ai",
+              "text": buf.toString(),
+              "streaming": "true",
+              "time": aiTime,
+            });
           });
           firstToken = false;
         } else {
-          setState(() => _messages.last = {"role": "ai", "text": buf.toString(), "streaming": "true", "time": aiTime});
+          setState(
+            () => _messages.last = {
+              "role": "ai",
+              "text": buf.toString(),
+              "streaming": "true",
+              "time": aiTime,
+            },
+          );
         }
         _scrollToBottom();
       }
@@ -376,7 +425,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       if (mounted) {
         setState(() {
           if (_messages.isNotEmpty && _messages.last['streaming'] == 'true') {
-            _messages.last = {"role": "ai", "text": buf.toString(), "time": _messages.last['time'] ?? _nowTime()};
+            _messages.last = {
+              "role": "ai",
+              "text": buf.toString(),
+              "time": _messages.last['time'] ?? _nowTime(),
+            };
           }
           _loading = false;
         });
@@ -385,9 +438,17 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       if (mounted) {
         setState(() {
           if (firstToken) {
-            _messages.add({"role": "ai", "text": "Error connecting to consultant: $e", "time": _nowTime()});
+            _messages.add({
+              "role": "ai",
+              "text": "Error connecting to consultant: $e",
+              "time": _nowTime(),
+            });
           } else {
-            _messages.last = {"role": "ai", "text": buf.isEmpty ? "Error: $e" : buf.toString(), "time": _messages.last['time'] ?? _nowTime()};
+            _messages.last = {
+              "role": "ai",
+              "text": buf.isEmpty ? "Error: $e" : buf.toString(),
+              "time": _messages.last['time'] ?? _nowTime(),
+            };
           }
           _loading = false;
         });
@@ -452,7 +513,10 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   void _startVoiceMode() {
     if (!_sttReady) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Microphone not available.'), backgroundColor: Colors.redAccent),
+        const SnackBar(
+          content: Text('Microphone not available.'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
       return;
     }
@@ -552,12 +616,25 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         if (firstToken) {
           setState(() {
             _loading = false;
-            _messages.add({'role': 'ai', 'text': buf.toString(), 'streaming': 'true', 'time': aiTime});
-            _voiceMode = CVoiceMode.speaking; // show speaking state while streaming
+            _messages.add({
+              'role': 'ai',
+              'text': buf.toString(),
+              'streaming': 'true',
+              'time': aiTime,
+            });
+            _voiceMode =
+                CVoiceMode.speaking; // show speaking state while streaming
           });
           firstToken = false;
         } else {
-          setState(() => _messages.last = {'role': 'ai', 'text': buf.toString(), 'streaming': 'true', 'time': aiTime});
+          setState(
+            () => _messages.last = {
+              'role': 'ai',
+              'text': buf.toString(),
+              'streaming': 'true',
+              'time': aiTime,
+            },
+          );
         }
         _scrollToBottom();
       }
@@ -566,7 +643,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         setState(() {
           _loading = false;
           if (_messages.isNotEmpty && _messages.last['streaming'] == 'true') {
-            _messages.last = {'role': 'ai', 'text': buf.toString(), 'time': _messages.last['time'] ?? _nowTime()};
+            _messages.last = {
+              'role': 'ai',
+              'text': buf.toString(),
+              'time': _messages.last['time'] ?? _nowTime(),
+            };
           }
         });
       }
@@ -579,7 +660,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       if (mounted && _voiceModeActive) {
         setState(() {
           if (firstToken) {
-            _messages.add({'role': 'ai', 'text': 'Error: $e', 'time': _nowTime()});
+            _messages.add({
+              'role': 'ai',
+              'text': 'Error: $e',
+              'time': _nowTime(),
+            });
           }
           _loading = false;
           _voiceMode = CVoiceMode.listening;
@@ -616,14 +701,18 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     _setVoiceMode(CVoiceMode.speaking);
 
     try {
-      final response = await http.post(
-        Uri.parse('https://api.deepgram.com/v1/speak?model=aura-orpheus-en'),
-        headers: {
-          'Authorization': 'Token $apiKey',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({'text': plain}),
-      ).timeout(const Duration(seconds: 20));
+      final response = await http
+          .post(
+            Uri.parse(
+              'https://api.deepgram.com/v1/speak?model=aura-orpheus-en',
+            ),
+            headers: {
+              'Authorization': 'Token $apiKey',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'text': plain}),
+          )
+          .timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         final dir = await getTemporaryDirectory();
@@ -710,7 +799,10 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               ),
             ),
 
-            Divider(color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade200, height: 1),
+            Divider(
+              color: isDark ? const Color(0xFF1E293B) : Colors.grey.shade200,
+              height: 1,
+            ),
 
             // New Chat tile
             ListTile(
@@ -747,7 +839,9 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                   textAlign: TextAlign.center,
                   style: GoogleFonts.manrope(
                     fontSize: 13,
-                    color: isDark ? const Color(0xFF475569) : Colors.grey.shade400,
+                    color: isDark
+                        ? const Color(0xFF475569)
+                        : Colors.grey.shade400,
                     height: 1.5,
                   ),
                 ),
@@ -794,10 +888,18 @@ class _ConsultantScreenState extends State<ConsultantScreen>
             // â”€â”€ TOP BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Container(
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
-                border: Border(bottom: BorderSide(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                )),
+                color:
+                    (isDark
+                            ? AppColors.backgroundDark
+                            : AppColors.backgroundLight)
+                        .withOpacity(0.9),
+                border: Border(
+                  bottom: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
               ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
@@ -806,8 +908,12 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                     // Drawer / menu button
                     IconButton(
                       onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                      icon: Icon(Icons.menu_rounded,
-                          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
+                      icon: Icon(
+                        Icons.menu_rounded,
+                        color: isDark
+                            ? const Color(0xFF94A3B8)
+                            : const Color(0xFF64748B),
+                      ),
                     ),
                     // Title
                     Expanded(
@@ -817,7 +923,9 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                         style: GoogleFonts.manrope(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: isDark ? Colors.white : const Color(0xFF0F172A),
+                          color: isDark
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                       ),
                     ),
@@ -847,14 +955,21 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                       child: Container(
                         width: double.infinity,
                         color: Colors.redAccent.withOpacity(0.12),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         child: Row(
                           children: [
-                            const Icon(Icons.wifi_off_rounded, color: Colors.redAccent, size: 15),
+                            const Icon(
+                              Icons.wifi_off_rounded,
+                              color: Colors.redAccent,
+                              size: 15,
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Not connected to server â€” tap to connect',
+                                'Not connected to server - tap to connect',
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -862,7 +977,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                                 ),
                               ),
                             ),
-                            const Icon(Icons.chevron_right_rounded, color: Colors.redAccent, size: 16),
+                            const Icon(
+                              Icons.chevron_right_rounded,
+                              color: Colors.redAccent,
+                              size: 16,
+                            ),
                           ],
                         ),
                       ),
@@ -916,9 +1035,19 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                           decoration: BoxDecoration(
                             color: Theme.of(context).colorScheme.primary,
                             shape: BoxShape.circle,
-                            boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withOpacity(0.3), blurRadius: 8)],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.3),
+                                blurRadius: 8,
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
+                          child: const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -940,10 +1069,16 @@ class _ConsultantScreenState extends State<ConsultantScreen>
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
               decoration: BoxDecoration(
-                color: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-                border: Border(top: BorderSide(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                )),
+                color: isDark
+                    ? AppColors.backgroundDark
+                    : AppColors.backgroundLight,
+                border: Border(
+                  top: BorderSide(
+                    color: isDark
+                        ? const Color(0xFF1E293B)
+                        : const Color(0xFFE2E8F0),
+                  ),
+                ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
@@ -951,7 +1086,9 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                        color: isDark
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(28),
                       ),
                       child: Row(
@@ -964,15 +1101,22 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                               minLines: 1,
                               style: GoogleFonts.manrope(
                                 fontSize: 14,
-                                color: isDark ? Colors.white : const Color(0xFF0F172A),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF0F172A),
                               ),
                               decoration: InputDecoration(
                                 hintText: 'Ask about your conversations...',
                                 hintStyle: GoogleFonts.manrope(
-                                  color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+                                  color: isDark
+                                      ? const Color(0xFF64748B)
+                                      : const Color(0xFF94A3B8),
                                 ),
                                 border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 14,
+                                ),
                               ),
                               onSubmitted: (_) => _sendMessage(),
                             ),
@@ -989,20 +1133,28 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                       height: 44,
                       decoration: BoxDecoration(
                         color: (_loading || _loadingChat)
-                            ? (isDark ? AppColors.surfaceDark : Colors.grey.shade300)
+                            ? (isDark
+                                  ? AppColors.surfaceDark
+                                  : Colors.grey.shade300)
                             : Theme.of(context).colorScheme.primary,
                         shape: BoxShape.circle,
                         boxShadow: (_loading || _loadingChat)
                             ? null
                             : [
                                 BoxShadow(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.3),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
                       ),
-                      child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.send_rounded,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],
