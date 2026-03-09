@@ -1,622 +1,165 @@
-import 'dart:io';
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart';
-
-import '../services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/design_tokens.dart';
+import '../widgets/shared_widgets.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
-import '../widgets/app_logo.dart';
-import '../theme/design_tokens.dart';
-import '../widgets/glass_morphism.dart';
+import 'home_screen.dart';
 
 class ProfileCompletionScreen extends StatefulWidget {
   const ProfileCompletionScreen({super.key});
 
   @override
-  State<ProfileCompletionScreen> createState() =>
-      _ProfileCompletionScreenState();
+  State<ProfileCompletionScreen> createState() => _ProfileCompletionScreenState();
 }
 
 class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   final _nameCtrl = TextEditingController();
-  final _countryCtrl = TextEditingController();
-  final _dobCtrl = TextEditingController();
-
-  DateTime? _dob;
-  String? _gender;
-
-  File? _imageFile;
-  String? _avatarUrl;
   bool _loading = false;
-  bool _initialLoading = true;
+  String? _error;
 
-  // Extensive list of countries
-  static const List<String> _countries = [
-    'United States',
-    'United Kingdom',
-    'Canada',
-    'Australia',
-    'Pakistan',
-    'India',
-    'Germany',
-    'France',
-    'Italy',
-    'Spain',
-    'Brazil',
-    'Mexico',
-    'Japan',
-    'South Korea',
-    'China',
-    'Russia',
-    'South Africa',
-    'Nigeria',
-    'Egypt',
-    'Saudi Arabia',
-    'UAE',
-    'Argentina',
-    'Netherlands',
-    'Sweden',
-    'Norway',
-    'Denmark',
-    'Finland',
-    'Poland',
-    'Turkey',
-    'Indonesia',
-    'Thailand',
-    'Vietnam',
-    'Philippines',
-    'Malaysia',
-    'Singapore',
-    'New Zealand',
-    'Ireland',
-    'Portugal',
-    'Greece',
-    'Switzerland',
-    'Austria',
-    'Belgium',
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfileData();
-  }
-
-  Future<void> _loadProfileData() async {
-    try {
-      final user = AuthService.instance.currentUser;
-      if (user == null) return;
-
-      final profile = await AuthService.instance.getProfile();
-
-      if (profile != null) {
-        _nameCtrl.text = profile['full_name'] ?? '';
-        _countryCtrl.text = profile['country'] ?? '';
-        _gender = profile['gender'];
-        _avatarUrl = profile['avatar_url'];
-
-        if (profile['dob'] != null) {
-          _dob = DateTime.parse(profile['dob']);
-          _dobCtrl.text = "${_dob!.day}/${_dob!.month}/${_dob!.year}";
-        }
-      }
-
-      if (_nameCtrl.text.isEmpty) {
-        final metaName = user.userMetadata?['full_name'];
-        if (metaName != null) _nameCtrl.text = metaName;
-      }
-      if (_avatarUrl == null) {
-        final metaAvatar = user.userMetadata?['avatar_url'];
-        if (metaAvatar != null) _avatarUrl = metaAvatar;
-      }
-    } catch (e) {
-      debugPrint("Error loading profile: $e");
-    } finally {
-      if (mounted) setState(() => _initialLoading = false);
-    }
-  }
-
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        _imageFile = File(picked.path);
-      });
-    }
-  }
-
-  Future<void> _selectDate() async {
-    final now = DateTime.now();
-    final initialDate = DateTime(2000);
-
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _dob ?? initialDate,
-      firstDate: DateTime(1900),
-      lastDate: now,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: Theme.of(context).colorScheme.copyWith(
-              surface: Theme.of(context).colorScheme.surfaceContainer,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _dob = picked;
-        _dobCtrl.text = "${picked.day}/${picked.month}/${picked.year}";
-      });
-    }
-  }
-
-  void _showCountryPicker() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-      ),
-      builder: (context) {
-        String searchQuery = '';
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final filteredCountries = _countries
-                .where(
-                  (country) =>
-                      country.toLowerCase().contains(searchQuery.toLowerCase()),
-                )
-                .toList();
-
-            return DraggableScrollableSheet(
-              initialChildSize: 0.7,
-              minChildSize: 0.5,
-              maxChildSize: 0.9,
-              expand: false,
-              builder: (context, scrollController) {
-                return Column(
-                  children: [
-                    // Handle Bar
-                    Center(
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 12, bottom: 12),
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurfaceVariant.withAlpha(76),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    // Search Bar
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
-                      ),
-                      child: TextField(
-                        onChanged: (val) {
-                          setModalState(() => searchQuery = val);
-                        },
-                        decoration: InputDecoration(
-                          hintText: 'Search Country',
-                          prefixIcon: const Icon(Icons.search),
-                          filled: true,
-                          fillColor: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest
-                              .withAlpha(76),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.lg),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Divider(),
-                    // List
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        itemCount: filteredCountries.length,
-                        itemBuilder: (context, index) {
-                          final country = filteredCountries[index];
-                          final isSelected = country == _countryCtrl.text;
-                          return ListTile(
-                            title: Text(
-                              country,
-                              style: TextStyle(
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: isSelected
-                                    ? AppColors.primary
-                                    : null,
-                              ),
-                            ),
-                            trailing: isSelected
-                                ? Icon(
-                                    Icons.check,
-                                    color: AppColors.primary,
-                                  )
-                                : null,
-                            onTap: () {
-                              setState(() => _countryCtrl.text = country);
-                              Navigator.pop(context);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _saveProfile() async {
-    if (_nameCtrl.text.isEmpty ||
-        _countryCtrl.text.isEmpty ||
-        _dob == null ||
-        _gender == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please fill all fields'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+  Future<void> _save() async {
+    if (_nameCtrl.text.trim().isEmpty) {
+      setState(() => _error = 'Please enter your name.');
       return;
     }
-
-    // Age validation: user must be at least 13 years old
-    final age = DateTime.now().difference(_dob!).inDays ~/ 365;
-    if (age < 13) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('You must be at least 13 years old'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _loading = true);
-
+    setState(() { _loading = true; _error = null; });
     try {
-      String? finalAvatarUrl = _avatarUrl;
-      if (_imageFile != null) {
-        final dir = await getTemporaryDirectory();
-        final targetPath = '${dir.absolute.path}/temp.jpg';
-        final compressedFile = await FlutterImageCompress.compressAndGetFile(
-          _imageFile!.absolute.path,
-          targetPath,
-          quality: 70,
-          minWidth: 512,
-          minHeight: 512,
-        );
-        final fileToUpload = compressedFile != null
-            ? File(compressedFile.path)
-            : _imageFile!;
-        finalAvatarUrl = await AuthService.instance.uploadAvatar(fileToUpload);
+      await Supabase.instance.client.auth.updateUser(
+        UserAttributes(data: {'full_name': _nameCtrl.text.trim()}));
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()));
       }
-
-      await AuthService.instance.upsertProfile(
-        fullName: _nameCtrl.text.trim(),
-        avatarUrl: finalAvatarUrl,
-        dob: _dob,
-        gender: _gender,
-        country: _countryCtrl.text.trim(),
-      );
-
-      if (!mounted) return;
-      Navigator.of(context).pushReplacementNamed('/home');
-    } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error: $e')));
+    } catch (_) {
+      setState(() => _error = 'Failed to save profile. Please try again.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
-  InputDecoration _getDecoration(
-    BuildContext context,
-    String label, {
-    IconData? icon,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return InputDecoration(
-      labelText: label,
-      filled: true,
-      fillColor: isDark ? AppColors.glassInput : theme.colorScheme.surfaceContainerHighest.withAlpha(76),
-      prefixIcon: icon != null
-          ? Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant)
-          : null,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(
-          color: isDark ? AppColors.glassBorder : theme.colorScheme.outline.withAlpha(51),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-    );
-  }
+  @override
+  void dispose() { _nameCtrl.dispose(); super.dispose(); }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    ImageProvider? bgImage;
-    if (_imageFile != null) {
-      bgImage = FileImage(_imageFile!);
-    } else if (_avatarUrl != null) {
-      bgImage = CachedNetworkImageProvider(_avatarUrl!);
-    }
-
-    if (_initialLoading) {
-      return Scaffold(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        body: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDark
-          : AppColors.backgroundLight,
-      body: Stack(
-        children: [
-          if (isDark) const MeshGradientBackground(),
-          SafeArea(
-        child: Column(
-          children: [
-            // Consistent header
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                border: Border(
-                  bottom: BorderSide(
-                    color: isDark
-                        ? AppColors.glassBorder
-                        : AppColors.slate200,
+      body: BgMesh(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Complete Profile',
+                    style: GoogleFonts.manrope(
+                      fontSize: 26, fontWeight: FontWeight.w800,
+                      color: BubblesColors.textPrimaryDark, letterSpacing: -0.5,
+                    )),
+                const SizedBox(height: 6),
+                Text('Tell us a bit about yourself to personalize your experience.',
+                    style: GoogleFonts.manrope(
+                      fontSize: 13, color: BubblesColors.textSecondaryDark, height: 1.5,
+                    )),
+                const SizedBox(height: 32),
+                // Avatar picker
+                Center(
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 110, height: 110,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: BubblesColors.glassDark,
+                            border: Border.all(
+                              color: BubblesColors.primary.withOpacity(0.4), width: 2),
+                          ),
+                          child: const Icon(Icons.person, color: BubblesColors.textMutedDark, size: 48),
+                        ),
+                        Positioned(
+                          right: 0, bottom: 0,
+                          child: Container(
+                            width: 34, height: 34,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: BubblesColors.primary,
+                              border: Border.all(color: BubblesColors.bgDark, width: 2),
+                            ),
+                            child: const Icon(Icons.camera_alt, size: 16, color: BubblesColors.bgDark),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_rounded,
-                        color: isDark ? Colors.white : AppColors.slate900,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    Text(
-                      'Profile Setup',
-                      style: GoogleFonts.manrope(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : AppColors.slate900,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 500),
+                const SizedBox(height: 32),
+                GlassBox(
+                  borderRadius: 20,
+                  padding: const EdgeInsets.all(24),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Center(child: AppLogo(size: 80)),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        'Complete Profile',
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        'Tell us a bit more about yourself',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // 1. Photo Section
-                      Center(
-                        child: Stack(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.primary,
-                                  width: 2,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppColors.primary
-                                        .withAlpha(51),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                              ),
-                              child: CircleAvatar(
-                                radius: 60,
-                                backgroundColor:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                backgroundImage: bgImage,
-                                child: bgImage == null
-                                    ? Icon(
-                                        Icons.person_rounded,
-                                        size: 60,
-                                        color: theme
-                                            .colorScheme
-                                            .onSurfaceVariant
-                                            .withAlpha(128),
-                                      )
-                                    : null,
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: _pickImage,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: theme.scaffoldBackgroundColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.camera_alt_rounded,
-                                    size: 20,
-                                    color: theme.colorScheme.onPrimary,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // 2. Full Name Input
                       AppInput(
-                        controller: _nameCtrl,
                         label: 'Full Name',
-                        prefixIcon: Icons.person_outline_rounded,
+                        hint: 'Enter your full name',
+                        controller: _nameCtrl,
+                        textInputAction: TextInputAction.next,
+                        prefix: Icon(Icons.person_outline, size: 18, color: BubblesColors.textMutedDark),
                       ),
-
-                      const SizedBox(height: AppSpacing.md),
-
-                      // 3. Gender Dropdown
-                      DropdownButtonFormField<String>(
-                        value: _gender,
-                        decoration: _getDecoration(
-                          context,
-                          'Gender',
-                          icon: Icons.wc_rounded,
-                        ),
-                        icon: Icon(
-                          Icons.arrow_drop_down_rounded,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        dropdownColor: theme.colorScheme.surfaceContainer,
-                        items: ['Male', 'Female', 'Other']
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e,
-                                child: Text(
-                                  e,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (val) => setState(() => _gender = val),
-                      ),
-
-                      const SizedBox(height: AppSpacing.md),
-
-                      // 4. Date of Birth
+                      const SizedBox(height: 20),
                       AppInput(
-                        controller: _dobCtrl,
                         label: 'Date of Birth',
-                        prefixIcon: Icons.calendar_today_rounded,
-                        readOnly: true,
-                        onTap: _selectDate,
+                        hint: 'Select date',
+                        prefix: Icon(Icons.calendar_today_outlined, size: 18, color: BubblesColors.textMutedDark),
                       ),
-
-                      const SizedBox(height: AppSpacing.md),
-
-                      // 5. Country Picker (Modern Modal)
+                      const SizedBox(height: 20),
                       AppInput(
-                        controller: _countryCtrl,
                         label: 'Country',
-                        prefixIcon: Icons.public_rounded,
-                        readOnly: true,
-                        onTap: _showCountryPicker,
-                        suffixIcon: Icons.arrow_drop_down_rounded,
+                        hint: 'Select country',
+                        prefix: Icon(Icons.language, size: 18, color: BubblesColors.textMutedDark),
                       ),
-
-                      const SizedBox(height: AppSpacing.xl),
-
-                      // 6. Complete Button
-                      AppButton(
-                        label: 'Complete Setup',
-                        onTap: _saveProfile,
-                        loading: _loading,
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
                     ],
                   ),
                 ),
-              ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: BubblesColors.error.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: BubblesColors.error.withOpacity(0.3)),
+                    ),
+                    child: Text(_error!, style: TextStyle(color: BubblesColors.error, fontSize: 12)),
+                  ),
+                ],
+                const SizedBox(height: 28),
+                AppButton(
+                  label: 'Save & Continue',
+                  onPressed: _save,
+                  loading: _loading,
+                  fullWidth: true,
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: GestureDetector(
+                    onTap: () => Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const HomeScreen())),
+                    child: Text('Skip for now',
+                        style: GoogleFonts.manrope(
+                          fontSize: 13, fontWeight: FontWeight.w600,
+                          color: BubblesColors.textSecondaryDark,
+                        )),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
             ),
-          ],
+          ),
         ),
-        ),
-      ],
-    ),
+      ),
     );
   }
 }

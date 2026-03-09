@@ -11,4 +11,9 @@ class AppRoutes {
   static const about = '/about';
   static const settings = '/settings';
   static const entities = '/entities';
+  static const sessionHistory = '/session-history';
+  static const aiInsights = '/ai-insights';
+  static const subscription = '/subscription';
+  static const profile = '/profile';
+  static const search = '/search';
 }

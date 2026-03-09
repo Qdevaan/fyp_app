@@ -1,18 +1,23 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../main.dart';
-import '../services/voice_assistant_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
-import 'voice/voice_overlay_controls.dart';
-import 'voice/voice_visual_indicator.dart';
 
-/// A global voice assistant overlay that matches the Bubbles design system.
-/// Triggered by the "Hey Bubbles" wake word Ã¢â‚¬â€ slides up from the bottom
-/// with a glassmorphic panel showing state, waveforms, and response text.
+/// Fullscreen voice overlay shown when the wake word is detected.
+/// Covers the entire app with a frosted scrim.
 class VoiceOverlay extends StatefulWidget {
-  final GlobalKey<NavigatorState>? navigatorKey;
+  final VoidCallback onDismiss;
+  final String state; // 'listening' | 'thinking' | 'speaking'
+  final String? transcript;
+  final String? response;
 
-  const VoiceOverlay({super.key, this.navigatorKey});
+  const VoiceOverlay({
+    super.key,
+    required this.onDismiss,
+    this.state = 'listening',
+    this.transcript,
+    this.response,
+  });
 
   @override
   State<VoiceOverlay> createState() => _VoiceOverlayState();
@@ -20,159 +25,237 @@ class VoiceOverlay extends StatefulWidget {
 
 class _VoiceOverlayState extends State<VoiceOverlay>
     with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late AnimationController _waveController;
-  late Animation<double> _pulseAnimation;
+  late AnimationController _orbCtrl;
+  late AnimationController _rippleCtrl;
+  late Animation<double> _orbAnim;
+  late Animation<double> _rippleAnim;
+
+  final _stateLabels = {
+    'listening': 'Listening…',
+    'thinking': 'Processing…',
+    'speaking': 'Speaking…',
+  };
 
   @override
   void initState() {
     super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat(reverse: true);
-
-    _waveController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat();
-
-    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    _orbCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
+      ..repeat(reverse: true);
+    _rippleCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 2000))
+      ..repeat();
+    _orbAnim = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _orbCtrl, curve: Curves.easeInOut),
+    );
+    _rippleAnim = Tween<double>(begin: 0.5, end: 1.5).animate(
+      CurvedAnimation(parent: _rippleCtrl, curve: Curves.easeOut),
     );
   }
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _waveController.dispose();
+    _orbCtrl.dispose();
+    _rippleCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<VoiceAssistantService>(
-      builder: (context, assistant, _) {
-        // Don't show on auth screens
-        if (!assistant.isActive) return const SizedBox.shrink();
-
-        // Handle pending navigation
-        final nav = assistant.consumePendingNavigation();
-        if (nav != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            BubblesApp.navigatorKey.currentState?.pushNamed(
-              nav['route'] as String,
-              arguments: nav['args'],
-            );
-          });
-        }
-
-        // Only render when overlay is visible
-        if (!assistant.isOverlayVisible) return const SizedBox.shrink();
-
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-
-        return Stack(
-          children: [
-            // Ã¢â€â‚¬Ã¢â€â‚¬ Scrim Ã¢â€â‚¬Ã¢â€â‚¬
-            Positioned.fill(
-              child: Semantics(
-                label: 'Dismiss voice assistant',
-                button: true,
-                child: GestureDetector(
-                onTap: () => assistant.hideOverlay(),
-                child: AnimatedContainer(
-                  duration: AppDurations.normal,
-                  color: (isDark ? AppColors.backgroundDark : Colors.black)
-                      .withAlpha(153),
-                ),
-              ),
-              ),
-            ),
-
-            // Ã¢â€â‚¬Ã¢â€â‚¬ Panel Ã¢â€â‚¬Ã¢â€â‚¬
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildPanel(context, assistant, isDark),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
-  // PANEL
-  // Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
-
-  Widget _buildPanel(
-    BuildContext context,
-    VoiceAssistantService assistant,
-    bool isDark,
-  ) {
-    return Material(
-      type: MaterialType.transparency,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.xxl),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-                    AppColors.slate900,
-                    AppColors.slate800,
-                    AppColors.slate900,
-                  ]
-                : [Colors.white, AppColors.slate100, Colors.white],
-          ),
-          border: Border.all(
-            color: isDark
-                ? AppColors.primary.withAlpha(38)
-                : Colors.grey.shade200,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withAlpha(isDark ? 31 : 20),
-              blurRadius: 40,
-              spreadRadius: 0,
-              offset: const Offset(0, -8),
-            ),
-            BoxShadow(
-              color: Colors.black.withAlpha(isDark ? 102 : 26),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Frosted scrim
+        BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          child: Container(color: const Color(0xCC101e22)),
         ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+        // Content
+        SafeArea(
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              VoiceStatusChip(
-                state: assistant.state,
-                pulseAnimation: _pulseAnimation,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 24),
-              VoiceVisualIndicator(
-                state: assistant.state,
-                pulseAnimation: _pulseAnimation,
-                waveController: _waveController,
-                isDark: isDark,
-              ),
-              const SizedBox(height: 24),
-              VoiceTextDisplay(assistant: assistant, isDark: isDark),
-              const SizedBox(height: 20),
-              VoiceBottomBar(assistant: assistant, isDark: isDark),
+              _buildTopBar(),
+              Expanded(child: _buildOrb()),
+              _buildPanel(),
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        children: [
+          const Spacer(),
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white.withOpacity(0.08),
+                border: Border.all(color: Colors.white.withOpacity(0.12)),
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 18),
+            ),
+            onPressed: widget.onDismiss,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrb() {
+    final Color orbColor = (() {
+      switch (widget.state) {
+        case 'thinking': return const Color(0xFFA855F7);
+        case 'speaking': return const Color(0xFF10B981);
+        default: return BubblesColors.primary;
+      }
+    })();
+
+    return Center(
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_orbCtrl, _rippleCtrl]),
+        builder: (_, __) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Outer ripple
+              Transform.scale(
+                scale: 1.0 + _rippleAnim.value,
+                child: Container(
+                  width: 120, height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: orbColor.withOpacity((1 - _rippleAnim.value / 1.5).clamp(0, 1) * 0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                ),
+              ),
+              // Inner pulsing orb
+              Transform.scale(
+                scale: _orbAnim.value,
+                child: Container(
+                  width: 100, height: 100,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(colors: [
+                      orbColor.withOpacity(0.9),
+                      orbColor.withOpacity(0.3),
+                    ]),
+                    boxShadow: [
+                      BoxShadow(
+                        color: orbColor.withOpacity(0.5),
+                        blurRadius: 40, spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    widget.state == 'speaking'
+                        ? Icons.volume_up_rounded
+                        : widget.state == 'thinking'
+                            ? Icons.auto_awesome
+                            : Icons.mic,
+                    color: Colors.white.withOpacity(0.9),
+                    size: 36,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPanel() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white.withOpacity(0.04),
+        border: Border.all(color: Colors.white.withOpacity(0.10)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Center(
+            child: Text(
+              _stateLabels[widget.state] ?? 'Ready',
+              style: GoogleFonts.manrope(
+                fontSize: 16, fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          if (widget.transcript != null && widget.transcript!.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white.withOpacity(0.05),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('YOU', style: TextStyle(
+                    fontSize: 9, fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2, color: BubblesColors.primary,
+                  )),
+                  const SizedBox(height: 4),
+                  Text(widget.transcript!, style: const TextStyle(
+                    fontSize: 13, color: Colors.white70, height: 1.45,
+                  )),
+                ],
+              ),
+            ),
+          ],
+          if (widget.response != null && widget.response!.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: BubblesColors.primary.withOpacity(0.08),
+                border: Border.all(color: BubblesColors.primary.withOpacity(0.2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('BUBBLES', style: TextStyle(
+                    fontSize: 9, fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2, color: BubblesColors.primary,
+                  )),
+                  const SizedBox(height: 4),
+                  Text(widget.response!, style: const TextStyle(
+                    fontSize: 13, color: Colors.white, height: 1.45,
+                  )),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
+          Center(
+            child: TextButton(
+              onPressed: widget.onDismiss,
+              child: Text('Dismiss', style: TextStyle(
+                fontSize: 12, color: Colors.white.withOpacity(0.5),
+              )),
+            ),
+          ),
+        ],
       ),
     );
   }

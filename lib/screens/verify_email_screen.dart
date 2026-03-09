@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/design_tokens.dart';
+import '../widgets/shared_widgets.dart';
 import '../widgets/app_button.dart';
+import 'home_screen.dart';
+import 'login_screen.dart';
 
 class VerifyEmailScreen extends StatefulWidget {
   const VerifyEmailScreen({super.key});
@@ -12,236 +14,149 @@ class VerifyEmailScreen extends StatefulWidget {
   State<VerifyEmailScreen> createState() => _VerifyEmailScreenState();
 }
 
-class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
-  final AuthService _authService = AuthService.instance;
-  bool _loading = false;
+class _VerifyEmailScreenState extends State<VerifyEmailScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ringCtrl;
+  bool _resending = false;
 
-  void _checkVerification() async {
-    // Reload user to get latest metadata
-    try {
-      // Note: Supabase user reload might be needed depending on implementation,
-      // but accessing the property triggers a check on the current instance.
-      // Ideally, you might want to call _authService.refreshSession() if available.
+  @override
+  void initState() {
+    super.initState();
+    _ringCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 2))..repeat();
+  }
 
-      if (_authService.isEmailVerified) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/profile-completion', (route) => false);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
-              'Email not verified yet. Please check your inbox.',
-            ),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      // handle error
+  @override
+  void dispose() { _ringCtrl.dispose(); super.dispose(); }
+
+  Future<void> _checkVerification() async {
+    await Supabase.instance.client.auth.refreshSession();
+    final user = Supabase.instance.client.auth.currentUser;
+    if (!mounted) return;
+    if (user?.emailConfirmedAt != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: BubblesColors.glassDark,
+          content: Text('Email not verified yet. Please check your inbox.',
+              style: TextStyle(color: BubblesColors.textPrimaryDark)),
+        ),
+      );
     }
   }
 
-  void _resendEmail() async {
-    setState(() => _loading = true);
+  Future<void> _resend() async {
+    setState(() => _resending = true);
     try {
-      final user = _authService.currentUser;
-      if (user != null && user.email != null) {
-        await _authService.resendVerificationEmail(user.email!);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Verification email sent!'),
-              backgroundColor: AppColors.primary,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-      }
-    } catch (e) {
+      final email = Supabase.instance.client.auth.currentUser?.email ?? '';
+      await Supabase.instance.client.auth.resend(type: OtpType.email, email: email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
             behavior: SnackBarBehavior.floating,
+            backgroundColor: BubblesColors.success.withOpacity(0.2),
+            content: Text('Verification email sent!',
+                style: TextStyle(color: BubblesColors.success)),
           ),
         );
       }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to resend email.')));
+      }
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _resending = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark
-          ? AppColors.backgroundDark
-          : AppColors.backgroundLight,
-      body: Stack(
-        children: [
-          if (isDark) ...[
-            Positioned(
-              top: -120,
-              left: -120,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+      body: BgMesh(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Animated mail icon disc
+                SizedBox(
+                  width: 160, height: 160,
+                  child: AnimatedBuilder(
+                    animation: _ringCtrl,
+                    builder: (_, __) {
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          // Expanding ring
+                          Opacity(
+                            opacity: (1.0 - _ringCtrl.value).clamp(0.0, 1.0),
+                            child: Container(
+                              width: 120 + 40 * _ringCtrl.value,
+                              height: 120 + 40 * _ringCtrl.value,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: BubblesColors.primary.withOpacity(0.3),
+                                ),
+                              ),
+                            ),
+                          ),
+                          GlassBox(
+                            width: 100, height: 100, borderRadius: 999,
+                            child: Icon(Icons.mail_outline, color: BubblesColors.primary, size: 48),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ),
-              ),
-            ),
-            Positioned(
-              bottom: -120,
-              right: -120,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                const SizedBox(height: 32),
+                Text('Check your inbox',
+                    style: GoogleFonts.manrope(
+                      fontSize: 26, fontWeight: FontWeight.w700,
+                      color: BubblesColors.textPrimaryDark, letterSpacing: -0.3,
+                    )),
+                const SizedBox(height: 12),
+                Text(
+                  "We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.manrope(
+                    fontSize: 14, fontWeight: FontWeight.w400,
+                    color: BubblesColors.textSecondaryDark, height: 1.5,
                   ),
                 ),
-              ),
-            ),
-          ],
-          SafeArea(
-        child: Column(
-          children: [
-            // Consistent header
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                border: Border(
-                  bottom: BorderSide(
-                    color: isDark
-                        ? AppColors.glassBorder
-                        : AppColors.slate200,
-                  ),
+                const SizedBox(height: 40),
+                AppButton(
+                  label: "I've Verified It",
+                  onPressed: _checkVerification,
+                  fullWidth: true,
                 ),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_rounded,
-                        color: isDark ? Colors.white : AppColors.slate900,
-                      ),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                    Text(
-                      'Verify Email',
+                const SizedBox(height: 12),
+                AppButton(
+                  label: 'Resend Email',
+                  onPressed: _resend,
+                  loading: _resending,
+                  variant: AppButtonVariant.outlined,
+                  fullWidth: true,
+                ),
+                const SizedBox(height: 24),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()), (_) => false),
+                  child: Text('Back to Login',
                       style: GoogleFonts.manrope(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isDark ? Colors.white : AppColors.slate900,
-                      ),
-                    ),
-                  ],
+                        fontSize: 13, fontWeight: FontWeight.w600,
+                        color: BubblesColors.textSecondaryDark,
+                      )),
                 ),
-              ),
+              ],
             ),
-
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 16.0,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Spacer(flex: 1),
-
-                    // Icon & Title
-                    Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.glassWhite
-                                : AppColors.primary.withAlpha(26),
-                            shape: BoxShape.circle,
-                            border: isDark
-                                ? Border.all(color: AppColors.glassBorder)
-                                : null,
-                          ),
-                          child: Icon(
-                            Icons.mark_email_unread_rounded,
-                            size: 64,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        Text(
-                          'Verify your email',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w200,
-                            color: isDark
-                                ? Colors.white
-                                : AppColors.slate900,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'We have sent a verification link to your email address. Please tap the link in the email to continue.',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            height: 1.6,
-                            color: isDark
-                                ? AppColors.slate400
-                                : AppColors.slate500,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const Spacer(flex: 2),
-
-                    // Buttons
-                    Column(
-                      children: [
-                        AppButton(
-                          label: 'I have verified it',
-                          onTap: _checkVerification,
-                          loading: _loading,
-                          filled: true,
-                        ),
-                        const SizedBox(height: 16),
-                        AppButton(
-                          label: 'Resend Email',
-                          onTap: _resendEmail,
-                          loading: _loading,
-                          filled: false,
-                        ),
-                      ],
-                    ),
-
-                    const Spacer(flex: 1),
-                  ],
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
-        ],
       ),
     );
   }

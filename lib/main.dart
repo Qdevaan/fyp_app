@@ -26,6 +26,11 @@ import 'screens/new_session_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/entity_screen.dart';
+import 'screens/session_history_screen.dart';
+import 'screens/ai_insights_dashboard_screen.dart';
+import 'screens/subscription_screen.dart';
+import 'screens/expanded_user_profile_screen.dart';
+import 'screens/search_discovery_screen.dart';
 import 'widgets/auth_guard.dart';
 import 'routes/app_routes.dart';
 
@@ -200,6 +205,16 @@ class BubblesApp extends StatelessWidget {
                   const AuthGuard(child: SessionsScreen()),
               AppRoutes.about: (context) =>
                   const AuthGuard(child: AboutScreen()),
+              AppRoutes.sessionHistory: (context) =>
+                  const AuthGuard(child: SessionHistoryScreen()),
+              AppRoutes.aiInsights: (context) =>
+                  const AuthGuard(child: AiInsightsDashboardScreen()),
+              AppRoutes.subscription: (context) =>
+                  const AuthGuard(child: SubscriptionScreen()),
+              AppRoutes.profile: (context) =>
+                  const AuthGuard(child: ExpandedUserProfileScreen()),
+              AppRoutes.search: (context) =>
+                  const AuthGuard(child: SearchDiscoveryScreen()),
             },
           );
         },
@@ -208,18 +223,33 @@ class BubblesApp extends StatelessWidget {
   }
 }
 
-/// Wrapper that adds VoiceOverlay on top of all screens except settings & auth.
+/// Wrapper that adds VoiceOverlay on top of all screens when voice is active.
 class _VoiceOverlayWrapper extends StatelessWidget {
   final Widget child;
   const _VoiceOverlayWrapper({required this.child});
 
   @override
   Widget build(BuildContext context) {
+    final voice = context.watch<VoiceAssistantService>();
+    final stateStr = (() {
+      switch (voice.state) {
+        case VoiceAssistantState.processing: return 'thinking';
+        case VoiceAssistantState.speaking: return 'speaking';
+        default: return 'listening';
+      }
+    })();
     return Stack(
       children: [
         child,
-        // The overlay manages its own visibility; it hides during settings
-        const VoiceOverlay(),
+        if (voice.isOverlayVisible)
+          Positioned.fill(
+            child: VoiceOverlay(
+              state: stateStr,
+              transcript: voice.partialText.isNotEmpty ? voice.partialText : null,
+              response: voice.lastResponse.isNotEmpty ? voice.lastResponse : null,
+              onDismiss: voice.hideOverlay,
+            ),
+          ),
       ],
     );
   }

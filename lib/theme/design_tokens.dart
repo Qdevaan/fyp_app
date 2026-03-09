@@ -1,138 +1,161 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Design-system colors matching the Stitch glassmorphism UI mockups.
-/// Based on Tailwind CSS Slate palette + brand colors.
+// ============================================================
+//  Bubbles Design Tokens — Glassmorphism UI System v2.0
+// ============================================================
+
+class BubblesColors {
+  BubblesColors._();
+
+  static const primary = Color(0xFF13bdec);
+  static const primaryDark = Color(0xFF0B8BC9);
+  static const bgDark = Color(0xFF101e22);
+  static const bgLight = Color(0xFFF6F8F8);
+
+  // Glass surfaces
+  static const glassDark = Color(0x08FFFFFF);
+  static const glassBorderDark = Color(0x14FFFFFF);
+  static const glassHeaderDark = Color(0xB3101E22);
+  static const glassHeaderBorderDark = Color(0x1A13BDEC);
+
+  static const glassLight = Color(0x80FFFFFF);
+  static const glassBorderLight = Color(0xCCFFFFFF);
+
+  // Glass primary tint
+  static const glassPrimary = Color(0x2613BDEC);
+  static const glassPrimaryBorder = Color(0x4D13BDEC);
+
+  // Text dark
+  static const textPrimaryDark = Color(0xFFF1F5F9);
+  static const textSecondaryDark = Color(0xFF94A3B8);
+  static const textMutedDark = Color(0xFF64748B);
+
+  // Text light
+  static const textPrimaryLight = Color(0xFF0F172A);
+  static const textSecondaryLight = Color(0xFF475569);
+  static const textMutedLight = Color(0xFF94A3B8);
+
+  // Status
+  static const success = Color(0xFF22C55E);
+  static const error = Color(0xFFEF4444);
+  static const warning = Color(0xFFF59E0B);
+  static const indigo = Color(0xFF6366F1);
+  static const purple = Color(0xFFA855F7);
+  static const rose = Color(0xFFF43F5E);
+  static const emerald = Color(0xFF10B981);
+  static const amber = Color(0xFFF59E0B);
+}
+
+class BubblesTheme {
+  BubblesTheme._();
+
+  static TextTheme _buildTextTheme(Color primary, Color secondary, Color muted) {
+    return TextTheme(
+      displayLarge: GoogleFonts.manrope(fontSize: 30, fontWeight: FontWeight.w800, color: primary, letterSpacing: -0.5),
+      displayMedium: GoogleFonts.manrope(fontSize: 26, fontWeight: FontWeight.w800, color: primary, letterSpacing: -0.5),
+      displaySmall: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w700, color: primary),
+      headlineLarge: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w700, color: primary),
+      headlineMedium: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700, color: primary),
+      headlineSmall: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w600, color: primary),
+      titleLarge: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w700, color: primary),
+      titleMedium: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w600, color: primary),
+      titleSmall: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: secondary),
+      bodyLarge: GoogleFonts.manrope(fontSize: 15, fontWeight: FontWeight.w500, color: primary, height: 1.5),
+      bodyMedium: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: secondary, height: 1.5),
+      bodySmall: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w500, color: muted),
+      labelLarge: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w700, color: primary, letterSpacing: 1.2),
+      labelMedium: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w700, color: muted, letterSpacing: 1.0),
+      labelSmall: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: muted, letterSpacing: 1.5),
+    );
+  }
+
+  static ThemeData get dark => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorScheme: const ColorScheme.dark(
+      primary: BubblesColors.primary,
+      onPrimary: BubblesColors.bgDark,
+      surface: BubblesColors.bgDark,
+      onSurface: BubblesColors.textPrimaryDark,
+      error: BubblesColors.error,
+    ),
+    scaffoldBackgroundColor: BubblesColors.bgDark,
+    textTheme: _buildTextTheme(
+      BubblesColors.textPrimaryDark,
+      BubblesColors.textSecondaryDark,
+      BubblesColors.textMutedDark,
+    ),
+    iconTheme: const IconThemeData(color: BubblesColors.textSecondaryDark, size: 24),
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      titleTextStyle: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700, color: BubblesColors.textPrimaryDark),
+      iconTheme: const IconThemeData(color: BubblesColors.textPrimaryDark),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: false,
+      border: InputBorder.none,
+      hintStyle: GoogleFonts.manrope(color: BubblesColors.textMutedDark, fontWeight: FontWeight.w500),
+    ),
+    dividerColor: BubblesColors.glassBorderDark,
+  );
+
+  static ThemeData get light => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    colorScheme: const ColorScheme.light(
+      primary: BubblesColors.primary,
+      onPrimary: Colors.white,
+      surface: BubblesColors.bgLight,
+      onSurface: BubblesColors.textPrimaryLight,
+      error: BubblesColors.error,
+    ),
+    scaffoldBackgroundColor: BubblesColors.bgLight,
+    textTheme: _buildTextTheme(
+      BubblesColors.textPrimaryLight,
+      BubblesColors.textSecondaryLight,
+      BubblesColors.textMutedLight,
+    ),
+    iconTheme: const IconThemeData(color: BubblesColors.textSecondaryLight, size: 24),
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      titleTextStyle: GoogleFonts.manrope(fontSize: 18, fontWeight: FontWeight.w700, color: BubblesColors.textPrimaryLight),
+      iconTheme: const IconThemeData(color: BubblesColors.textPrimaryLight),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: false,
+      border: InputBorder.none,
+      hintStyle: GoogleFonts.manrope(color: BubblesColors.textMutedLight, fontWeight: FontWeight.w500),
+    ),
+    dividerColor: BubblesColors.glassBorderLight,
+  );
+}
+
+// ============================================================
+//  Compatibility aliases — used by ThemeProvider
+// ============================================================
+
 class AppColors {
-  // Primary — Cyan accent from Stitch
-  static const Color primary = Color(0xFF13BDEC);
-  static const Color primaryDark = Color(0xFF0B9AC9);
-  static const Color primaryLight = Color(0xFF6ECBF5);
-  static const Color primaryGlow = Color(0xFF00D2FF);
-
-  // Backgrounds — dark mesh gradient base
-  static const Color backgroundDark = Color(0xFF101E22);
-  static const Color backgroundLight = Color(0xFFF6F8F8);
-
-  // Surfaces (glass cards / panels)
-  static const Color surfaceDark = Color(0xFF192B33);
-  static const Color surfaceDarkHighlight = Color(0xFF233C48);
-  static const Color surfaceLight = Color(0xFFFFFFFF);
-
-  // Glass colors
-  static const Color glassWhite = Color(0x08FFFFFF); // rgba(255,255,255,0.03)
-  static const Color glassBorder = Color(0x1AFFFFFF); // rgba(255,255,255,0.1)
-  static const Color glassBorderLight = Color(0x0DFFFFFF); // rgba(255,255,255,0.05)
-  static const Color glassInput = Color(0x0DFFFFFF); // rgba(255,255,255,0.05)
-  static const Color glassPrimary = Color(0x2613BDEC); // rgba(19,189,236,0.15)
-  static const Color glassPrimaryBorder = Color(0x4D13BDEC); // rgba(19,189,236,0.3)
-
-  // Chat bubbles
-  static const Color bubbleDark = Color(0xFF1C2A33);
-  static const Color bubbleUser = Color(0x1A13BDEC); // 10% primary
-  static const Color bubbleUserBorder = Color(0x3313BDEC); // 20% primary
-
-  // Tailwind Slate scale
-  static const Color slate50 = Color(0xFFF8FAFC);
-  static const Color slate100 = Color(0xFFF1F5F9);
-  static const Color slate200 = Color(0xFFE2E8F0);
-  static const Color slate300 = Color(0xFFCBD5E1);
-  static const Color slate400 = Color(0xFF94A3B8);
-  static const Color slate500 = Color(0xFF64748B);
-  static const Color slate600 = Color(0xFF475569);
-  static const Color slate700 = Color(0xFF334155);
-  static const Color slate800 = Color(0xFF1E293B);
-  static const Color slate900 = Color(0xFF0F172A);
-
-  // Text (aliased from slate)
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = slate400;
-  static const Color textMuted = slate500;
-
-  // Accents
-  static const Color success = Color(0xFF22C55E);
-  static const Color error = Color(0xFFEF4444);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color accent = Color(0xFF818CF8); // indigo-400
-  static const Color orange = Color(0xFFF97316);
-  static const Color purple = Color(0xFFA855F7);
-  static const Color amber = Color(0xFFF59E0B);
+  AppColors._();
+  static const primary = BubblesColors.primary;
+  static const slate900 = Color(0xFF0F172A);
+  static const slate200 = Color(0xFFE2E8F0);
+  static const surfaceLight = Color(0xFFF8FAFC);
+  static const surfaceDark = Color(0xFF1E293B);
+  static const backgroundLight = BubblesColors.bgLight;
+  static const backgroundDark = BubblesColors.bgDark;
+  static const glassWhite = Color(0x0DFFFFFF);
+  static const glassBorder = BubblesColors.glassBorderDark;
+  static const glassInput = Color(0x10FFFFFF);
 }
 
 class AppRadius {
-  static const double sm = 8;
-  static const double md = 12;
-  static const double lg = 16;
-  static const double xl = 20;
-  static const double xxl = 24;
-  static const double full = 9999;
-}
-
-class AppSpacing {
-  static const double xs = 6;
-  static const double sm = 12;
-  static const double md = 18;
-  static const double lg = 24;
-  static const double xl = 32;
-}
-
-class AppDurations {
-  static const Duration fast = Duration(milliseconds: 180);
-  static const Duration normal = Duration(milliseconds: 250);
-  static const Duration slow = Duration(milliseconds: 400);
-  static const Duration pulse = Duration(milliseconds: 1500);
-  static const Duration dialog = Duration(milliseconds: 300);
-  static const Duration tooltip = Duration(milliseconds: 200);
-  static const Duration pageTransition = Duration(milliseconds: 350);
-}
-
-class AppTypography {
-  static TextStyle hero(BuildContext context) => GoogleFonts.manrope(
-    fontSize: 36,
-    fontWeight: FontWeight.w200,
-    color: Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : AppColors.slate900,
-  );
-
-  static TextStyle title(BuildContext context) => GoogleFonts.manrope(
-    fontSize: 24,
-    fontWeight: FontWeight.w700,
-    color: Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : AppColors.slate900,
-  );
-
-  static TextStyle subtitle(BuildContext context) => GoogleFonts.manrope(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: Theme.of(context).brightness == Brightness.dark
-        ? Colors.white
-        : AppColors.slate900,
-  );
-
-  static TextStyle label(BuildContext context) => GoogleFonts.manrope(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    letterSpacing: 1.2,
-    color: Theme.of(context).brightness == Brightness.dark
-        ? AppColors.slate400
-        : AppColors.slate500,
-  );
-
-  static TextStyle body(BuildContext context) => GoogleFonts.manrope(
-    fontSize: 14,
-    fontWeight: FontWeight.w400,
-    color: Theme.of(context).brightness == Brightness.dark
-        ? AppColors.slate300
-        : AppColors.slate600,
-  );
-
-  static TextStyle caption(BuildContext context) => GoogleFonts.manrope(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    color: Theme.of(context).brightness == Brightness.dark
-        ? AppColors.slate500
-        : AppColors.slate400,
-  );
+  AppRadius._();
+  static const double xxl = 24.0;
+  static const double lg = 12.0;
+  static const double full = 999.0;
 }

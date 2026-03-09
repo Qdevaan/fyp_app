@@ -1,14 +1,11 @@
-import 'dart:async';
-import '../theme/design_tokens.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import '../services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../theme/design_tokens.dart';
+import '../widgets/shared_widgets.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
-import '../widgets/social_button.dart';
-import '../widgets/app_logo.dart';
+import 'verify_email_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,353 +15,250 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final AuthService _authService = AuthService.instance;
-  final _formKey = GlobalKey<FormState>();
-
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  final _confirmPassCtrl = TextEditingController();
-
-  bool _isEmailLoading = false;
-  bool _isGoogleLoading = false;
+  final _confirmCtrl = TextEditingController();
+  bool _loading = false;
+  String? _error;
   double _passwordStrength = 0;
-  late final StreamSubscription<AuthState> _authSubscription;
+  String _strengthLabel = '';
 
   @override
   void initState() {
     super.initState();
-    _passCtrl.addListener(_updatePasswordStrength);
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
-      data,
-    ) {
-      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
-        if (!_isEmailLoading && mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
+    _passCtrl.addListener(_updateStrength);
+  }
+
+  void _updateStrength() {
+    final p = _passCtrl.text;
+    double s = 0;
+    if (p.length >= 6) s += 0.25;
+    if (p.length >= 10) s += 0.25;
+    if (RegExp(r'[0-9]').hasMatch(p)) s += 0.25;
+    if (RegExp(r'[!@#\$%^&*]').hasMatch(p)) s += 0.25;
+    String label = '';
+    if (s <= 0.25) label = 'Weak';
+    else if (s <= 0.5) label = 'Fair';
+    else if (s <= 0.75) label = 'Good';
+    else label = 'Strong';
+    setState(() { _passwordStrength = s; _strengthLabel = p.isEmpty ? '' : label; });
+  }
+
+  Color get _strengthColor {
+    if (_passwordStrength <= 0.25) return BubblesColors.error;
+    if (_passwordStrength <= 0.5) return BubblesColors.warning;
+    if (_passwordStrength <= 0.75) return const Color(0xFF6ECBF5);
+    return BubblesColors.success;
+  }
+
+  Future<void> _signUp() async {
+    if (_passCtrl.text != _confirmCtrl.text) {
+      setState(() => _error = 'Passwords do not match.');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      final res = await Supabase.instance.client.auth.signUp(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+      );
+      if (!mounted) return;
+      if (res.user != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const VerifyEmailScreen()));
       }
-    });
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = 'Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
   void dispose() {
-    _authSubscription.cancel();
-    _passCtrl.removeListener(_updatePasswordStrength);
     _emailCtrl.dispose();
     _passCtrl.dispose();
-    _confirmPassCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
-  }
-
-  void _updatePasswordStrength() {
-    final pw = _passCtrl.text;
-    double score = 0;
-    if (pw.length >= 6) score += 0.2;
-    if (pw.length >= 10) score += 0.1;
-    if (pw.contains(RegExp(r'[A-Z]'))) score += 0.2;
-    if (pw.contains(RegExp(r'[0-9]'))) score += 0.2;
-    if (pw.contains(RegExp(r'[!@#\$%\^&\*\(\)_\+\-=\[\]{};:,.<>?/\\|`~]'))) score += 0.2;
-    if (pw.length >= 14) score += 0.1;
-    setState(() => _passwordStrength = score.clamp(0.0, 1.0));
-  }
-
-  String get _strengthLabel {
-    if (_passwordStrength <= 0) return '';
-    if (_passwordStrength < 0.3) return 'Weak';
-    if (_passwordStrength < 0.6) return 'Fair';
-    if (_passwordStrength < 0.8) return 'Good';
-    return 'Strong';
-  }
-
-  Color get _strengthColor {
-    if (_passwordStrength < 0.3) return AppColors.error;
-    if (_passwordStrength < 0.6) return AppColors.warning;
-    if (_passwordStrength < 0.8) return AppColors.primary;
-    return AppColors.success;
-  }
-
-  Future<void> _signupWithEmail() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isEmailLoading = true);
-    try {
-      await _authService.signUpWithEmail(
-        _emailCtrl.text.trim(),
-        _passCtrl.text,
-      );
-      if (!mounted) return;
-      Navigator.pushNamed(context, '/verify-email');
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString().replaceAll('Exception:', '').trim()),
-          backgroundColor: Theme.of(context).colorScheme.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _isEmailLoading = false);
-    }
-  }
-
-  Future<void> _signupWithGoogle() async {
-    setState(() => _isGoogleLoading = true);
-    try {
-      await _authService.signInWithGoogle();
-      if (mounted) setState(() => _isGoogleLoading = false);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Google Sign up failed: $e')));
-        setState(() => _isGoogleLoading = false);
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: Stack(
-        children: [
-          // Mesh gradient background
-          if (isDark) ...[
-            Positioned(
-              top: -120,
-              left: -120,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -120,
-              right: -120,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          // Main Content
-          SafeArea(
+      body: BgMesh(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: IconButton(
-                    padding: const EdgeInsets.only(left: 16, top: 16),
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: isDark ? Colors.white : AppColors.slate900,
-                    ),
-                    onPressed: () => Navigator.pop(context),
+                Row(children: [
+                  CircleIconBtn(icon: Icons.arrow_back, onPressed: () => Navigator.pop(context)),
+                ]),
+                const SizedBox(height: 28),
+                Center(
+                  child: Column(
+                    children: [
+                      GlassBox(
+                        borderRadius: 16, width: 60, height: 60, padding: const EdgeInsets.all(14),
+                        child: const Icon(Icons.bubble_chart, color: BubblesColors.primary, size: 32),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Create Account',
+                          style: GoogleFonts.manrope(
+                            fontSize: 28, fontWeight: FontWeight.w800,
+                            color: BubblesColors.textPrimaryDark, letterSpacing: -0.5,
+                          )),
+                      const SizedBox(height: 6),
+                      Text('Join Bubbles to get started',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            color: BubblesColors.textSecondaryDark,
+                          )),
+                    ],
                   ),
                 ),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 10),
-
-                          // Header + Logo + Title
-                          Column(
-                            children: [
-                              const AppLogo(size: 80),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Create Account',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w200,
-                                  color: isDark ? Colors.white : AppColors.slate900,
-                                ),
+                const SizedBox(height: 32),
+                GlassBox(
+                  borderRadius: 20,
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      AppInput(
+                        label: 'Email Address',
+                        hint: 'name@example.com',
+                        controller: _emailCtrl,
+                        keyboardType: TextInputType.emailAddress,
+                        textInputAction: TextInputAction.next,
+                        prefix: Icon(Icons.mail_outline, size: 18, color: BubblesColors.textMutedDark),
+                      ),
+                      const SizedBox(height: 20),
+                      AppInput(
+                        label: 'Password',
+                        hint: '••••••••',
+                        controller: _passCtrl,
+                        obscureText: true,
+                        textInputAction: TextInputAction.next,
+                        prefix: Icon(Icons.lock_outline, size: 18, color: BubblesColors.textMutedDark),
+                      ),
+                      if (_strengthLabel.isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Row(children: [
+                          Expanded(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(999),
+                              child: LinearProgressIndicator(
+                                value: _passwordStrength,
+                                minHeight: 4,
+                                backgroundColor: BubblesColors.glassDark,
+                                valueColor: AlwaysStoppedAnimation(_strengthColor),
                               ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Join your personal Wingman today.',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.slate400,
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 30),
-
-                          // Form Fields
-                          AppInput(
-                            controller: _emailCtrl,
-                            label: 'Email',
-                            prefixIcon: Icons.email_outlined,
-                            type: TextInputType.emailAddress,
-                            hintText: 'Enter your email',
-                            validator: (v) => v != null && v.contains('@')
-                                ? null
-                                : 'Invalid email',
-                          ),
-                          const SizedBox(height: 16),
-
-                          AppInput(
-                            controller: _passCtrl,
-                            label: 'Password',
-                            prefixIcon: Icons.lock_outline,
-                            hintText: 'Enter your password',
-                            obscure: true,
-                            validator: (v) => v != null && v.length >= 6
-                                ? null
-                                : 'Min 6 characters',
-                          ),
-                          if (_passCtrl.text.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(AppRadius.full),
-                                    child: LinearProgressIndicator(
-                                      value: _passwordStrength,
-                                      backgroundColor: isDark
-                                          ? AppColors.glassBorder
-                                          : AppColors.slate200,
-                                      color: _strengthColor,
-                                      minHeight: 3,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _strengthLabel,
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: _strengthColor,
-                                  ),
-                                ),
-                              ],
                             ),
-                          ],
-                          const SizedBox(height: 16),
-
-                          AppInput(
-                            controller: _confirmPassCtrl,
-                            label: 'Confirm Password',
-                            prefixIcon: Icons.lock_reset,
-                            hintText: 'Re-enter your password',
-                            obscure: true,
-                            validator: (v) => v == _passCtrl.text
-                                ? null
-                                : 'Passwords do not match',
                           ),
-
-                          const SizedBox(height: 32),
-
-                          // Actions
-                          AppButton(
-                            label: 'Sign Up',
-                            onTap: _signupWithEmail,
-                            loading: _isEmailLoading,
+                          const SizedBox(width: 10),
+                          Text(_strengthLabel,
+                              style: TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w700,
+                                color: _strengthColor,
+                              )),
+                        ]),
+                      ],
+                      const SizedBox(height: 20),
+                      AppInput(
+                        label: 'Confirm Password',
+                        hint: '••••••••',
+                        controller: _confirmCtrl,
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        onEditingComplete: _signUp,
+                        prefix: Icon(Icons.lock_outline, size: 18, color: BubblesColors.textMutedDark),
+                      ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: BubblesColors.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: BubblesColors.error.withOpacity(0.3)),
                           ),
-                          const SizedBox(height: 24),
-
-                          // Divider
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Divider(
-                                  color: isDark ? AppColors.glassBorder : AppColors.slate200,
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
-                                child: Text(
-                                  'OR',
-                                  style: GoogleFonts.manrope(
-                                    color: AppColors.slate500,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                              Expanded(
-                                child: Divider(
-                                  color: isDark ? AppColors.glassBorder : AppColors.slate200,
-                                ),
-                              ),
-                            ],
+                          child: Text(_error!, style: TextStyle(color: BubblesColors.error, fontSize: 12)),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      AppButton(
+                        label: 'Create Account',
+                        onPressed: _signUp,
+                        loading: _loading,
+                        fullWidth: true,
+                        trailingIcon: Icons.arrow_forward,
+                      ),
+                      const SizedBox(height: 20),
+                      Row(children: [
+                        const Expanded(child: Divider(color: Color(0x14FFFFFF))),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text('OR',
+                              style: GoogleFonts.manrope(
+                                fontSize: 10, fontWeight: FontWeight.w600,
+                                color: BubblesColors.textMutedDark, letterSpacing: 1.5,
+                              )),
+                        ),
+                        const Expanded(child: Divider(color: Color(0x14FFFFFF))),
+                      ]),
+                      const SizedBox(height: 16),
+                      GestureDetector(
+                        onTap: () {},
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: BubblesColors.glassDark,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: BubblesColors.glassBorderDark),
                           ),
-
-                          const SizedBox(height: 24),
-
-                          SocialButton(
-                            label: 'Continue with Google',
-                            imagePath: 'assets/logos/google_logo.png',
-                            onTap: _signupWithGoogle,
-                            loading: _isGoogleLoading,
-                          ),
-                          const SizedBox(height: 20),
-                          // Footer
-                          Row(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                'Already have an account?',
-                                style: GoogleFonts.manrope(
-                                  color: AppColors.slate400,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: TextButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                                  minimumSize: Size.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                child: Text(
-                                  'Log In',
+                              const Icon(Icons.g_mobiledata, color: BubblesColors.textPrimaryDark, size: 22),
+                              const SizedBox(width: 8),
+                              Text('Continue with Google',
                                   style: GoogleFonts.manrope(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
+                                    fontSize: 14, fontWeight: FontWeight.w600,
+                                    color: BubblesColors.textPrimaryDark,
+                                  )),
                             ],
                           ),
-
-                          // Bottom spacing for keyboard/scroll
-                          const SizedBox(height: 20),
-                        ],
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
+                const SizedBox(height: 24),
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Already have an account? ',
+                          style: TextStyle(color: BubblesColors.textSecondaryDark, fontSize: 13)),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Text('Log In',
+                            style: GoogleFonts.manrope(
+                              fontSize: 13, fontWeight: FontWeight.w700,
+                              color: BubblesColors.primary,
+                            )),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }

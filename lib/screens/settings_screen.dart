@@ -1,473 +1,386 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:record/record.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../theme/design_tokens.dart';
-import '../services/auth_service.dart';
-import '../services/api_service.dart';
-import '../services/connection_service.dart';
-import '../services/voice_assistant_service.dart';
+import '../widgets/shared_widgets.dart';
+import '../widgets/app_button.dart';
 import '../providers/theme_provider.dart';
-import '../widgets/settings/settings_widgets.dart';
-import '../widgets/settings/settings_dialogs.dart';
+import 'login_screen.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
-}
+  Widget build(BuildContext context) {
+    final themeProvider = context.watch<ThemeProvider>();
+    final isDark = themeProvider.themeMode == ThemeMode.dark;
+    final user = Supabase.instance.client.auth.currentUser;
+    final name = (user?.userMetadata?['full_name'] ?? user?.email?.split('@').first ?? 'User') as String;
+    final email = user?.email ?? '';
+    final avatarUrl = user?.userMetadata?['avatar_url'] as String?;
 
-class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isLoggingOut = false;
-
-  Future<void> _logout() async {
-    setState(() => _isLoggingOut = true);
-    try {
-      await AuthService.instance.signOut();
-      if (mounted) {
-        Navigator.of(
-          context,
-        ).pushNamedAndRemoveUntil('/login', (Route<dynamic> route) => false);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Logout failed: $e'),
-            backgroundColor: AppColors.error,
+    return Scaffold(
+      backgroundColor: isDark ? BubblesColors.bgDark : BubblesColors.bgLight,
+      body: Column(
+        children: [
+          _buildHeader(context, isDark),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildAccountCard(context, name, email, avatarUrl, isDark),
+                  const SizedBox(height: 20),
+                  _SectionLabel('PREFERENCES'),
+                  const SizedBox(height: 8),
+                  _buildPrefsCard(context, isDark, themeProvider),
+                  const SizedBox(height: 20),
+                  _SectionLabel('VOICE ASSISTANT'),
+                  const SizedBox(height: 8),
+                  _buildVoiceCard(context, isDark),
+                  const SizedBox(height: 20),
+                  _SectionLabel('ACCOUNT'),
+                  const SizedBox(height: 8),
+                  _buildAccountActionsCard(context, isDark),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
           ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isLoggingOut = false);
-    }
+        ],
+      ),
+      bottomNavigationBar: BubblesBottomNav(
+        currentIndex: 4,
+        onTap: (i) {
+          if (i != 4) Navigator.pop(context);
+        },
+      ),
+    );
   }
 
-  void _showComingSoon(BuildContext context, String feature) =>
-      showComingSoon(context, feature);
-
-  void _showContactSheet(BuildContext context, bool isDark) =>
-      showContactSheet(context, isDark);
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onHorizontalDragEnd: (details) {
-        if (details.primaryVelocity != null &&
-            details.primaryVelocity! < -300) {
-          // Swipe Left -> go back
-          Navigator.pop(context);
-        }
-      },
-      child: Scaffold(
-        backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-        body: Stack(
-          children: [
-            if (isDark) ...[
-              Positioned(
-                top: -120,
-                left: -120,
-                child: Container(
-                  width: 400,
-                  height: 400,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [AppColors.primary.withAlpha(38), Colors.transparent],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                bottom: -120,
-                right: -120,
-                child: Container(
-                  width: 400,
-                  height: 400,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: [AppColors.primary.withAlpha(26), Colors.transparent],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-            SafeArea(
-          child: Column(
-            children: [
-              // --- Header ---
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      tooltip: 'Go back',
-                      icon: Icon(
-                        Icons.arrow_back,
-                        size: 28,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: Text(
-                        'Done',
-                        style: GoogleFonts.manrope(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Settings',
-                    style: GoogleFonts.manrope(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: isDark ? Colors.white : AppColors.slate900,
-                    ),
-                  ),
-                ),
-              ),
-
-              // --- Content ---
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // ACCOUNT SECTION
-                      SectionLabel(label: 'Account'),
-                      GroupedContainer(
-                        isDark: isDark,
-                        children: [
-                          // Profile Tile
-                          ProfileTile(isDark: isDark),
-                          TileDivider(isDark: isDark),
-                          // Subscription
-                          SettingsTile(
-                            isDark: isDark,
-                            iconBg: AppColors.accent.withAlpha(51),
-                            iconColor: AppColors.accent,
-                            icon: Icons.diamond_outlined,
-                            title: 'Subscription',
-                            trailing: Text(
-                              'Free Plan',
-                              style: GoogleFonts.manrope(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            onTap: () =>
-                                _showComingSoon(context, 'Subscription'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // PREFERENCES SECTION
-                      SectionLabel(label: 'Preferences'),
-                      GroupedContainer(
-                        isDark: isDark,
-                        children: [
-                          Consumer<ThemeProvider>(
-                            builder: (context, themeProvider, _) =>
-                                SettingsTile(
-                                  isDark: isDark,
-                                  iconBg: const Color(
-                                    0xFF38BDF8,
-                                  ).withAlpha(51),
-                                  iconColor: const Color(0xFF38BDF8),
-                                  icon: Icons.brightness_medium_outlined,
-                                  title: 'Theme Mode',
-                                  trailing: Text(
-                                    themeProvider.themeMode == ThemeMode.system
-                                        ? 'System'
-                                        : themeProvider.themeMode ==
-                                              ThemeMode.dark
-                                        ? 'Dark'
-                                        : 'Light',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 13,
-                                      color: AppColors.textMuted,
-                                    ),
-                                  ),
-                                  onTap: () => _showThemeModePicker(
-                                    context,
-                                    themeProvider,
-                                  ),
-                                ),
-                          ),
-                          TileDivider(isDark: isDark),
-                          Consumer<ThemeProvider>(
-                            builder: (context, themeProvider, _) =>
-                                SettingsTile(
-                                  isDark: isDark,
-                                  iconBg: themeProvider.seedColor.withAlpha(51),
-                                  iconColor: themeProvider.seedColor,
-                                  icon: Icons.color_lens_outlined,
-                                  title: 'Accent Color',
-                                  trailing: Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: themeProvider.seedColor,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  onTap: () =>
-                                      _showColorPicker(context, themeProvider),
-                                ),
-                          ),
-                          TileDivider(isDark: isDark),
-                          SettingsTile(
-                            isDark: isDark,
-                            iconBg: const Color(0xFF34D399).withAlpha(51),
-                            iconColor: const Color(0xFF34D399),
-                            icon: Icons.translate,
-                            title: 'Language',
-                            trailing: Text(
-                              'English (US)',
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                            onTap: () => _showComingSoon(context, 'Language'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // VOICE ASSISTANT
-                      SectionLabel(label: 'Voice Assistant'),
-                      Consumer<VoiceAssistantService>(
-                        builder: (context, voice, _) {
-                          return GroupedContainer(
-                            isDark: isDark,
-                            children: [
-                              ToggleTile(
-                                isDark: isDark,
-                                iconBg: AppColors.primary.withAlpha(51),
-                              iconColor: AppColors.primary,
-                                icon: Icons.hearing_rounded,
-                                title: '"Hey Bubbles" Wake Word',
-                                value: voice.isWakeWordEnabled,
-                                onChanged: (val) =>
-                                    voice.setWakeWordEnabled(val),
-                              ),
-                              TileDivider(isDark: isDark),
-                              SettingsTile(
-                                isDark: isDark,
-                                iconBg: Colors.teal.withAlpha(51),
-                                iconColor: Colors.tealAccent.shade700,
-                                icon: Icons.record_voice_over_outlined,
-                                title: 'Voice Mode',
-                                trailing: Text(
-                                  voice.voiceMode.name[0].toUpperCase() +
-                                      voice.voiceMode.name.substring(1),
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 13,
-                                    color: AppColors.textMuted,
-                                  ),
-                                ),
-                                onTap: () =>
-                                    _showVoiceModePicker(context, voice),
-                              ),
-                              TileDivider(isDark: isDark),
-                              VoiceEnrollmentSection(isDark: isDark),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 24),
-
-                      // PRIVACY
-                      SectionLabel(label: 'Privacy'),
-                      GroupedContainer(
-                        isDark: isDark,
-                        children: [
-                          SettingsTile(
-                            isDark: isDark,
-                            iconBg: Colors.grey.withAlpha(51),
-                            iconColor: isDark
-                                ? AppColors.slate300
-                                : Colors.grey.shade600,
-                            icon: Icons.storage_outlined,
-                            title: 'Data Management',
-                            onTap: () =>
-                                _showComingSoon(context, 'Data Management'),
-                          ),
-                          TileDivider(isDark: isDark),
-                          SettingsTile(
-                            isDark: isDark,
-                            iconBg: Colors.grey.withAlpha(51),
-                            iconColor: isDark
-                                ? AppColors.slate300
-                                : Colors.grey.shade600,
-                            icon: Icons.lock_outline,
-                            title: 'Permissions',
-                            onTap: () =>
-                                _showComingSoon(context, 'Permissions'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-
-                      // NOTIFICATIONS
-                      SectionLabel(label: 'Notifications'),
-                      Consumer<ConnectionService>(
-                        builder: (context, conn, _) => GroupedContainer(
-                          isDark: isDark,
-                          children: [
-                            ToggleTile(
-                              isDark: isDark,
-                              iconBg: const Color(0xFFF43F5E).withAlpha(51),
-                              iconColor: const Color(0xFFF43F5E),
-                              icon: Icons.notifications_outlined,
-                              title: 'Push Notifications',
-                              value: true,
-                              onChanged: (_) => _showComingSoon(
-                                context,
-                                'Push Notifications',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-
-                      // ABOUT & SUPPORT
-                      SectionLabel(label: 'About & Support'),
-                      GroupedContainer(
-                        isDark: isDark,
-                        children: [
-                          SettingsTile(
-                            isDark: isDark,
-                            iconBg: AppColors.primary.withAlpha(38),
-                            iconColor: AppColors.primary,
-                            icon: Icons.info_outline_rounded,
-                            title: 'About Bubbles',
-                            onTap: () => Navigator.pushNamed(context, '/about'),
-                          ),
-                          TileDivider(isDark: isDark),
-                          SettingsTile(
-                            isDark: isDark,
-                            iconBg: const Color(0xFF10B981).withAlpha(38),
-                            iconColor: const Color(0xFF10B981),
-                            icon: Icons.mail_outline_rounded,
-                            title: 'Contact Us',
-                            onTap: () => _showContactSheet(context, isDark),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-
-                      // LOG OUT
-                      _isLoggingOut
-                          ? const Center(child: CircularProgressIndicator())
-                          : GestureDetector(
-                              onTap: _logout,
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 16,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isDark
-                                      ? AppColors.glassWhite
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.xxl,
-                                  ),
-                                  border: Border.all(
-                                    color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    'Log Out',
-                                    style: GoogleFonts.manrope(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w700,
-                                      color: AppColors.error,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                      const SizedBox(height: 20),
-
-                      // Version
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              'Bubbles v1.0.4',
-                              style: GoogleFonts.manrope(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? AppColors.slate600
-                                    : AppColors.slate400,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Made with AI Love',
-                              style: GoogleFonts.manrope(
-                                fontSize: 11,
-                                color: isDark
-                                    ? AppColors.slate700
-                                    : AppColors.slate300,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 30),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+  Widget _buildHeader(BuildContext context, bool isDark) {
+    return SafeArea(
+      bottom: false,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? BubblesColors.glassHeaderDark : BubblesColors.bgLight,
+          border: Border(
+            bottom: BorderSide(
+              color: isDark ? const Color(0x1A13BDEC) : const Color(0x0F000000),
+            ),
           ),
         ),
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.arrow_back,
+                color: isDark ? BubblesColors.textPrimaryDark : BubblesColors.textPrimaryLight),
+              onPressed: () => Navigator.pop(context),
+            ),
+            Expanded(
+              child: Text('Settings', style: GoogleFonts.manrope(
+                fontSize: 18, fontWeight: FontWeight.w700,
+                color: isDark ? BubblesColors.textPrimaryDark : BubblesColors.textPrimaryLight,
+              )),
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showThemeModePicker(BuildContext context, ThemeProvider themeProvider) =>
-      showThemeModePicker(context, themeProvider);
+  Widget _buildAccountCard(BuildContext ctx, String name, String email,
+      String? avatarUrl, bool isDark) {
+    return GlassBox(
+      borderRadius: 16, padding: const EdgeInsets.all(16),
+      bgColor: isDark ? BubblesColors.glassDark : const Color(0xFFF0F9FF),
+      borderColor: isDark ? BubblesColors.glassBorderDark : const Color(0x3313BDEC),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: BubblesColors.primary.withOpacity(0.2),
+            backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+            child: avatarUrl == null
+                ? Text(name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                    style: GoogleFonts.manrope(
+                      fontSize: 18, fontWeight: FontWeight.w800,
+                      color: BubblesColors.primary,
+                    ))
+                : null,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name, style: GoogleFonts.manrope(
+                  fontSize: 15, fontWeight: FontWeight.w700,
+                  color: isDark ? BubblesColors.textPrimaryDark : BubblesColors.textPrimaryLight,
+                )),
+                const SizedBox(height: 2),
+                Text(email, style: TextStyle(
+                  fontSize: 12, color: isDark ? BubblesColors.textSecondaryDark : BubblesColors.textSecondaryLight,
+                )),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right,
+            color: isDark ? BubblesColors.textMutedDark : BubblesColors.textMutedLight),
+        ],
+      ),
+    );
+  }
 
-  void _showColorPicker(BuildContext context, ThemeProvider themeProvider) =>
-      showColorPicker(context, themeProvider);
+  Widget _buildPrefsCard(BuildContext ctx, bool isDark, ThemeProvider theme) {
+    return GlassBox(
+      borderRadius: 16, padding: const EdgeInsets.symmetric(vertical: 4),
+      bgColor: isDark ? BubblesColors.glassDark : const Color(0xFFF0F9FF),
+      borderColor: isDark ? BubblesColors.glassBorderDark : const Color(0x2013BDEC),
+      child: Column(
+        children: [
+          _ToggleTile(
+            icon: Icons.dark_mode_outlined,
+            label: 'Dark Mode',
+            value: isDark,
+            onChanged: (_) => theme.setThemeMode(theme.themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark),
+            isDark: isDark,
+          ),
+          _Divider(isDark),
+          _ToggleTile(
+            icon: Icons.notifications_outlined,
+            label: 'Notifications',
+            value: true,
+            onChanged: (_) {},
+            isDark: isDark,
+          ),
+          _Divider(isDark),
+          _NavTile(
+            icon: Icons.palette_outlined,
+            label: 'Accent Color',
+            trailing: Container(
+              width: 20, height: 20,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle, color: BubblesColors.primary,
+              ),
+            ),
+            onTap: () {},
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
 
-  void _showVoiceModePicker(BuildContext context, VoiceAssistantService voice) =>
-      showVoiceModePicker(context, voice);
+  Widget _buildVoiceCard(BuildContext ctx, bool isDark) {
+    return GlassBox(
+      borderRadius: 16, padding: const EdgeInsets.symmetric(vertical: 4),
+      bgColor: isDark ? BubblesColors.glassDark : const Color(0xFFF0F9FF),
+      borderColor: isDark ? BubblesColors.glassBorderDark : const Color(0x2013BDEC),
+      child: Column(
+        children: [
+          _ToggleTile(
+            icon: Icons.mic_outlined,
+            label: 'Wake Word Detection',
+            value: true,
+            onChanged: (_) {},
+            isDark: isDark,
+          ),
+          _Divider(isDark),
+          _ToggleTile(
+            icon: Icons.volume_up_outlined,
+            label: 'Voice Responses',
+            value: true,
+            onChanged: (_) {},
+            isDark: isDark,
+          ),
+          _Divider(isDark),
+          _NavTile(
+            icon: Icons.record_voice_over_outlined,
+            label: 'Voice Enrollment',
+            onTap: () {},
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAccountActionsCard(BuildContext ctx, bool isDark) {
+    return GlassBox(
+      borderRadius: 16, padding: const EdgeInsets.symmetric(vertical: 4),
+      bgColor: isDark ? BubblesColors.glassDark : const Color(0xFFF0F9FF),
+      borderColor: isDark ? BubblesColors.glassBorderDark : const Color(0x2013BDEC),
+      child: Column(
+        children: [
+          _NavTile(
+            icon: Icons.privacy_tip_outlined,
+            label: 'Privacy & Data',
+            onTap: () {},
+            isDark: isDark,
+          ),
+          _Divider(isDark),
+          _NavTile(
+            icon: Icons.info_outline,
+            label: 'About Bubbles',
+            onTap: () {},
+            isDark: isDark,
+          ),
+          _Divider(isDark),
+          _NavTile(
+            icon: Icons.logout,
+            label: 'Log Out',
+            color: const Color(0xFFF43F5E),
+            onTap: () => _confirmLogout(ctx),
+            isDark: isDark,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmLogout(BuildContext ctx) {
+    showDialog(
+      context: ctx,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassBox(
+          borderRadius: 20, padding: const EdgeInsets.all(24),
+          bgColor: BubblesColors.glassHeaderDark,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFFF43F5E).withOpacity(0.15),
+                ),
+                child: const Icon(Icons.logout, color: Color(0xFFF43F5E), size: 26),
+              ),
+              const SizedBox(height: 16),
+              Text('Log Out?', style: GoogleFonts.manrope(
+                fontSize: 18, fontWeight: FontWeight.w700,
+                color: BubblesColors.textPrimaryDark,
+              )),
+              const SizedBox(height: 8),
+              Text('You will need to log in again to access Bubbles.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: BubblesColors.textSecondaryDark),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton(
+                      label: 'Cancel',
+                      variant: AppButtonVariant.outlined,
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: AppButton(
+                      label: 'Log Out',
+                      variant: AppButtonVariant.danger,
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await Supabase.instance.client.auth.signOut();
+                        if (ctx.mounted) {
+                          Navigator.of(ctx).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            (_) => false,
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 4),
+    child: Text(text, style: TextStyle(
+      fontSize: 10, fontWeight: FontWeight.w700,
+      letterSpacing: 1.2, color: BubblesColors.textMutedDark,
+    )),
+  );
+}
+
+class _ToggleTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final bool isDark;
+  const _ToggleTile({required this.icon, required this.label, required this.value,
+    required this.onChanged, required this.isDark});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      dense: true,
+      leading: Icon(icon, color: BubblesColors.primary, size: 20),
+      title: Text(label, style: GoogleFonts.manrope(
+        fontSize: 14, fontWeight: FontWeight.w600,
+        color: isDark ? BubblesColors.textPrimaryDark : BubblesColors.textPrimaryLight,
+      )),
+      trailing: Switch.adaptive(
+        value: value,
+        onChanged: onChanged,
+        activeColor: BubblesColors.primary,
+      ),
+    );
+  }
+}
+
+class _NavTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool isDark;
+  final Color? color;
+  final Widget? trailing;
+  const _NavTile({required this.icon, required this.label, required this.onTap,
+    required this.isDark, this.color, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? (isDark ? BubblesColors.textPrimaryDark : BubblesColors.textPrimaryLight);
+    return ListTile(
+      dense: true,
+      onTap: onTap,
+      leading: Icon(icon, color: color ?? BubblesColors.primary, size: 20),
+      title: Text(label, style: GoogleFonts.manrope(
+        fontSize: 14, fontWeight: FontWeight.w600, color: c,
+      )),
+      trailing: trailing ?? Icon(Icons.chevron_right,
+        color: isDark ? BubblesColors.textMutedDark : BubblesColors.textMutedLight, size: 18),
+    );
+  }
+}
+
+class _Divider extends StatelessWidget {
+  final bool isDark;
+  const _Divider(this.isDark);
+  @override
+  Widget build(BuildContext context) => Divider(
+    height: 1,
+    color: isDark ? BubblesColors.glassBorderDark : const Color(0x0A000000),
+    indent: 55,
+  );
 }

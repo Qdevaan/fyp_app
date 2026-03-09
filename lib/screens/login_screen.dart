@@ -1,16 +1,13 @@
-﻿import 'dart:async';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
-
-import '../providers/theme_provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/design_tokens.dart';
-import '../services/auth_service.dart';
+import '../widgets/shared_widgets.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
-import '../widgets/social_button.dart';
-import '../widgets/app_logo.dart';
+import 'signup_screen.dart';
+import 'home_screen.dart';
+import 'verify_email_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,366 +16,240 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final AuthService _authService = AuthService.instance;
-  final _formKey = GlobalKey<FormState>();
-
+class _LoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-
-  bool _isEmailLoading = false;
-  bool _isGoogleLoading = false;
-  late final StreamSubscription<AuthState> _authSubscription;
+  bool _loading = false;
+  String? _error;
+  late AnimationController _fadeCtrl;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
     super.initState();
-    _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
-      data,
-    ) {
-      if (data.event == AuthChangeEvent.signedIn && data.session != null) {
-        if (!_isEmailLoading && mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
-      }
-    });
+    _fadeCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
+    _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero)
+        .animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
+    _fadeCtrl.forward();
   }
 
   @override
   void dispose() {
-    _authSubscription.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _fadeCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _showThemeSelectionDialog() async {
-    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-    await showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Select Theme',
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.brightness_auto),
-              title: Text('System Default', style: GoogleFonts.manrope()),
-              onTap: () {
-                themeProvider.setThemeMode(ThemeMode.system);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.light_mode),
-              title: Text('Light', style: GoogleFonts.manrope()),
-              onTap: () {
-                themeProvider.setThemeMode(ThemeMode.light);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.dark_mode),
-              title: Text('Dark', style: GoogleFonts.manrope()),
-              onTap: () {
-                themeProvider.setThemeMode(ThemeMode.dark);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _loginWithEmail() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isEmailLoading = true);
+  Future<void> _signIn() async {
+    setState(() { _loading = true; _error = null; });
     try {
-      await _authService.signInWithEmail(
-        _emailCtrl.text.trim(),
-        _passCtrl.text,
+      final res = await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
       );
-      if (mounted) {
-        await _showThemeSelectionDialog();
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
+      if (!mounted) return;
+      if (res.user != null) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()));
       }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString().replaceAll('Exception:', '').trim()),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        setState(() => _isEmailLoading = false);
-      }
+    } on AuthException catch (e) {
+      setState(() => _error = e.message);
+    } catch (_) {
+      setState(() => _error = 'Something went wrong. Please try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  Future<void> _loginWithGoogle() async {
-    setState(() => _isGoogleLoading = true);
+  Future<void> _signInWithGoogle() async {
+    setState(() { _loading = true; _error = null; });
     try {
-      await _authService.signInWithGoogle();
-      // Loading state will be cleared by the auth listener on sign-in
-      if (mounted) setState(() => _isGoogleLoading = false);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Google Sign in failed: $e')));
-        setState(() => _isGoogleLoading = false);
-      }
+      await Supabase.instance.client.auth.signInWithOAuth(OAuthProvider.google);
+    } catch (_) {
+      setState(() => _error = 'Google sign-in failed.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: Stack(
-        children: [
-          // Mesh gradient background
-          if (isDark) ...[
-            Positioned(
-              top: -120,
-              left: -120,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: -120,
-              right: -120,
-              child: Container(
-                width: 400,
-                height: 400,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
-                  ),
-                ),
-              ),
-            ),
-          ],
-
-          // Main Content
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Form(
-                key: _formKey,
+      body: BgMesh(
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const SizedBox(height: 60),
-
-                    // Header — Logo + Title
-                    Column(
-                      children: [
-                        const AppLogo(size: 80),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Welcome Back',
-                          style: GoogleFonts.manrope(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w200,
-                            color: isDark ? Colors.white : AppColors.slate900,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Your premium AI Wingman & Consultant',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.slate400,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 24),
+                    // Brand header
+                    GlassBox(
+                      borderRadius: 16,
+                      padding: const EdgeInsets.all(16),
+                      width: 60,
+                      height: 60,
+                      child: const Icon(Icons.bubble_chart, color: BubblesColors.primary, size: 32),
                     ),
-
+                    const SizedBox(height: 16),
+                    Text('Bubbles',
+                        style: GoogleFonts.manrope(
+                          fontSize: 32, fontWeight: FontWeight.w800,
+                          color: BubblesColors.textPrimaryDark, letterSpacing: -0.5,
+                        )),
+                    const SizedBox(height: 6),
+                    Text('Refined connectivity for the modern age.',
+                        style: GoogleFonts.manrope(
+                          fontSize: 14, fontWeight: FontWeight.w400,
+                          color: BubblesColors.textSecondaryDark, letterSpacing: 0.3,
+                        )),
                     const SizedBox(height: 40),
-
-                    // Form Fields
-                    AppInput(
-                      controller: _emailCtrl,
-                      label: 'Email',
-                      prefixIcon: Icons.email_outlined,
-                      type: TextInputType.emailAddress,
-                      hintText: 'Enter your email',
-                      validator: (v) =>
-                          v != null && v.contains('@') ? null : 'Invalid email',
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Password with Forgot Password
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Padding(
-                              padding: const EdgeInsets.only(left: 4, bottom: 8),
-                              child: Text(
-                                'PASSWORD',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 1.2,
-                                  color: isDark ? AppColors.slate400 : AppColors.slate500,
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
+                    // Card
+                    GlassBox(
+                      borderRadius: 20,
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Welcome Back',
+                              style: GoogleFonts.manrope(
+                                fontSize: 22, fontWeight: FontWeight.w700,
+                                color: BubblesColors.textPrimaryDark,
+                              )),
+                          const SizedBox(height: 6),
+                          Text('Enter your credentials to access your workspace.',
+                              style: GoogleFonts.manrope(
+                                fontSize: 13, fontWeight: FontWeight.w400,
+                                color: BubblesColors.textSecondaryDark,
+                              )),
+                          const SizedBox(height: 28),
+                          AppInput(
+                            label: 'Email Address',
+                            hint: 'name@example.com',
+                            controller: _emailCtrl,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            prefix: Icon(Icons.mail_outline, size: 18,
+                                color: BubblesColors.textMutedDark),
+                          ),
+                          const SizedBox(height: 20),
+                          AppInput(
+                            label: 'Password',
+                            hint: '••••••••',
+                            controller: _passCtrl,
+                            obscureText: true,
+                            textInputAction: TextInputAction.done,
+                            onEditingComplete: _signIn,
+                            prefix: Icon(Icons.lock_outline, size: 18,
+                                color: BubblesColors.textMutedDark),
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: GestureDetector(
                               onTap: () {},
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Text(
-                                  'Forgot Password?',
+                              child: Text('Forgot?',
                                   style: GoogleFonts.manrope(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
+                                    fontSize: 12, fontWeight: FontWeight.w700,
+                                    color: BubblesColors.primary, letterSpacing: 0.5,
+                                  )),
+                            ),
+                          ),
+                          if (_error != null) ...[
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: BubblesColors.error.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: BubblesColors.error.withOpacity(0.3)),
                               ),
+                              child: Text(_error!,
+                                  style: TextStyle(color: BubblesColors.error, fontSize: 12)),
                             ),
                           ],
-                        ),
-                        AppInput(
-                          controller: _passCtrl,
-                          label: '',
-                          prefixIcon: Icons.lock_outline,
-                          obscure: true,
-                          hintText: 'Enter your password',
-                          validator: (v) => v != null && v.length >= 6
-                              ? null
-                              : 'Min 6 characters',
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Login Button — gradient primary
-                    AppButton(
-                      label: 'Log In',
-                      icon: Icons.arrow_forward,
-                      onTap: _loginWithEmail,
-                      loading: _isEmailLoading,
-                      filled: true,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // Divider
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Divider(
-                            color: isDark ? AppColors.glassBorder : AppColors.slate200,
+                          const SizedBox(height: 24),
+                          AppButton(
+                            label: 'Sign In',
+                            onPressed: _signIn,
+                            loading: _loading,
+                            fullWidth: true,
+                            trailingIcon: Icons.arrow_forward,
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
-                          child: Text(
-                            'Or continue with',
-                            style: GoogleFonts.manrope(
-                              fontSize: 12,
-                              color: AppColors.slate500,
+                          const SizedBox(height: 24),
+                          // Divider
+                          Row(children: [
+                            const Expanded(child: Divider(color: Color(0x14FFFFFF))),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              child: Text('OR CONTINUE WITH',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 10, fontWeight: FontWeight.w600,
+                                    color: BubblesColors.textMutedDark, letterSpacing: 1.5,
+                                  )),
+                            ),
+                            const Expanded(child: Divider(color: Color(0x14FFFFFF))),
+                          ]),
+                          const SizedBox(height: 16),
+                          // Google button
+                          GestureDetector(
+                            onTap: _signInWithGoogle,
+                            child: Container(
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: BubblesColors.glassDark,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: BubblesColors.glassBorderDark),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.g_mobiledata, color: BubblesColors.textPrimaryDark, size: 22),
+                                  const SizedBox(width: 8),
+                                  Text('Continue with Google',
+                                      style: GoogleFonts.manrope(
+                                        fontSize: 14, fontWeight: FontWeight.w600,
+                                        color: BubblesColors.textPrimaryDark,
+                                      )),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Divider(
-                            color: isDark ? AppColors.glassBorder : AppColors.slate200,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Social Buttons
-                    SocialButton(
-                      label: 'Continue with Google',
-                      imagePath: 'assets/logos/google_logo.png',
-                      onTap: _loginWithGoogle,
-                      loading: _isGoogleLoading,
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Footer
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          'New to Bubbles? ',
-                          style: GoogleFonts.manrope(
-                            fontSize: 14,
-                            color: AppColors.slate400,
-                          ),
-                        ),
+                        Text("Don't have an account? ",
+                            style: TextStyle(color: BubblesColors.textSecondaryDark, fontSize: 13)),
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/signup'),
-                          child: Text(
-                            'Sign Up',
-                            style: GoogleFonts.manrope(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
-                            ),
-                          ),
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const SignupScreen())),
+                          child: Text('Create an account',
+                              style: GoogleFonts.manrope(
+                                fontSize: 13, fontWeight: FontWeight.w700,
+                                color: BubblesColors.primary,
+                              )),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
           ),
-
-          // Bottom accent line
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              height: 1,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.transparent,
-                    AppColors.primary.withAlpha(128),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

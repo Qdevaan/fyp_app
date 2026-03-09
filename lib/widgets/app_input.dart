@@ -2,30 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
 
+// ============================================================
+//  Bubbles Glass Input
+// ============================================================
+
 class AppInput extends StatefulWidget {
-  final TextEditingController controller;
-  final String label;
-  final IconData? prefixIcon;
-  final TextInputType type;
-  final bool obscure;
-  final String? Function(String?)? validator;
-  final String? hintText;
-  final bool readOnly;
-  final VoidCallback? onTap;
-  final IconData? suffixIcon;
+  final String? label;
+  final String? hint;
+  final TextEditingController? controller;
+  final bool obscureText;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final Widget? prefix;
+  final Widget? suffix;
+  final String? errorText;
+  final ValueChanged<String>? onChanged;
+  final VoidCallback? onEditingComplete;
+  final bool enabled;
+  final int? maxLines;
 
   const AppInput({
     super.key,
-    required this.controller,
-    required this.label,
-    this.prefixIcon,
-    this.type = TextInputType.text,
-    this.obscure = false,
-    this.validator,
-    this.hintText,
-    this.readOnly = false,
-    this.onTap,
-    this.suffixIcon,
+    this.label,
+    this.hint,
+    this.controller,
+    this.obscureText = false,
+    this.keyboardType,
+    this.textInputAction,
+    this.prefix,
+    this.suffix,
+    this.errorText,
+    this.onChanged,
+    this.onEditingComplete,
+    this.enabled = true,
+    this.maxLines = 1,
   });
 
   @override
@@ -33,96 +43,128 @@ class AppInput extends StatefulWidget {
 }
 
 class _AppInputState extends State<AppInput> {
-  bool _hidden = true;
+  bool _focused = false;
+  late bool _obscure;
+  late FocusNode _node;
+
+  @override
+  void initState() {
+    super.initState();
+    _obscure = widget.obscureText;
+    _node = FocusNode()..addListener(() => setState(() => _focused = _node.hasFocus));
+  }
+
+  @override
+  void dispose() {
+    _node.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isPassword = widget.obscure;
+    final hasError = widget.errorText != null;
+
+    Color borderColor;
+    if (hasError) {
+      borderColor = BubblesColors.error.withOpacity(0.6);
+    } else if (_focused) {
+      borderColor = BubblesColors.primary.withOpacity(0.6);
+    } else {
+      borderColor = isDark ? BubblesColors.glassBorderDark : const Color(0x14000000);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (widget.label.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text(
-              widget.label.toUpperCase(),
-              style: GoogleFonts.manrope(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2,
-                color: isDark ? AppColors.slate400 : AppColors.slate500,
-              ),
+        if (widget.label != null) ...[
+          Text(
+            widget.label!.toUpperCase(),
+            style: GoogleFonts.manrope(
+              fontSize: 10, fontWeight: FontWeight.w700,
+              color: isDark ? BubblesColors.textMutedDark : BubblesColors.textMutedLight,
+              letterSpacing: 1.2,
             ),
           ),
-        TextFormField(
-          controller: widget.controller,
-          keyboardType: widget.type,
-          obscureText: isPassword ? _hidden : false,
-          validator: widget.validator,
-          readOnly: widget.readOnly,
-          onTap: widget.onTap,
-          style: GoogleFonts.manrope(
-            fontSize: 15,
-            color: isDark ? Colors.white : AppColors.slate900,
-          ),
-          decoration: InputDecoration(
-            hintText: widget.hintText ?? 'Enter ${widget.label.toLowerCase()}',
-            hintStyle: GoogleFonts.manrope(
-              fontSize: 15,
-              color: isDark ? AppColors.slate500 : AppColors.slate400,
-            ),
-            prefixIcon: widget.prefixIcon != null
-                ? Icon(
-                    widget.prefixIcon,
-                    size: 20,
-                    color: AppColors.slate400,
-                  )
-                : null,
-            suffixIcon: isPassword
-                ? IconButton(
-                    icon: Icon(
-                      _hidden ? Icons.visibility_off : Icons.visibility,
-                      size: 20,
-                      color: AppColors.slate400,
+          const SizedBox(height: 6),
+        ],
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isDark ? BubblesColors.glassDark : BubblesColors.glassLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: borderColor, width: 1.2),
+            boxShadow: _focused
+                ? [
+                    BoxShadow(
+                      color: (hasError ? BubblesColors.error : BubblesColors.primary)
+                          .withOpacity(0.12),
+                      blurRadius: 12,
+                      spreadRadius: 0,
                     ),
-                    onPressed: () => setState(() => _hidden = !_hidden),
-                  )
-                : (widget.suffixIcon != null
-                      ? Icon(widget.suffixIcon, size: 20, color: AppColors.slate400)
-                      : null),
-            filled: true,
-            fillColor: isDark ? AppColors.glassInput : Colors.white.withAlpha(200),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.glassBorder : AppColors.slate200,
+                  ]
+                : null,
+          ),
+          child: Row(
+            children: [
+              if (widget.prefix != null) ...[
+                const SizedBox(width: 12),
+                widget.prefix!,
+              ],
+              Expanded(
+                child: TextField(
+                  controller: widget.controller,
+                  obscureText: _obscure,
+                  keyboardType: widget.keyboardType,
+                  textInputAction: widget.textInputAction,
+                  focusNode: _node,
+                  enabled: widget.enabled,
+                  maxLines: _obscure ? 1 : widget.maxLines,
+                  onChanged: widget.onChanged,
+                  onEditingComplete: widget.onEditingComplete,
+                  style: GoogleFonts.manrope(
+                    fontSize: 15, fontWeight: FontWeight.w500,
+                    color: isDark ? BubblesColors.textPrimaryDark : BubblesColors.textPrimaryLight,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: widget.hint,
+                    hintStyle: GoogleFonts.manrope(
+                      fontSize: 15, fontWeight: FontWeight.w400,
+                      color: isDark ? BubblesColors.textMutedDark : BubblesColors.textMutedLight,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  ),
+                ),
               ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: BorderSide(
-                color: isDark ? AppColors.glassBorder : AppColors.slate200,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: BorderSide(
-                color: AppColors.primary,
-                width: 2,
-              ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              borderSide: const BorderSide(color: AppColors.error),
-            ),
+              if (widget.obscureText) ...[
+                IconButton(
+                  onPressed: () => setState(() => _obscure = !_obscure),
+                  icon: Icon(
+                    _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                    size: 18,
+                    color: isDark ? BubblesColors.textMutedDark : BubblesColors.textMutedLight,
+                  ),
+                ),
+              ] else if (widget.suffix != null) ...[
+                const SizedBox(width: 4),
+                widget.suffix!,
+                const SizedBox(width: 8),
+              ],
+            ],
           ),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 4),
+          Text(
+            widget.errorText!,
+            style: TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w500,
+              color: BubblesColors.error,
+            ),
+          ),
+        ],
       ],
     );
   }
