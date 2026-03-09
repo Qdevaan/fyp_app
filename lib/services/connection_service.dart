@@ -3,8 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
+import 'package:connectivity_plus/connectivity_plus.dart';
 
-enum ConnectionStatus { disconnected, connecting, connected, error }
+enum ConnectionStatus { disconnected, connecting, connected, error, offline }
 
 class ConnectionService with ChangeNotifier {
   // --- Private State ---
@@ -12,6 +13,10 @@ class ConnectionService with ChangeNotifier {
   ConnectionStatus _status = ConnectionStatus.disconnected;
   Timer? _statusCheckTimer;
   bool _isChecking = false;
+  
+  // -- Connectivity --
+  final Connectivity _connectivity = Connectivity();
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
 
   // --- Public Getters ---
   String get serverUrl => _serverUrl;
@@ -22,7 +27,28 @@ class ConnectionService with ChangeNotifier {
 
   // --- Initialization ---
   ConnectionService() {
+    _initConnectivity();
     _loadSavedUrlAndInitialCheck();
+  }
+
+  Future<void> _initConnectivity() async {
+    // Initial check
+    final results = await _connectivity.checkConnectivity();
+    _handleConnectivityChange(results);
+    
+    // Listen for changes
+    _connectivitySubscription = _connectivity.onConnectivityChanged.listen(_handleConnectivityChange);
+  }
+
+  void _handleConnectivityChange(List<ConnectivityResult> results) {
+    if (results.contains(ConnectivityResult.none)) {
+      _updateStatus(ConnectionStatus.offline);
+    } else {
+      if (_status == ConnectionStatus.offline) {
+        _updateStatus(ConnectionStatus.disconnected);
+        checkConnection();
+      }
+    }
   }
 
   // --- URL Management ---
@@ -70,6 +96,8 @@ class ConnectionService with ChangeNotifier {
 
   // --- Connection Testing ---
   Future<bool> checkConnection({bool notifyResult = true}) async {
+    if (_status == ConnectionStatus.offline) return false;
+    
     if (_serverUrl.isEmpty) {
       _updateStatus(ConnectionStatus.disconnected);
       return false;
@@ -129,6 +157,7 @@ class ConnectionService with ChangeNotifier {
   @override
   void dispose() {
     _statusCheckTimer?.cancel();
+    _connectivitySubscription?.cancel();
     super.dispose();
   }
 }

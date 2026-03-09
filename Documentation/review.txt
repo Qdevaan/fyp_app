@@ -1,0 +1,102 @@
+================================================================================
+                    BUBBLES AI ASSISTANT — PROJECT REVIEW
+================================================================================
+Date: March 2026
+Objective: Provide a brutal, unvarnished look at the current state of "Bubbles",
+           what is built, what is left, and the Good/Bad/Ugly of the codebase.
+
+--------------------------------------------------------------------------------
+1. CORE CONCEPT
+--------------------------------------------------------------------------------
+Bubbles is a dual-engine AI app designed to listen and assist users via audio:
+- The Wingman (Real-Time): Uses Llama 3 8B (via fast Groq inference), LiveKit,
+  and Deepgram to provide real-time strategic advice during live conversations.
+- The Consultant (Deep Dive): Uses Llama 3 70B for detailed Q&A. Pulls context 
+  using a heavy RAG architecture comprising both Vector Long-Term Memory (MiniLM
+  embeddings) and a Semantic Knowledge Graph (NetworkX).
+
+--------------------------------------------------------------------------------
+2. WHAT HAS BEEN DONE SO FAR (ACHIEVEMENTS)
+--------------------------------------------------------------------------------
+[x] INFRASTRUCTURE
+    - Complex Supabase Database Schema executed (13 tables handling sessions,
+      vectors, graph nodes, relationships, and consultant logs).
+    - pgvector and pg_trgm extensions active.
+    - Supabase Realtime subscriptions mapped for live Flutter UI updates.
+
+[x] FRONTEND (FLUTTER APP)
+    - Full authentication flow (Signup, Login, Verification, Registration).
+    - Polished UI framework built (Home, Session History, Connections, Entity
+      viewing, Settings, Consultant Mode).
+    - Audio Services integrated: LiveKit streaming, Deepgram transcription,
+      Porcupine wake-word ("hey-bubbles"), Speech-To-Text tools.
+    - Provider-based Theme management.
+
+[x] BACKEND (PYTHON APP)
+    - Fully functional pipeline processing audio, transcribing it, storing facts
+      into a Knowledge Graph, and generating embeddings.
+    - Groq integration for millisecond latency on LLM generations.
+    - Advanced context memory structure combining `match_memory` Similarity 
+      Search (pgvector) and relationship arrays.
+    - Automatic Ngrok tunneling implemented for rapid local-to-phone testing.
+    - Voice Enrollment features built via SpeechBrain identity vectors. 
+
+--------------------------------------------------------------------------------
+3. WHAT NEEDS TO BE DONE (THE ROADMAP)
+--------------------------------------------------------------------------------
+APP (FLUTTER):
+[ ] Offline Capability: Graceful degradation and caching if the user drops cell
+    reception.
+[ ] Hardware Tuning: Voice overlay and Wake-word processing chew through battery 
+    cycles. Needs strict optimization to avoid background drain.
+[ ] E2E Latency Checks: Wingman mode needs to rigorously ensure the round trip 
+    (Audio -> Text -> LLM -> Text -> App) is strictly under 2 seconds.
+
+SERVER (PYTHON) / INFRASTRUCTURE:
+[ ] Proper Platform Deployment: Stop using PyNgrok localized tunnels. The APIs 
+    need to be hosted 24/7 on AWS/GCP/Render or Railway.
+[ ] Diarization Calibration: Deepgram & Speechbrain integration need robust testing
+    to infallibly split "User vs. External Speaker" and avoid crossing context streams.
+[ ] Supabase RLS: Currently, ALL 13 tables are wide open (policies globally OFF). 
+    RLS must be properly re-enabled with Row Level Security tied to auth.uid().
+[ ] Hallucination Guardrails: Tighten NetworkX extraction logic to ensure the AI 
+    doesn't generate fake entity relations during messy cross-talk.
+
+--------------------------------------------------------------------------------
+4. THE GOOD, THE BAD, AND THE UGLY
+--------------------------------------------------------------------------------
+
+THE GOOD:
+- Ambitious Brain Architecture: The combination of Vector Memory + a dedicated
+  Knowledge Graph in Supabase JSONB is extremely powerful. Far superior to basic 
+  chatbot memory.
+- Tech Stack Choice: Groq + LiveKit is the absolute cutting edge for dropping 
+  latency natively. Realtime database syncs mean your Flutter UI doesn't need 
+  complex socket handlers, it just updates magically.
+- Solid Scope: The dual mode (Wingman vs Consultant) perfectly separates fast, 
+  shallow inference from slow, deep reasoning.
+
+THE BAD:
+- Monolithic Backend: `new_server.py` is nearly ~1800 lines of code. GraphService, 
+  VectorService, BrainService, routing, ngrok tunneling, and websockets are all
+  mashed into a single file. This needs to be shattered into modular folders 
+  (e.g., `/routers`, `/services`, `/models`).
+- [RESOLVED] "Fat" Flutter Screens: Flutter views were bloated. `settings_screen.dart`
+  was ~1700 lines, `consultant_screen.dart` was ~1500 lines. We have extracted these 
+  into `lib/widgets/settings/` and `lib/widgets/consultant/` keeping main files 
+  leaner and logic separated. 
+
+THE UGLY:
+- Total Lack of Database Security: RLS disabled is fine for day 1, but right now
+  a leaked anon key allows completely bypassing authentication to wipe or corrupt
+  every user's memory and transcript data.
+- Ngrok in Production logic: Initializing ngrok tunnels inline inside the FastAPI 
+  server loop is considered an antipattern for anything approaching production. 
+  It creates brittle, stateful local dependencies.
+- Poorly Isolated State: Without extracting components, adjusting the layout of
+  the consultant screen will directly risk breaking the API state. Flutter
+  projects demand granular customized widgets.
+
+================================================================================
+END OF REVIEW
+================================================================================

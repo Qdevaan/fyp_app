@@ -7,6 +7,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   connectivity_plus
   file_selector_windows
+  flutter_sound
   flutter_tts
   flutter_webrtc
   livekit_client

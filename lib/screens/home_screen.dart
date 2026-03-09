@@ -280,7 +280,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthService.instance.currentUser;
-    final name = _profile?['full_name'] ?? 'Guest';
+    final name =
+        _profile?['full_name'] ??
+        user?.userMetadata?['full_name'] ??
+        user?.userMetadata?['name'] ??
+        'Guest';
     final firstName = name.toString().split(' ').first;
     final avatarUrl =
         _profile?['avatar_url'] ?? user?.userMetadata?['avatar_url'];

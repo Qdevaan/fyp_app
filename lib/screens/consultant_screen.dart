@@ -19,13 +19,15 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/connection_service.dart';
 import '../widgets/app_logo.dart';
+import '../widgets/consultant/voice_mode.dart';
+import '../widgets/consultant/consultant_widgets.dart';
 
-// ─── Voice mode state for the consultant ────────
-enum _CVoiceMode { off, listening, processing, speaking }
+// â”€â”€â”€ Voice mode state for the consultant â”€â”€â”€â”€â”€â”€â”€â”€
 
-// ────────────────────────────────────────────
+
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  CONSULTANT SCREEN  (ChatGPT-style multi-chat)
-// ────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class ConsultantScreen extends StatefulWidget {
   const ConsultantScreen({super.key});
 
@@ -40,20 +42,20 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   final _scaffoldKey = GlobalKey<ScaffoldState>();
   final _supabase = Supabase.instance.client;
 
-  // ── Current chat ──────────────────────────
+  // â”€â”€ Current chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   String? _currentSessionId;
   final List<Map<String, String>> _messages = [];
   bool _loading = false;
   bool _showScrollToBottom = false;
 
-  // ── Drawer / past chats ───────────────────
+  // â”€â”€ Drawer / past chats â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   List<Map<String, dynamic>> _pastChats = [];
   bool _drawerLoading = false;
   bool _drawerLoaded = false;
   bool _loadingChat = false; // loading messages for a selected past chat
 
-  // ── Hands-free voice mode ─────────────────
-  _CVoiceMode _voiceMode = _CVoiceMode.off;
+  // â”€â”€ Hands-free voice mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  CVoiceMode _voiceMode = CVoiceMode.off;
   final SpeechToText _stt = SpeechToText();
   bool _sttReady = false;
   final AudioPlayer _ttsPlayer = AudioPlayer();
@@ -63,7 +65,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   late final Animation<double> _micPulseAnim;
 
   static const _welcomeMsg =
-      "Hello! I'm your Consultant AI.\n\nI have access to your **knowledge graph**, **session memories**, and **past summaries**. Ask me anything about your conversations, relationships, or decisions.";
+      "Hello! I'm your Consultant AI.\import '../widgets/consultant/voice_mode.dart';\nimport '../widgets/consultant/consultant_widgets.dart';\nn\nI have access to your **knowledge graph**, **session memories**, and **past summaries**. Ask me anything about your conversations, relationships, or decisions.";
 
   @override
   void initState() {
@@ -110,7 +112,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     if (show != _showScrollToBottom) setState(() => _showScrollToBottom = show);
   }
 
-  // ── New / clear chat ──────────────────────
+  // â”€â”€ New / clear chat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _newChat() {
     Navigator.pop(context); // close drawer
     setState(() {
@@ -121,7 +123,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     });
   }
 
-  // ── Load sidebar chat list ─────────────────
+  // â”€â”€ Load sidebar chat list â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Future<void> _loadPastChats() async {
     if (_drawerLoading) return;
     final user = AuthService.instance.currentUser;
@@ -167,7 +169,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     }
   }
 
-  // ── Load messages for a selected past chat ─
+  // â”€â”€ Load messages for a selected past chat â”€
   Future<void> _loadChatById(String sessionId) async {
     if (_loadingChat) return;
     final user = AuthService.instance.currentUser;
@@ -209,7 +211,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     }
   }
 
-  // ── Not-connected dialog ─────────────────
+  // â”€â”€ Not-connected dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _showNotConnectedDialog() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
@@ -276,7 +278,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     );
   }
 
-  // ── Send message (SSE streaming) ───────────
+  // â”€â”€ Send message (SSE streaming) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   void _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty || _loading || _loadingChat) return;
@@ -316,7 +318,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
           if (mounted) {
             setState(() {
               _currentSessionId = sid;
-              _drawerLoaded = false; // stale — will reload on next drawer open
+              _drawerLoaded = false; // stale â€” will reload on next drawer open
             });
           }
         },
@@ -373,7 +375,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     });
   }
 
-  // ── Current time helper ──────────────────────
+  // â”€â”€ Current time helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   String _nowTime() {
     final dt = DateTime.now();
     final h = dt.hour;
@@ -383,31 +385,31 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     return '$hour12:$m $period';
   }
 
-  // ══════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  HANDS-FREE VOICE MODE
-  // ══════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   Future<void> _initVoice() async {
     _sttReady = await _stt.initialize(
-      onError: (e) => debugPrint('🎙️ STT error: ${e.errorMsg}'),
+      onError: (e) => debugPrint('ðŸŽ™ï¸ STT error: ${e.errorMsg}'),
     );
     // When TTS audio ends, auto-restart listening if still in voice mode
     _ttsPlayer.onPlayerComplete.listen((_) {
       if (_voiceModeActive && mounted) {
-        _setVoiceMode(_CVoiceMode.listening);
+        _setVoiceMode(CVoiceMode.listening);
         _startSTT();
       }
     });
   }
 
-  void _setVoiceMode(_CVoiceMode mode) {
+  void _setVoiceMode(CVoiceMode mode) {
     if (!mounted) return;
     setState(() => _voiceMode = mode);
   }
 
   /// Toggle hands-free mode on / off.
   void _toggleVoiceMode() {
-    if (_voiceMode == _CVoiceMode.off) {
+    if (_voiceMode == CVoiceMode.off) {
       _startVoiceMode();
     } else {
       _stopVoiceMode();
@@ -422,7 +424,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       return;
     }
     _voiceModeActive = true;
-    _setVoiceMode(_CVoiceMode.listening);
+    _setVoiceMode(CVoiceMode.listening);
     _startSTT();
   }
 
@@ -430,15 +432,15 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     _voiceModeActive = false;
     _ttsPlayer.stop();
     _stt.stop();
-    _setVoiceMode(_CVoiceMode.off);
+    _setVoiceMode(CVoiceMode.off);
     setState(() => _voicePartial = '');
   }
 
   /// Interrupt mid-speak / mid-listen and start listening instead.
   void _interruptAndListen() {
-    if (_voiceMode == _CVoiceMode.speaking) {
+    if (_voiceMode == CVoiceMode.speaking) {
       _ttsPlayer.stop(); // onPlayerComplete will NOT fire when stopped manually
-      _setVoiceMode(_CVoiceMode.listening);
+      _setVoiceMode(CVoiceMode.listening);
       _startSTT();
     }
   }
@@ -461,7 +463,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     if (result.finalResult) {
       final text = result.recognizedWords.trim();
       if (text.isEmpty) {
-        // Nothing heard — keep listening
+        // Nothing heard â€” keep listening
         _startSTT();
         return;
       }
@@ -486,7 +488,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     setState(() {
       _voicePartial = '';
       _messages.add({'role': 'user', 'text': text, 'time': _nowTime()});
-      _voiceMode = _CVoiceMode.processing;
+      _voiceMode = CVoiceMode.processing;
       _loading = true;
     });
     _scrollToBottom();
@@ -518,7 +520,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
           setState(() {
             _loading = false;
             _messages.add({'role': 'ai', 'text': buf.toString(), 'streaming': 'true', 'time': aiTime});
-            _voiceMode = _CVoiceMode.speaking; // show speaking state while streaming
+            _voiceMode = CVoiceMode.speaking; // show speaking state while streaming
           });
           firstToken = false;
         } else {
@@ -547,7 +549,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
             _messages.add({'role': 'ai', 'text': 'Error: $e', 'time': _nowTime()});
           }
           _loading = false;
-          _voiceMode = _CVoiceMode.listening;
+          _voiceMode = CVoiceMode.listening;
         });
         _startSTT();
       }
@@ -570,15 +572,15 @@ class _ConsultantScreenState extends State<ConsultantScreen>
 
     final apiKey = dotenv.env['DEEPGRAM_API_KEY'] ?? '';
     if (apiKey.isEmpty) {
-      debugPrint('⚠️ No Deepgram API key — skipping TTS');
+      debugPrint('âš ï¸ No Deepgram API key â€” skipping TTS');
       if (_voiceModeActive && mounted) {
-        _setVoiceMode(_CVoiceMode.listening);
+        _setVoiceMode(CVoiceMode.listening);
         _startSTT();
       }
       return;
     }
 
-    _setVoiceMode(_CVoiceMode.speaking);
+    _setVoiceMode(CVoiceMode.speaking);
 
     try {
       final response = await http.post(
@@ -597,27 +599,27 @@ class _ConsultantScreenState extends State<ConsultantScreen>
         await _ttsPlayer.play(DeviceFileSource(file.path));
         // onPlayerComplete in _initVoice handles restarting STT
       } else {
-        debugPrint('❌ TTS error: ${response.statusCode}');
+        debugPrint('âŒ TTS error: ${response.statusCode}');
         if (_voiceModeActive && mounted) {
-          _setVoiceMode(_CVoiceMode.listening);
+          _setVoiceMode(CVoiceMode.listening);
           _startSTT();
         }
       }
     } catch (e) {
-      debugPrint('❌ TTS network error: $e');
+      debugPrint('âŒ TTS network error: $e');
       if (_voiceModeActive && mounted) {
-        _setVoiceMode(_CVoiceMode.listening);
+        _setVoiceMode(CVoiceMode.listening);
         _startSTT();
       }
     }
   }
 
-  // ══════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
-  // ── Helpers ────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   String _chatTitle(Map<String, dynamic> chat) {
     final q = chat['title'] as String? ?? 'Chat';
-    return q.length > 48 ? '${q.substring(0, 48)}…' : q;
+    return q.length > 48 ? '${q.substring(0, 48)}â€¦' : q;
   }
 
   String _formatDate(String? iso) {
@@ -641,7 +643,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     }
   }
 
-  // ── Drawer ─────────────────────────────────
+  // â”€â”€ Drawer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _buildDrawer(bool isDark) {
     final primary = Theme.of(context).colorScheme.primary;
     return Drawer(
@@ -726,7 +728,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                     final chat = _pastChats[i];
                     final sid = chat['session_id'] as String;
                     final isActive = sid == _currentSessionId;
-                    return _ChatHistoryTile(
+                    return ChatHistoryTile(
                       title: _chatTitle(chat),
                       date: _formatDate(chat['created_at'] as String?),
                       isActive: isActive,
@@ -742,7 +744,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     );
   }
 
-  // ── Build ──────────────────────────────────
+  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -756,7 +758,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
       body: SafeArea(
         child: Column(
           children: [
-            // ── TOP BAR ──────────────────────────────
+            // â”€â”€ TOP BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Container(
               decoration: BoxDecoration(
                 color: (isDark ? AppColors.backgroundDark : AppColors.backgroundLight).withOpacity(0.9),
@@ -787,10 +789,10 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                       ),
                     ),
                     // Hands-free mic toggle
-                    _MicToggleButton(
+                    MicToggleButton(
                       voiceMode: _voiceMode,
                       onTap: () {
-                        if (_voiceMode == _CVoiceMode.speaking) {
+                        if (_voiceMode == CVoiceMode.speaking) {
                           _interruptAndListen();
                         } else {
                           _toggleVoiceMode();
@@ -803,7 +805,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               ),
             ),
 
-            // ── CONNECTION BANNER ────────────────────
+            // â”€â”€ CONNECTION BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Consumer<ConnectionService>(
               builder: (_, conn, __) => conn.isConnected
                   ? const SizedBox.shrink()
@@ -819,7 +821,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Not connected to server — tap to connect',
+                                'Not connected to server â€” tap to connect',
                                 style: GoogleFonts.manrope(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
@@ -834,7 +836,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                     ),
             ),
 
-            // ── CHAT AREA ─────────────────────────────
+            // â”€â”€ CHAT AREA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Expanded(
               child: Stack(
                 children: [
@@ -846,19 +848,19 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                           itemCount: _messages.length + (_loading ? 1 : 0),
                           itemBuilder: (context, index) {
                             if (_loading && index == _messages.length) {
-                              return _TypingIndicator(isDark: isDark);
+                              return TypingIndicator(isDark: isDark);
                             }
                             final msg = _messages[index];
                             final isUser = msg['role'] == "user";
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 24),
                               child: isUser
-                                  ? _UserBubble(
+                                  ? UserBubble(
                                       text: msg['text']!,
                                       isDark: isDark,
                                       time: msg['time'],
                                     )
-                                  : _AiBubble(
+                                  : AiBubble(
                                       text: msg['text']!,
                                       isDark: isDark,
                                       streaming: msg['streaming'] == 'true',
@@ -891,9 +893,9 @@ class _ConsultantScreenState extends State<ConsultantScreen>
               ),
             ),
 
-            // ── VOICE STATUS BANNER ───────────────────────
-            if (_voiceMode != _CVoiceMode.off)
-              _VoiceStatusBanner(
+            // â”€â”€ VOICE STATUS BANNER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            if (_voiceMode != CVoiceMode.off)
+              VoiceStatusBanner(
                 voiceMode: _voiceMode,
                 partial: _voicePartial,
                 isDark: isDark,
@@ -901,7 +903,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                 onStop: _stopVoiceMode,
               ),
 
-            // ── INPUT AREA ────────────────────────────
+            // â”€â”€ INPUT AREA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             Container(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
               decoration: BoxDecoration(
@@ -980,514 +982,6 @@ class _ConsultantScreenState extends State<ConsultantScreen>
   }
 }
 
-// ────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  DRAWER TILE
-// ────────────────────────────────────────────
-class _ChatHistoryTile extends StatelessWidget {
-  final String title;
-  final String date;
-  final bool isActive;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _ChatHistoryTile({
-    required this.title,
-    required this.date,
-    required this.isActive,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          decoration: BoxDecoration(
-            color: isActive
-                ? primary.withOpacity(isDark ? 0.15 : 0.08)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            border: isActive
-                ? Border.all(color: primary.withOpacity(0.3))
-                : null,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.manrope(
-                        fontSize: 13,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                        color: isActive
-                            ? primary
-                            : (isDark ? const Color(0xFFCBD5E1) : const Color(0xFF334155)),
-                        height: 1.3,
-                      ),
-                    ),
-                    if (date.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        date,
-                        style: GoogleFonts.manrope(
-                          fontSize: 11,
-                          color: isDark ? const Color(0xFF475569) : Colors.grey.shade400,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (isActive)
-                Container(
-                  width: 6,
-                  height: 6,
-                  margin: const EdgeInsets.only(left: 8),
-                  decoration: BoxDecoration(color: primary, shape: BoxShape.circle),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// --- Bubble Widgets ---
-
-class _UserBubble extends StatelessWidget {
-  final String text;
-  final bool isDark;
-  final String? time;
-  const _UserBubble({required this.text, required this.isDark, this.time});
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // "You" label
-              Padding(
-                padding: const EdgeInsets.only(right: 4, bottom: 4),
-                child: Text(
-                  'YOU',
-                  style: GoogleFonts.manrope(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-              // Bubble
-              Container(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.75,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: primary,
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(16),
-                    topRight: Radius.circular(3),
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primary.withOpacity(0.2),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  text,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    color: Colors.white,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-              // Timestamp
-              if (time != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4, top: 4),
-                  child: Text(
-                    time!,
-                    style: GoogleFonts.manrope(
-                      fontSize: 10,
-                      color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AiBubble extends StatelessWidget {
-  final String text;
-  final bool isDark;
-  final bool streaming;
-  final String? time;
-  const _AiBubble({required this.text, required this.isDark, this.streaming = false, this.time});
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // AI Avatar – app logo
-        AppLogo(size: 32),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // "BUBBLES AI" label
-              Padding(
-                padding: const EdgeInsets.only(left: 2, bottom: 4),
-                child: Text(
-                  'BUBBLES AI',
-                  style: GoogleFonts.manrope(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-              // Bubble – flat top-left corner
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(3),
-                    topRight: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: MarkdownBody(
-                  data: streaming ? '$text ◌' : text,
-                  styleSheet: MarkdownStyleSheet(
-                    p: GoogleFonts.manrope(
-                      fontSize: 14,
-                      color: isDark ? const Color(0xFFE2E8F0) : const Color(0xFF1E293B),
-                      height: 1.6,
-                    ),
-                    strong: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w700,
-                      color: primary,
-                    ),
-                    em: GoogleFonts.manrope(
-                      fontStyle: FontStyle.italic,
-                      color: isDark ? const Color(0xFFCBD5E1) : Colors.grey.shade700,
-                    ),
-                  ),
-                ),
-              ),
-              // Timestamp
-              if (time != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 2, top: 4),
-                  child: Text(
-                    time!,
-                    style: GoogleFonts.manrope(
-                      fontSize: 10,
-                      color: isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _TypingIndicator extends StatelessWidget {
-  final bool isDark;
-  const _TypingIndicator({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppLogo(size: 32),
-          const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 2, bottom: 4),
-                child: Text(
-                  'BUBBLES AI',
-                  style: GoogleFonts.manrope(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(3),
-                    topRight: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: List.generate(3, (i) {
-                    return Padding(
-                      padding: EdgeInsets.only(left: i > 0 ? 4 : 0),
-                      child: _BouncingDot(delay: i * 150),
-                    );
-                  }),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _BouncingDot extends StatefulWidget {
-  final int delay;
-  const _BouncingDot({required this.delay});
-
-  @override
-  State<_BouncingDot> createState() => _BouncingDotState();
-}
-
-class _BouncingDotState extends State<_BouncingDot> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 600))
-      ..repeat(reverse: true);
-    _animation = Tween(begin: 0.0, end: -6.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    Future.delayed(Duration(milliseconds: widget.delay), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (_, child) => Transform.translate(
-        offset: Offset(0, _animation.value),
-        child: child,
-      ),
-      child: Container(
-        width: 6,
-        height: 6,
-        decoration: BoxDecoration(
-          color: const Color(0xFF64748B),
-          shape: BoxShape.circle,
-        ),
-      ),
-    );
-  }
-}
-
-// ────────────────────────────────────────────
-//  MIC TOGGLE BUTTON (top-bar)
-// ────────────────────────────────────────────
-class _MicToggleButton extends StatelessWidget {
-  final _CVoiceMode voiceMode;
-  final VoidCallback onTap;
-  final bool isDark;
-
-  const _MicToggleButton({
-    required this.voiceMode,
-    required this.onTap,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final isActive = voiceMode != _CVoiceMode.off;
-    final isSpeaking = voiceMode == _CVoiceMode.speaking;
-
-    return Tooltip(
-      message: isActive
-          ? (isSpeaking ? 'Tap to interrupt' : 'Stop hands-free mode')
-          : 'Hands-free mode',
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          width: 36,
-          height: 36,
-          margin: const EdgeInsets.only(right: 4),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isActive
-                ? primary.withOpacity(0.15)
-                : Colors.transparent,
-            border: Border.all(
-              color: isActive ? primary : Colors.transparent,
-              width: 1.5,
-            ),
-          ),
-          child: Icon(
-            isSpeaking
-                ? Icons.volume_up_rounded
-                : (isActive ? Icons.mic_rounded : Icons.mic_none_rounded),
-            size: 20,
-            color: isActive
-                ? primary
-                : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ────────────────────────────────────────────
-//  VOICE STATUS BANNER (above input, when active)
-// ────────────────────────────────────────────
-class _VoiceStatusBanner extends StatelessWidget {
-  final _CVoiceMode voiceMode;
-  final String partial;
-  final bool isDark;
-  final Animation<double> micPulseAnim;
-  final VoidCallback onStop;
-
-  const _VoiceStatusBanner({
-    required this.voiceMode,
-    required this.partial,
-    required this.isDark,
-    required this.micPulseAnim,
-    required this.onStop,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final primary = Theme.of(context).colorScheme.primary;
-    final label = switch (voiceMode) {
-      _CVoiceMode.listening   => partial.isEmpty ? 'Listening…' : partial,
-      _CVoiceMode.processing  => 'Thinking…',
-      _CVoiceMode.speaking    => 'Speaking — tap mic to interrupt',
-      _CVoiceMode.off         => '',
-    };
-    final bg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
-
-    return Container(
-      color: bg,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          // Pulsing mic icon
-          AnimatedBuilder(
-            animation: micPulseAnim,
-            builder: (_, child) => Transform.scale(
-              scale: voiceMode == _CVoiceMode.listening ? micPulseAnim.value : 1.0,
-              child: child,
-            ),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: primary.withOpacity(0.15),
-              ),
-              child: Icon(
-                voiceMode == _CVoiceMode.speaking
-                    ? Icons.volume_up_rounded
-                    : voiceMode == _CVoiceMode.processing
-                        ? Icons.hourglass_top_rounded
-                        : Icons.mic_rounded,
-                size: 17,
-                color: primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 10),
-          // Status text
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.manrope(
-                fontSize: 13,
-                color: voiceMode == _CVoiceMode.listening && partial.isNotEmpty
-                    ? (isDark ? Colors.white : const Color(0xFF0F172A))
-                    : (isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B)),
-                fontStyle: voiceMode == _CVoiceMode.listening && partial.isEmpty
-                    ? FontStyle.italic
-                    : FontStyle.normal,
-              ),
-            ),
-          ),
-          // Stop button
-          GestureDetector(
-            onTap: onStop,
-            child: Container(
-              width: 28,
-              height: 28,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.redAccent.withOpacity(0.12),
-              ),
-              child: const Icon(Icons.close_rounded, size: 16, color: Colors.redAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

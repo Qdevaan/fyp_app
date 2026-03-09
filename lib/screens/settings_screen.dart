@@ -14,6 +14,7 @@ import '../services/api_service.dart';
 import '../services/connection_service.dart';
 import '../services/voice_assistant_service.dart';
 import '../providers/theme_provider.dart';
+import '../widgets/settings/settings_widgets.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -105,7 +106,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              _ContactRow(
+              ContactRow(
                 isDark: isDark,
                 icon: Icons.email_outlined,
                 iconColor: primary,
@@ -113,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: 'support@bubbles.ai',
               ),
               const SizedBox(height: 12),
-              _ContactRow(
+              ContactRow(
                 isDark: isDark,
                 icon: Icons.language_rounded,
                 iconColor: const Color(0xFF3B82F6),
@@ -121,7 +122,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: 'www.bubbles.ai',
               ),
               const SizedBox(height: 12),
-              _ContactRow(
+              ContactRow(
                 isDark: isDark,
                 icon: Icons.bug_report_outlined,
                 iconColor: const Color(0xFFF59E0B),
@@ -204,15 +205,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ACCOUNT SECTION
-                      _SectionLabel(label: 'Account'),
-                      _GroupedContainer(
+                      SectionLabel(label: 'Account'),
+                      GroupedContainer(
                         isDark: isDark,
                         children: [
                           // Profile Tile
-                          _ProfileTile(isDark: isDark),
-                          _TileDivider(isDark: isDark),
+                          ProfileTile(isDark: isDark),
+                          TileDivider(isDark: isDark),
                           // Subscription
-                          _SettingsTile(
+                          SettingsTile(
                             isDark: isDark,
                             iconBg: const Color(0xFF818CF8).withOpacity(0.2),
                             iconColor: const Color(0xFF818CF8),
@@ -234,13 +235,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 24),
 
                       // PREFERENCES SECTION
-                      _SectionLabel(label: 'Preferences'),
-                      _GroupedContainer(
+                      SectionLabel(label: 'Preferences'),
+                      GroupedContainer(
                         isDark: isDark,
                         children: [
                           Consumer<ThemeProvider>(
                             builder: (context, themeProvider, _) =>
-                                _SettingsTile(
+                                SettingsTile(
                                   isDark: isDark,
                                   iconBg: const Color(
                                     0xFF38BDF8,
@@ -266,10 +267,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                 ),
                           ),
-                          _TileDivider(isDark: isDark),
+                          TileDivider(isDark: isDark),
                           Consumer<ThemeProvider>(
                             builder: (context, themeProvider, _) =>
-                                _SettingsTile(
+                                SettingsTile(
                                   isDark: isDark,
                                   iconBg: themeProvider.seedColor.withOpacity(
                                     0.2,
@@ -289,8 +290,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                       _showColorPicker(context, themeProvider),
                                 ),
                           ),
-                          _TileDivider(isDark: isDark),
-                          _SettingsTile(
+                          TileDivider(isDark: isDark),
+                          SettingsTile(
                             isDark: isDark,
                             iconBg: const Color(0xFF34D399).withOpacity(0.2),
                             iconColor: const Color(0xFF34D399),
@@ -310,13 +311,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 24),
 
                       // VOICE ASSISTANT
-                      _SectionLabel(label: 'Voice Assistant'),
+                      SectionLabel(label: 'Voice Assistant'),
                       Consumer<VoiceAssistantService>(
                         builder: (context, voice, _) {
-                          return _GroupedContainer(
+                          return GroupedContainer(
                             isDark: isDark,
                             children: [
-                              _ToggleTile(
+                              ToggleTile(
                                 isDark: isDark,
                                 iconBg: Theme.of(
                                   context,
@@ -330,8 +331,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onChanged: (val) =>
                                     voice.setWakeWordEnabled(val),
                               ),
-                              _TileDivider(isDark: isDark),
-                              _SettingsTile(
+                              TileDivider(isDark: isDark),
+                              SettingsTile(
                                 isDark: isDark,
                                 iconBg: Colors.teal.withOpacity(0.2),
                                 iconColor: Colors.tealAccent.shade700,
@@ -348,8 +349,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 onTap: () =>
                                     _showVoiceModePicker(context, voice),
                               ),
-                              _TileDivider(isDark: isDark),
-                              _VoiceEnrollmentSection(isDark: isDark),
+                              TileDivider(isDark: isDark),
+                              VoiceEnrollmentSection(isDark: isDark),
                             ],
                           );
                         },
@@ -357,11 +358,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 24),
 
                       // PRIVACY
-                      _SectionLabel(label: 'Privacy'),
-                      _GroupedContainer(
+                      SectionLabel(label: 'Privacy'),
+                      GroupedContainer(
                         isDark: isDark,
                         children: [
-                          _SettingsTile(
+                          SettingsTile(
                             isDark: isDark,
                             iconBg: Colors.grey.withOpacity(0.2),
                             iconColor: isDark
@@ -372,8 +373,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             onTap: () =>
                                 _showComingSoon(context, 'Data Management'),
                           ),
-                          _TileDivider(isDark: isDark),
-                          _SettingsTile(
+                          TileDivider(isDark: isDark),
+                          SettingsTile(
                             isDark: isDark,
                             iconBg: Colors.grey.withOpacity(0.2),
                             iconColor: isDark
@@ -389,12 +390,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 24),
 
                       // NOTIFICATIONS
-                      _SectionLabel(label: 'Notifications'),
+                      SectionLabel(label: 'Notifications'),
                       Consumer<ConnectionService>(
-                        builder: (context, conn, _) => _GroupedContainer(
+                        builder: (context, conn, _) => GroupedContainer(
                           isDark: isDark,
                           children: [
-                            _ToggleTile(
+                            ToggleTile(
                               isDark: isDark,
                               iconBg: const Color(0xFFF43F5E).withOpacity(0.2),
                               iconColor: const Color(0xFFF43F5E),
@@ -412,11 +413,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SizedBox(height: 32),
 
                       // ABOUT & SUPPORT
-                      _SectionLabel(label: 'About & Support'),
-                      _GroupedContainer(
+                      SectionLabel(label: 'About & Support'),
+                      GroupedContainer(
                         isDark: isDark,
                         children: [
-                          _SettingsTile(
+                          SettingsTile(
                             isDark: isDark,
                             iconBg: Theme.of(
                               context,
@@ -426,8 +427,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             title: 'About Bubbles',
                             onTap: () => Navigator.pushNamed(context, '/about'),
                           ),
-                          _TileDivider(isDark: isDark),
-                          _SettingsTile(
+                          TileDivider(isDark: isDark),
+                          SettingsTile(
                             isDark: isDark,
                             iconBg: const Color(0xFF10B981).withOpacity(0.15),
                             iconColor: const Color(0xFF10B981),
@@ -845,856 +846,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-// --- Component Widgets ---
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        label.toUpperCase(),
-        style: GoogleFonts.manrope(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.2,
-          color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
-        ),
-      ),
-    );
-  }
-}
-
-class _GroupedContainer extends StatelessWidget {
-  final bool isDark;
-  final List<Widget> children;
-  const _GroupedContainer({required this.isDark, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      child: Column(children: children),
-    );
-  }
-}
-
-class _TileDivider extends StatelessWidget {
-  final bool isDark;
-  const _TileDivider({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Divider(
-      height: 1,
-      indent: 60,
-      color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
-    );
-  }
-}
-
-class _ProfileTile extends StatefulWidget {
-  final bool isDark;
-  const _ProfileTile({required this.isDark});
-
-  @override
-  State<_ProfileTile> createState() => _ProfileTileState();
-}
-
-class _ProfileTileState extends State<_ProfileTile> {
-  Map<String, dynamic>? _profile;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadProfile();
-  }
-
-  Future<void> _loadProfile() async {
-    final profile = await AuthService.instance.getProfile();
-    if (mounted) {
-      setState(() {
-        _profile = profile;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = AuthService.instance.currentUser;
-    final name =
-        _profile?['full_name'] ?? user?.userMetadata?['full_name'] ?? 'User';
-    final email = user?.email ?? '';
-    final avatarUrl =
-        _profile?['avatar_url'] ?? user?.userMetadata?['avatar_url'];
-
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.pushNamed(context, '/profile-completion');
-        _loadProfile();
-      },
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              ),
-              child: ClipOval(
-                child: avatarUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: avatarUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (_, __) => const Center(
-                          child: SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                        errorWidget: (_, __, ___) => Icon(
-                          Icons.person,
-                          color: widget.isDark ? Colors.white54 : Colors.grey,
-                        ),
-                      )
-                    : Center(
-                        child: Text(
-                          name.isNotEmpty ? name[0].toUpperCase() : '?',
-                          style: GoogleFonts.manrope(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: GoogleFonts.manrope(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: widget.isDark
-                          ? Colors.white
-                          : const Color(0xFF0F172A),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    email,
-                    style: GoogleFonts.manrope(
-                      fontSize: 13,
-                      color: AppColors.textMuted,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: widget.isDark
-                  ? const Color(0xFF64748B)
-                  : Colors.grey.shade400,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  final bool isDark;
-  final Color iconBg;
-  final Color iconColor;
-  final IconData icon;
-  final String title;
-  final Widget? trailing;
-  final VoidCallback onTap;
-
-  const _SettingsTile({
-    required this.isDark,
-    required this.iconBg,
-    required this.iconColor,
-    required this.icon,
-    required this.title,
-    this.trailing,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: iconColor, size: 22),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.manrope(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                ),
-              ),
-            ),
-            if (trailing != null) ...[trailing!, const SizedBox(width: 6)],
-            Icon(
-              Icons.chevron_right,
-              size: 20,
-              color: isDark ? const Color(0xFF64748B) : Colors.grey.shade400,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ToggleTile extends StatelessWidget {
-  final bool isDark;
-  final Color iconBg;
-  final Color iconColor;
-  final IconData icon;
-  final String title;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _ToggleTile({
-    required this.isDark,
-    required this.iconBg,
-    required this.iconColor,
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: iconBg,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              title,
-              style: GoogleFonts.manrope(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: isDark ? Colors.white : const Color(0xFF0F172A),
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: Theme.of(context).colorScheme.primary,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Voice Enrollment Section
-// ─────────────────────────────────────────────────────────────────────────────
-
-enum _EnrollState { idle, checking, recording, uploading, success, error }
-
-class _VoiceEnrollmentSection extends StatefulWidget {
-  final bool isDark;
-  const _VoiceEnrollmentSection({required this.isDark});
-
-  @override
-  State<_VoiceEnrollmentSection> createState() =>
-      _VoiceEnrollmentSectionState();
-}
-
-class _VoiceEnrollmentSectionState extends State<_VoiceEnrollmentSection> {
-  _EnrollState _state = _EnrollState.checking;
-  String? _enrolledAt;
-  String? _errorMessage;
-  int _countdown = 7;
-  Timer? _countdownTimer;
-  AudioRecorder? _recorder;
-
-  @override
-  void initState() {
-    super.initState();
-    _checkStatus();
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    _recorder?.dispose();
-    super.dispose();
-  }
-
-  Future<void> _checkStatus() async {
-    setState(() => _state = _EnrollState.checking);
-    final user = AuthService.instance.currentUser;
-    if (user == null) {
-      setState(() => _state = _EnrollState.idle);
-      return;
-    }
-
-    try {
-      final res = await Supabase.instance.client
-          .from('voice_enrollments')
-          .select('enrolled_at')
-          .eq('user_id', user.id)
-          .maybeSingle();
-      setState(() {
-        _enrolledAt = res?['enrolled_at'] as String?;
-        _state = _EnrollState.idle;
-      });
-    } catch (_) {
-      setState(() {
-        _enrolledAt = null;
-        _state = _EnrollState.idle;
-      });
-    }
-  }
-
-  String _formatDate(String? iso) {
-    if (iso == null) return '';
-    try {
-      final dt = DateTime.parse(iso).toLocal();
-      return '${dt.day}/${dt.month}/${dt.year}';
-    } catch (_) {
-      return '';
-    }
-  }
-
-  Future<void> _startEnrollment() async {
-    final user = AuthService.instance.currentUser;
-    if (user == null) return;
-
-    // Check connection
-    final api = Provider.of<ApiService>(context, listen: false);
-    if (!api.isConnected) {
-      setState(() {
-        _state = _EnrollState.error;
-        _errorMessage =
-            'Not connected to server. Set URL in Connections first.';
-      });
-      return;
-    }
-
-    // Request mic permission
-    final status = await Permission.microphone.request();
-    if (!status.isGranted) {
-      setState(() {
-        _state = _EnrollState.error;
-        _errorMessage = 'Microphone permission denied.';
-      });
-      return;
-    }
-
-    // Get temp file path
-    final dir = await getTemporaryDirectory();
-    final path = '${dir.path}/enrollment_${user.id}.m4a';
-
-    _recorder = AudioRecorder();
-    setState(() {
-      _state = _EnrollState.recording;
-      _countdown = 7;
-    });
-
-    await _recorder!.start(
-      const RecordConfig(encoder: AudioEncoder.aacLc),
-      path: path,
-    );
-
-    // Countdown timer
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
-      if (!mounted) {
-        t.cancel();
-        return;
-      }
-      setState(() => _countdown--);
-      if (_countdown <= 0) {
-        t.cancel();
-        await _finishRecording(
-          path,
-          user.id,
-          user.userMetadata?['full_name'] ?? user.email ?? 'User',
-        );
-      }
-    });
-  }
-
-  Future<void> _finishRecording(
-    String path,
-    String userId,
-    String userName,
-  ) async {
-    await _recorder?.stop();
-    _recorder?.dispose();
-    _recorder = null;
-
-    if (!mounted) return;
-    setState(() => _state = _EnrollState.uploading);
-
-    final api = Provider.of<ApiService>(context, listen: false);
-    try {
-      final enrolledAt = await api.enrollVoice(
-        userId: userId,
-        userName: userName,
-        audioPath: path,
-      );
-      if (mounted) {
-        setState(() {
-          _enrolledAt = enrolledAt;
-          _state = _EnrollState.success;
-        });
-        // Reset to idle after 2 seconds so the tile shows the updated status
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) setState(() => _state = _EnrollState.idle);
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _state = _EnrollState.error;
-          _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        });
-      }
-    }
-  }
-
-  void _cancelRecording() {
-    _countdownTimer?.cancel();
-    _recorder?.stop();
-    _recorder?.dispose();
-    _recorder = null;
-    setState(() {
-      _state = _EnrollState.idle;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = const Color(0xFFF472B6); // pink accent for voice
-    final bg = color.withOpacity(0.15);
-
-    switch (_state) {
-      case _EnrollState.checking:
-        return const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              SizedBox(width: 12),
-            ],
-          ),
-        );
-
-      case _EnrollState.recording:
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.mic,
-                      color: AppColors.error,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Recording...',
-                          style: GoogleFonts.manrope(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: widget.isDark
-                                ? Colors.white
-                                : const Color(0xFF0F172A),
-                          ),
-                        ),
-                        Text(
-                          'Speak naturally for $_countdown more seconds',
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: _cancelRecording,
-                    child: Text(
-                      'Cancel',
-                      style: GoogleFonts.manrope(
-                        color: AppColors.textMuted,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: (7 - _countdown) / 7,
-                backgroundColor: AppColors.error.withOpacity(0.1),
-                color: AppColors.error,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ],
-          ),
-        );
-
-      case _EnrollState.uploading:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(Icons.upload, color: color, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  'Uploading & verifying enrollment...',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    color: AppColors.textMuted,
-                  ),
-                ),
-              ),
-              const SizedBox(
-                width: 8,
-                height: 8,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ],
-          ),
-        );
-
-      case _EnrollState.success:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.success,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  'Voice enrolled successfully!',
-                  style: GoogleFonts.manrope(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.success,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-
-      case _EnrollState.error:
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.error_outline,
-                      color: AppColors.error,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Text(
-                      'Enrollment failed',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.error,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => _state = _EnrollState.idle),
-                    child: Text(
-                      'Retry',
-                      style: GoogleFonts.manrope(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              if (_errorMessage != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 54, top: 4),
-                  child: Text(
-                    _errorMessage!,
-                    style: GoogleFonts.manrope(
-                      fontSize: 12,
-                      color: AppColors.textMuted,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-            ],
-          ),
-        );
-
-      case _EnrollState.idle:
-      default:
-        final isEnrolled = _enrolledAt != null;
-        return GestureDetector(
-          onTap: _startEnrollment,
-          behavior: HitTestBehavior.opaque,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: bg,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(Icons.fingerprint, color: color, size: 22),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Voice Enrollment',
-                        style: GoogleFonts.manrope(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: widget.isDark
-                              ? Colors.white
-                              : const Color(0xFF0F172A),
-                        ),
-                      ),
-                      Text(
-                        isEnrolled
-                            ? 'Enrolled on ${_formatDate(_enrolledAt)}'
-                            : 'Not enrolled — tap to record',
-                        style: GoogleFonts.manrope(
-                          fontSize: 12,
-                          color: isEnrolled
-                              ? AppColors.success
-                              : AppColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (isEnrolled)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Active',
-                      style: GoogleFonts.manrope(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.success,
-                      ),
-                    ),
-                  )
-                else
-                  Text(
-                    'Enroll',
-                    style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                      color: color,
-                    ),
-                  ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.chevron_right,
-                  size: 20,
-                  color: widget.isDark
-                      ? const Color(0xFF64748B)
-                      : Colors.grey.shade400,
-                ),
-              ],
-            ),
-          ),
-        );
-    }
-  }
-}
-
-// ── Contact row used in the contact bottom sheet ──────────────────────────
-class _ContactRow extends StatelessWidget {
-  final bool isDark;
-  final IconData icon;
-  final Color iconColor;
-  final String label;
-  final String value;
-
-  const _ContactRow({
-    required this.isDark,
-    required this.icon,
-    required this.iconColor,
-    required this.label,
-    required this.value,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 20),
-          ),
-          const SizedBox(width: 14),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.manrope(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? const Color(0xFF64748B)
-                      : const Color(0xFF94A3B8),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: GoogleFonts.manrope(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : const Color(0xFF0F172A),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

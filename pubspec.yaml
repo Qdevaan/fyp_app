@@ -32,6 +32,8 @@ dependencies:
   porcupine_flutter: ^4.0.0
   audioplayers: ^6.5.1
   path_provider: ^2.1.5
+  flutter_voice_processor: ^1.1.2
+  flutter_sound: ^9.2.13
 
 flutter_launcher_icons:
   android: "launcher_icon"

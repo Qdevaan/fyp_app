@@ -11,11 +11,13 @@ import 'package:porcupine_flutter/porcupine_error.dart';
 /// Uses the custom "Hey Bubbles" .ppn model for efficient, always-on,
 /// offline wake word detection — far more reliable and battery-friendly
 /// than the previous speech_to_text approach.
-class WakeWordService extends ChangeNotifier {
+class WakeWordService extends ChangeNotifier with WidgetsBindingObserver {
   PorcupineManager? _porcupineManager;
   bool _isListening = false;
   bool _isInitialized = false;
   bool _isInitializing = false; // guard against concurrent init calls
+
+  bool _wasListeningBeforePause = false;
 
   bool get isListening => _isListening;
   bool get isInitialized => _isInitialized;
