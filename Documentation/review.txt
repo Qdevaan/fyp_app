@@ -494,15 +494,15 @@ Bubbles is a dual-engine AI assistant app:
   • Dual-model strategy is cost-effective and latency-aware.
 
   WHAT'S BAD:
-  • All five services + all eleven endpoints + all models + Ngrok setup + 
+  • [FIXED] All five services + all eleven endpoints + all models + Ngrok setup + 
     LiveKit worker are in a SINGLE 1800-line file. This is the definition 
     of a God File.
-  • Global mutable state: LIVE_SESSIONS dict and TURN_COUNTERS dict are 
+  • [FIXED] Global mutable state: LIVE_SESSIONS dict and TURN_COUNTERS dict are 
     module-level globals with no cleanup mechanism — grow unbounded.
-  • The LiveKit Agent Worker (entrypoint() function, ~100 lines) appears 
+  • [FIXED] The LiveKit Agent Worker (entrypoint() function, ~100 lines) appears 
     to be dead code — comments say "might be unused if we switch to 
     client-side Deepgram". It is not wired up and should be removed.
-  • nest-asyncio dependency exists only to patch event loop conflicts — 
+  • [FIXED] nest-asyncio dependency exists only to patch event loop conflicts — 
     this shouldn't be needed with proper async design.
 
 ─── 4B. ENDPOINTS ─────────────────────────────────────────────────────────────
@@ -525,12 +525,12 @@ Bubbles is a dual-engine AI assistant app:
   └───────────────────────────────┴────────┴────────────────────────────────┘
 
   ISSUES:
-  • /getToken passes userId as query parameter — sensitive data in URL logs.
-  • No API versioning (no /v1/ prefix).
-  • No endpoint for deleting entities, sessions, or memories. All deletion 
+  • [FIXED] /getToken passes userId as query parameter — sensitive data in URL logs.
+  • [FIXED] No API versioning (no /v1/ prefix).
+  • [FIXED] No endpoint for deleting entities, sessions, or memories. All deletion 
     currently requires direct Supabase client calls from Flutter.
-  • No batch endpoint for multiple consultant queries.
-  • /health doesn't actually check DB or Groq connectivity — just returns 200.
+  • [FIXED] No batch endpoint for multiple consultant queries.
+  • [FIXED] /health doesn't actually check DB or Groq connectivity — just returns 200.
 
 ─── 4C. LLM INTEGRATION ──────────────────────────────────────────────────────
 
@@ -547,18 +547,18 @@ Bubbles is a dual-engine AI assistant app:
     800 for extraction).
 
   WHAT'S BAD:
-  • No retry logic: If Groq rate-limits or has a transient error, the 
+  • [FIXED] No retry logic: If Groq rate-limits or has a transient error, the 
     request just fails. No exponential backoff.
-  • No token counting: Context could silently exceed model token limits.
+  • [FIXED] No token counting: Context could silently exceed model token limits.
     With 10 graph facts + 5 history messages + 3 summaries + system 
     prompt, it's easy to exceed 8K tokens, especially for llama-3.1-8b.
-  • Max tokens are hardcoded — 400 for consultant may be too strict for 
+  • [FIXED] Max tokens are hardcoded — 400 for consultant may be too strict for 
     detailed explanations.
-  • No hallucination verification: extract_entities_full() trusts the LLM 
+  • [FIXED] No hallucination verification: extract_entities_full() trusts the LLM 
     output completely. A hallucinated entity gets persisted to the DB.
-  • Fallback string "WAITING" returned on Brain errors — the client 
+  • [FIXED] Fallback string "WAITING" returned on Brain errors — the client 
     cannot distinguish between "no advice yet" and "server error".
-  • No response caching — identical questions hit Groq every time.
+  • [FIXED] No response caching — identical questions hit Groq every time.
 
 ─── 4D. DATABASE INTERACTIONS ─────────────────────────────────────────────────
 
@@ -570,21 +570,21 @@ Bubbles is a dual-engine AI assistant app:
   • Session-aware logging with proper foreign keys.
 
   WHAT'S BAD:
-  • No transactions: Entity + attributes + relations are 3 separate 
+  • [FIXED] No transactions: Entity + attributes + relations are 3 separate 
     upserts with no rollback. If step 2 fails, you get an entity with 
     no attributes — partial state corruption.
-  • Client-side JOINs: EntityScreen fetches entities, then attributes, 
+  • [FIXED] Client-side JOINs: EntityScreen fetches entities, then attributes, 
     then relations in 3 separate queries. Should use SQL JOINs or a 
     single Supabase select with nested references.
-  • fetch_session_summaries() fetches 3 sessions with their summaries — 
+  • [FIXED] fetch_session_summaries() fetches 3 sessions with their summaries — 
     no pagination, no cursor-based fetching.
-  • No soft deletes anywhere. Hard deletes cascade, which is destructive.
-  • No database indexing strategy documented. The entities table has a 
+  • [FIXED] No soft deletes anywhere. Hard deletes cascade, which is destructive.
+  • [FIXED] No database indexing strategy documented. The entities table has a 
     unique constraint on (user_id, canonical_name), but there are no 
     explicit indexes on session_logs.session_id, memory.user_id, etc.
     PostgreSQL auto-creates indexes on foreign keys in some cases but 
     not all.
-  • Rolling summarization overwrites the session's summary field — 
+  • [FIXED] Rolling summarization overwrites the session's summary field — 
     previous summary versions are lost forever.
 
 ─── 4E. STREAMING & WEBSOCKETS ────────────────────────────────────────────────
@@ -603,13 +603,13 @@ Bubbles is a dual-engine AI assistant app:
   • Post-processing (save memory, update graph) runs after stream completes.
 
   WHAT'S BAD:
-  • Threading + asyncio mixing is overly complex and fragile.
-  • If client disconnects mid-stream, the thread keeps running (no 
+  • [FIXED] Threading + asyncio mixing is overly complex and fragile.
+  • [FIXED] If client disconnects mid-stream, the thread keeps running (no 
     cancellation mechanism).
-  • No SSE heartbeat — connection could timeout during long silences.
-  • No client backpressure — tokens queue up unbounded if client is slow.
-  • Daemon thread means abrupt termination if server shuts down.
-  • Error in the sync thread is not propagated to the SSE response.
+  • [FIXED] No SSE heartbeat — connection could timeout during long silences.
+  • [FIXED] No client backpressure — tokens queue up unbounded if client is slow.
+  • [FIXED] Daemon thread means abrupt termination if server shuts down.
+  • [FIXED] Error in the sync thread is not propagated to the SSE response.
 
   BETTER APPROACH: Use the async Groq client (if available) or 
   asyncio.to_thread() with a simpler generator pattern.
@@ -620,14 +620,14 @@ Bubbles is a dual-engine AI assistant app:
   emoji prefixes and the function returns a safe default value.
 
   WHAT'S BAD:
-  • No distinction between transient errors (retry) and permanent errors 
+  • [FIXED] No distinction between transient errors (retry) and permanent errors 
     (fail fast).
-  • No structured error responses to clients — just default strings.
-  • Console logging with emojis is not machine-parseable or monitorable.
-  • No error tracking (Sentry, etc.) — bugs in production are invisible.
-  • Silent failures: client sees "WAITING" and has no idea if it's a 
+  • [FIXED] No structured error responses to clients — just default strings.
+  • [FIXED] Console logging with emojis is not machine-parseable or monitorable.
+  • [FIXED] No error tracking (Sentry, etc.) — bugs in production are invisible.
+  • [FIXED] Silent failures: client sees "WAITING" and has no idea if it's a 
     network error, a Groq API issue, or a database problem.
-  • Rate limiting is completely absent — an attacker can spam /ask_consultant 
+  • [FIXED] Rate limiting is completely absent — an attacker can spam /ask_consultant 
     and exhaust the Groq API quota (real money cost).
 
 ─── 4G. DEPENDENCIES ──────────────────────────────────────────────────────────
@@ -654,15 +654,15 @@ Bubbles is a dual-engine AI assistant app:
   └──────────────────────────┴──────────┴────────────────────────────────────┘
 
   ISSUES:
-  • torch is ~2GB download. For CPU-only inference (MiniLM embeddings), 
+  • [FIXED] torch is ~2GB download. For CPU-only inference (MiniLM embeddings), 
     install torch-cpu to save 1.5GB.
-  • pyngrok and qrcode are dev/testing utilities — should be in a separate 
+  • [FIXED] pyngrok and qrcode are dev/testing utilities — should be in a separate 
     requirements-dev.txt.
-  • livekit-agents and livekit-plugins-deepgram may be entirely unused if 
+  • [FIXED] livekit-agents and livekit-plugins-deepgram may be entirely unused if 
     the LiveKit worker entrypoint is dead code. Remove if unused.
-  • nest-asyncio is a band-aid for event loop conflicts. Removing it and 
+  • [FIXED] nest-asyncio is a band-aid for event loop conflicts. Removing it and 
     properly structuring async code would be cleaner.
-  • No version pins on torch and pydantic (>=2.0.0) — could break on 
+  • [FIXED] No version pins on torch and pydantic (>=2.0.0) — could break on 
     future installs.
 
 
@@ -682,7 +682,7 @@ Bubbles is a dual-engine AI assistant app:
   • pgvector extension with match_memory RPC is production-quality.
 
   WHAT'S BAD:
-  • No explicit indexes beyond primary keys and unique constraints.
+  • [FIXED] No explicit indexes beyond primary keys and unique constraints.
     Recommended indexes:
     - session_logs(session_id, created_at)
     - memory(user_id)
@@ -690,14 +690,14 @@ Bubbles is a dual-engine AI assistant app:
     - entity_relations(user_id)
     - consultant_logs(user_id, session_id)
     - highlights(user_id, is_read)
-  • No updated_at column on most tables (session_logs, consultant_logs, 
+  • [FIXED] No updated_at column on most tables (session_logs, consultant_logs, 
     memory, highlights, events). Makes tracking changes difficult.
-  • events table has due_text as TEXT instead of TIMESTAMPTZ — can't do 
+  • [FIXED] events table has due_text as TEXT instead of TIMESTAMPTZ — can't do 
     date range queries or sort by due date.
-  • voice_enrollments stores 192-dim speaker embedding as-is — no 
+  • [FIXED] voice_enrollments stores 192-dim speaker embedding as-is — no 
     encryption for biometric data.
-  • No audit trail / change history on any table.
-  • highlights table has no is_read boolean — can't track which ones 
+  • [FIXED] No audit trail / change history on any table.
+  • [FIXED] highlights table has no is_read boolean — can't track which ones 
     the user has seen.
     [UPDATE: Need to verify if is_read exists but wasn't shown in excerpt.]
 
