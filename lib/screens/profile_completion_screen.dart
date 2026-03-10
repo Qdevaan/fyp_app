@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -26,6 +25,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   final _nameCtrl = TextEditingController();
   final _countryCtrl = TextEditingController();
   final _dobCtrl = TextEditingController();
+  final _genderCtrl = TextEditingController();
 
   DateTime? _dob;
   String? _gender;
@@ -98,6 +98,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         _nameCtrl.text = profile['full_name'] ?? '';
         _countryCtrl.text = profile['country'] ?? '';
         _gender = profile['gender'];
+        _genderCtrl.text = _gender ?? '';
         _avatarUrl = profile['avatar_url'];
 
         if (profile['dob'] != null) {
@@ -134,6 +135,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
   Future<void> _selectDate() async {
     final now = DateTime.now();
     final initialDate = DateTime(2000);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final picked = await showDatePicker(
       context: context,
@@ -144,10 +146,32 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              surface: Theme.of(context).colorScheme.surfaceContainer,
+              surface: Colors.transparent,
+              surfaceContainer: Colors.transparent,
+              surfaceContainerHigh: Colors.transparent,
+              surfaceContainerHighest: Colors.transparent,
             ),
           ),
-          child: child!,
+          child: Builder(
+            builder: (context) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  GlassCard(
+                    padding: EdgeInsets.zero,
+                    borderRadius: AppRadius.xxl,
+                    backgroundColor: isDark
+                        ? AppColors.backgroundDark.withAlpha(200)
+                        : Colors.white.withAlpha(220),
+                    borderColor: isDark
+                        ? Theme.of(context).colorScheme.primary.withAlpha(60)
+                        : Colors.white.withAlpha(255),
+                    child: child ?? const SizedBox(),
+                  ),
+                ],
+              );
+            }
+          ),
         );
       },
     );
@@ -160,8 +184,55 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     }
   }
 
+  void _showGenderPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return GlassBottomSheet(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle Bar
+              Center(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(76),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              ...['Male', 'Female', 'Other'].map(
+                (gender) => ListTile(
+                  title: Text(
+                    gender,
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      _gender = gender;
+                      _genderCtrl.text = gender;
+                    });
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _showCountryPicker() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -342,43 +413,6 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
     }
   }
 
-  InputDecoration _getDecoration(
-    BuildContext context,
-    String label, {
-    IconData? icon,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    return InputDecoration(
-      labelText: label,
-      filled: true,
-      fillColor: isDark ? AppColors.glassInput : theme.colorScheme.surfaceContainerHighest.withAlpha(76),
-      prefixIcon: icon != null
-          ? Icon(icon, size: 20, color: theme.colorScheme.onSurfaceVariant)
-          : null,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(
-          color: isDark ? AppColors.glassBorder : theme.colorScheme.outline.withAlpha(51),
-        ),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: theme.colorScheme.error, width: 1.5),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -547,33 +581,14 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
 
                       const SizedBox(height: AppSpacing.md),
 
-                      // 3. Gender Dropdown
-                      DropdownButtonFormField<String>(
-                        value: _gender,
-                        decoration: _getDecoration(
-                          context,
-                          'Gender',
-                          icon: Icons.wc_rounded,
-                        ),
-                        icon: Icon(
-                          Icons.arrow_drop_down_rounded,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        dropdownColor: theme.colorScheme.surfaceContainer,
-                        items: ['Male', 'Female', 'Other']
-                            .map(
-                              (e) => DropdownMenuItem(
-                                value: e,
-                                child: Text(
-                                  e,
-                                  style: TextStyle(
-                                    color: theme.colorScheme.onSurface,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (val) => setState(() => _gender = val),
+                      // 3. Gender Picker
+                      AppInput(
+                        controller: _genderCtrl,
+                        label: 'Gender',
+                        prefixIcon: Icons.wc_rounded,
+                        readOnly: true,
+                        onTap: _showGenderPicker,
+                        suffixIcon: Icons.arrow_drop_down_rounded,
                       ),
 
                       const SizedBox(height: AppSpacing.md),
