@@ -24,7 +24,7 @@ void showContactSheet(BuildContext context, bool isDark) {
     context: context,
     backgroundColor: Colors.transparent,
     builder: (_) {
-      final primary = AppColors.primary;
+      final primary = Theme.of(context).colorScheme.primary;
       return GlassBottomSheet(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -105,13 +105,13 @@ void showThemeModePicker(BuildContext context, ThemeProvider themeProvider) {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(26),
+                          color: Theme.of(context).colorScheme.primary.withAlpha(26),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(51)),
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.palette_outlined,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 20,
                         ),
                       ),
@@ -155,7 +155,7 @@ void showThemeModePicker(BuildContext context, ThemeProvider themeProvider) {
                         'Close',
                         style: GoogleFonts.manrope(
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
@@ -185,12 +185,12 @@ Widget _buildThemeOption(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isSelected
-            ? AppColors.primary.withAlpha(26)
+            ? Theme.of(context).colorScheme.primary.withAlpha(26)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isSelected
-              ? AppColors.primary.withAlpha(76)
+              ? Theme.of(context).colorScheme.primary.withAlpha(76)
               : (isDark ? Colors.white10 : Colors.black12),
           width: 1,
         ),
@@ -201,7 +201,7 @@ Widget _buildThemeOption(
             icon,
             size: 20,
             color: isSelected
-                ? AppColors.primary
+                ? Theme.of(context).colorScheme.primary
                 : (isDark ? Colors.white70 : Colors.black87),
           ),
           const SizedBox(width: 12),
@@ -212,7 +212,7 @@ Widget _buildThemeOption(
                 fontSize: 15,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected
-                    ? AppColors.primary
+                    ? Theme.of(context).colorScheme.primary
                     : (isDark ? Colors.white : Colors.black87),
               ),
             ),
@@ -220,7 +220,7 @@ Widget _buildThemeOption(
           if (isSelected)
             Icon(
               Icons.check_circle_rounded,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               size: 20,
             ),
         ],
@@ -244,11 +244,11 @@ void showColorPicker(BuildContext context, ThemeProvider themeProvider) {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(26),
+                        color: Theme.of(context).colorScheme.primary.withAlpha(26),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.primary.withAlpha(51)),
+                        border: Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(51)),
                       ),
-                      child: const Icon(Icons.color_lens_outlined, color: AppColors.primary, size: 20),
+                      child: Icon(Icons.color_lens_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -315,7 +315,7 @@ void showColorPicker(BuildContext context, ThemeProvider themeProvider) {
                       'Cancel',
                       style: GoogleFonts.manrope(
                         fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
                   ),
@@ -432,11 +432,11 @@ void showVoiceModePicker(BuildContext context, VoiceAssistantService voice) {
                       Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(26),
+                          color: Theme.of(context).colorScheme.primary.withAlpha(26),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(51)),
                         ),
-                        child: const Icon(Icons.record_voice_over_outlined, color: AppColors.primary, size: 20),
+                        child: Icon(Icons.record_voice_over_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -456,7 +456,7 @@ void showVoiceModePicker(BuildContext context, VoiceAssistantService voice) {
                         mode: VoiceMode.male,
                         icon: Icons.man_rounded,
                         label: 'Male',
-                        color: Colors.blueAccent,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(width: 10),
                       buildCard(
@@ -470,7 +470,7 @@ void showVoiceModePicker(BuildContext context, VoiceAssistantService voice) {
                         mode: VoiceMode.neutral,
                         icon: Icons.smart_toy_rounded,
                         label: 'Jarvis',
-                        color: Colors.tealAccent.shade700,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                     ],
                   ),
