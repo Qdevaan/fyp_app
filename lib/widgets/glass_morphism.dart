@@ -14,8 +14,8 @@ class MeshGradientBackground extends StatelessWidget {
     
     // Adapted for Light mode too using the accent color
     final bgColor = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
-    final blurColor1 = AppColors.primary.withAlpha(isDark ? 38 : 60); // 15% / ~25%
-    final blurColor2 = AppColors.primary.withAlpha(isDark ? 26 : 40); // 10% / ~15%
+    final blurColor1 = Theme.of(context).colorScheme.primary.withAlpha(isDark ? 38 : 60); // 15% / ~25%
+    final blurColor2 = Theme.of(context).colorScheme.primary.withAlpha(isDark ? 26 : 40); // 10% / ~15%
     final radialBase = isDark ? AppColors.backgroundDark : AppColors.backgroundLight;
 
     return Container(
@@ -106,9 +106,9 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = backgroundColor ??
-        (isDark ? AppColors.glassWhite : AppColors.primary.withAlpha(8)); // Slightly accent-tinted base
+        (isDark ? AppColors.glassWhite : Colors.white.withAlpha(220)); // White glass base
     final border = borderColor ??
-        (isDark ? AppColors.glassBorder : AppColors.primary.withAlpha(20)); // Tinted border
+        (isDark ? AppColors.glassBorder : Colors.white.withAlpha(255)); // Tinted border
 
     return GestureDetector(
       onTap: onTap,
@@ -153,10 +153,10 @@ class GlassPanel extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark ? AppColors.glassWhite : AppColors.primary.withAlpha(12),
+            color: isDark ? AppColors.glassWhite : Theme.of(context).colorScheme.primary.withAlpha(12),
             borderRadius: BorderRadius.circular(borderRadius),
             border: Border.all(
-              color: isDark ? AppColors.glassBorderLight : AppColors.primary.withAlpha(20),
+              color: isDark ? AppColors.glassBorderLight : Theme.of(context).colorScheme.primary.withAlpha(20),
               width: 1,
             ),
           ),
@@ -188,11 +188,11 @@ class GlassTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bg = active
-        ? AppColors.primary.withAlpha(isDark ? 38 : 60)
-        : (isDark ? AppColors.glassWhite : AppColors.primary.withAlpha(8));
+        ? Theme.of(context).colorScheme.primary.withAlpha(isDark ? 38 : 60)
+        : (isDark ? AppColors.glassWhite : Theme.of(context).colorScheme.primary.withAlpha(8));
     final border = active
-        ? AppColors.primary.withAlpha(isDark ? 76 : 100)
-        : (isDark ? AppColors.glassBorderLight : AppColors.primary.withAlpha(20));
+        ? Theme.of(context).colorScheme.primary.withAlpha(isDark ? 76 : 100)
+        : (isDark ? AppColors.glassBorderLight : Theme.of(context).colorScheme.primary.withAlpha(20));
 
     return GestureDetector(
       onTap: onTap,
@@ -239,10 +239,12 @@ class GlassDialog extends StatelessWidget {
       child: GlassCard(
         padding: padding,
         borderRadius: borderRadius,
-        borderColor: AppColors.primary.withAlpha(isDark ? 80 : 40),
-        backgroundColor: isDark 
-            ? AppColors.backgroundDark.withAlpha(200) 
-            : AppColors.primary.withAlpha(15), 
+        borderColor: isDark
+            ? Theme.of(context).colorScheme.primary.withAlpha(80)
+            : Colors.white.withAlpha(255),
+        backgroundColor: isDark
+            ? AppColors.backgroundDark.withAlpha(200)
+            : Colors.white.withAlpha(240),
         blur: 20,
         child: child,
       ),
@@ -271,12 +273,14 @@ class GlassBottomSheet extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Container(
           decoration: BoxDecoration(
-            color: isDark 
-                ? AppColors.backgroundDark.withAlpha(220) 
-                : AppColors.primary.withAlpha(20),
+            color: isDark
+                ? AppColors.backgroundDark.withAlpha(220)
+                : Colors.white.withAlpha(240),
             border: Border(
               top: BorderSide(
-                color: AppColors.primary.withAlpha(isDark ? 80 : 40),
+                color: isDark
+                    ? Theme.of(context).colorScheme.primary.withAlpha(80)
+                    : Colors.white.withAlpha(255),
                 width: 1,
               ),
             ),
@@ -316,12 +320,12 @@ class GlassPillButton extends StatelessWidget {
           child: Container(
             height: 52,
             decoration: BoxDecoration(
-              color: AppColors.glassPrimary,
+              color: Theme.of(context).colorScheme.primary.withAlpha(38),
               borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(color: AppColors.glassPrimaryBorder, width: 1),
+              border: Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(77), width: 1),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withAlpha(51), // inset glow
+                  color: Theme.of(context).colorScheme.primary.withAlpha(51), // inset glow
                   blurRadius: 15,
                   spreadRadius: -2,
                 ),
@@ -404,7 +408,7 @@ class GlassBottomNav extends StatelessWidget {
                     children: [
                       Icon(
                         item.icon,
-                        color: active ? AppColors.primary : AppColors.slate500,
+                        color: active ? Theme.of(context).colorScheme.primary : AppColors.slate500,
                         size: 24,
                       ),
                       const SizedBox(height: 4),
@@ -415,7 +419,7 @@ class GlassBottomNav extends StatelessWidget {
                           fontWeight:
                               active ? FontWeight.w600 : FontWeight.w400,
                           color:
-                              active ? AppColors.primary : AppColors.slate500,
+                              active ? Theme.of(context).colorScheme.primary : AppColors.slate500,
                         ),
                       ),
                     ],
