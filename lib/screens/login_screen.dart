@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/theme_provider.dart';
 import '../theme/design_tokens.dart';
 import '../services/auth_service.dart';
+import '../utils/permissions_util.dart';
 import '../widgets/app_button.dart';
 import '../widgets/app_input.dart';
 import '../widgets/social_button.dart';
@@ -41,10 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ) async {
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         if (!_isEmailLoading && mounted) {
-          await _checkAndShowThemeDialog();
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, '/home');
-          }
+          await _handlePostLogin();
         }
       }
     });
@@ -169,6 +167,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  Future<void> _handlePostLogin() async {
+    final profile = await _authService.getProfile();
+    final isComplete = profile != null && (profile['full_name']?.toString().isNotEmpty ?? false);
+
+    if (mounted) {
+      await PermissionsUtil.requestStartupPermissions(context);
+    }
+    
+    if (mounted) {
+      await _checkAndShowThemeDialog();
+    }
+    
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, isComplete ? '/home' : '/profile-completion');
+    }
+  }
+
   Future<void> _loginWithEmail() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -179,10 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _passCtrl.text,
       );
       if (mounted) {
-        await _checkAndShowThemeDialog();
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
+        await _handlePostLogin();
       }
     } catch (e) {
       if (mounted) {

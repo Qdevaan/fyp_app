@@ -4,6 +4,8 @@ import '../theme/design_tokens.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/auth_service.dart';
+import '../utils/permissions_util.dart';
 import '../widgets/glass_morphism.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -35,12 +37,6 @@ class _SplashScreenState extends State<SplashScreen> {
           _progress = 0.3;
           _loadingText = 'Loading...';
         });
-      }
-      
-      try {
-        await _requestStartupPermissions();
-      } catch (e) {
-        debugPrint('Permissions error: $e');
       }
 
       if (mounted) {
@@ -87,46 +83,6 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
-  Future<void> _requestStartupPermissions() async {
-    final permissionsToRequest = <Permission>[
-      Permission.microphone,
-      Permission.camera,
-      Permission.storage,
-      Permission.photos,
-      Permission.videos,
-      Permission.location,
-      // Avoid requesting locationAlways with location simultaneously as it crashes on some Android versions
-      Permission.bluetooth,
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-      Permission.bluetoothAdvertise,
-    ];
-
-    final deniedPermissions = <Permission>[];
-
-    for (final permission in permissionsToRequest) {
-      final status = await permission.status;
-      if (status.isDenied || status.isRestricted || status.isLimited) {
-        deniedPermissions.add(permission);
-      }
-    }
-
-    if (deniedPermissions.isNotEmpty) {
-      final result = await deniedPermissions.request();
-      final hasPermanentlyDenied = result.values.any(
-        (status) => status.isPermanentlyDenied,
-      );
-
-      if (hasPermanentlyDenied && mounted) {
-        await _showSettingsDialog(
-          title: 'Permissions Required',
-          message:
-              'Some required permissions are permanently denied. Please allow Camera, Microphone, Storage, Location, and Bluetooth in app settings.',
-        );
-      }
-    }
-  }
-
   Future<void> _checkConnectivity() async {
     final results = await Connectivity().checkConnectivity();
     final hasConnection = !results.contains(ConnectivityResult.none);
@@ -142,7 +98,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _determineAuthState() async {
     final session = Supabase.instance.client.auth.currentSession;
-    _targetRoute = session != null ? '/home' : '/login';
+    if (session != null) {
+      final profile = await AuthService.instance.getProfile();
+      final isComplete = profile != null && (profile['full_name']?.toString().isNotEmpty ?? false);
+
+      if (mounted) {
+        await PermissionsUtil.requestStartupPermissions(context);
+      }
+
+      _targetRoute = isComplete ? '/home' : '/profile-completion';
+    } else {
+      _targetRoute = '/login';
+    }
 
     // Simulate extra loading time for visual effect (optional)
     await Future.delayed(AppDurations.normal);
