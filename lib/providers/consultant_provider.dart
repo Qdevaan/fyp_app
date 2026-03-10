@@ -76,15 +76,21 @@ class ConsultantProvider extends ChangeNotifier {
       for (final r in rows) {
         final sid = r['session_id'] as String?;
         if (sid == null) continue;
-        seen.putIfAbsent(sid, () => {
-          'session_id': sid,
-          'title': r['question'] as String? ?? 'Chat',
-          'created_at': r['created_at'] as String? ?? '',
-        });
+        seen.putIfAbsent(
+          sid,
+          () => {
+            'session_id': sid,
+            'title': r['question'] as String? ?? 'Chat',
+            'created_at': r['created_at'] as String? ?? '',
+          },
+        );
       }
 
       final list = seen.values.toList()
-        ..sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
+        ..sort(
+          (a, b) =>
+              (b['created_at'] as String).compareTo(a['created_at'] as String),
+        );
 
       _pastChats = list;
       _drawerLoading = false;
@@ -127,7 +133,10 @@ class ConsultantProvider extends ChangeNotifier {
         }
       }
       if (_messages.isEmpty) {
-        _messages.add({"role": "ai", "text": "This conversation appears to be empty."});
+        _messages.add({
+          "role": "ai",
+          "text": "This conversation appears to be empty.",
+        });
       }
       _loadingChat = false;
       notifyListeners();
@@ -144,6 +153,7 @@ class ConsultantProvider extends ChangeNotifier {
   Future<void> sendMessage(
     String text,
     ApiService api, {
+    String tone = 'casual',
     void Function()? onFirstToken,
     void Function(String fullResponse)? onComplete,
   }) async {
@@ -165,6 +175,7 @@ class ConsultantProvider extends ChangeNotifier {
         user.id,
         text,
         sessionId: _currentSessionId,
+        mode: tone,
         onSessionCreated: (sid) {
           _currentSessionId = sid;
           _drawerLoaded = false;

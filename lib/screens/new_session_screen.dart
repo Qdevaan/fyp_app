@@ -11,6 +11,7 @@ import '../services/auth_service.dart';
 import '../services/deepgram_service.dart';
 import '../services/connection_service.dart';
 import '../providers/session_provider.dart';
+import '../providers/settings_provider.dart';
 import '../widgets/chat_bubble.dart';
 
 // ============================================================================
@@ -42,11 +43,13 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     deepgram.addListener(_onDeepgramUpdate);
 
     _pulseController = AnimationController(
-        vsync: this, duration: const Duration(seconds: 2))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat();
     _blobController = AnimationController(
-        vsync: this, duration: const Duration(seconds: 8))
-      ..repeat();
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
   }
 
   @override
@@ -76,8 +79,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     if (user == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("User not found. Please login again.")),
+          const SnackBar(content: Text("User not found. Please login again.")),
         );
       }
       return;
@@ -98,10 +100,14 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF0D1B1F).withAlpha(235) : Colors.white.withAlpha(242),
+                    color: isDark
+                        ? const Color(0xFF0D1B1F).withAlpha(235)
+                        : Colors.white.withAlpha(242),
                     borderRadius: BorderRadius.circular(AppRadius.xxl),
                     border: Border.all(
-                      color: isDark ? AppColors.glassBorder : Colors.grey.shade200,
+                      color: isDark
+                          ? AppColors.glassBorder
+                          : Colors.grey.shade200,
                     ),
                   ),
                   padding: const EdgeInsets.all(24),
@@ -117,7 +123,11 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                               color: AppColors.error.withAlpha(26),
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            child: const Icon(Icons.stop_circle_outlined, color: AppColors.error, size: 20),
+                            child: const Icon(
+                              Icons.stop_circle_outlined,
+                              color: AppColors.error,
+                              size: 20,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Text(
@@ -135,7 +145,9 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                         'Your conversation will be saved.',
                         style: GoogleFonts.manrope(
                           fontSize: 14,
-                          color: isDark ? AppColors.slate400 : AppColors.slate500,
+                          color: isDark
+                              ? AppColors.slate400
+                              : AppColors.slate500,
                           height: 1.5,
                         ),
                       ),
@@ -149,13 +161,17 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                               'Cancel',
                               style: GoogleFonts.manrope(
                                 fontWeight: FontWeight.w700,
-                                color: isDark ? AppColors.slate400 : AppColors.slate500,
+                                color: isDark
+                                    ? AppColors.slate400
+                                    : AppColors.slate500,
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           FilledButton(
-                            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.error,
+                            ),
                             onPressed: () => Navigator.pop(ctx, true),
                             child: const Text('End Session'),
                           ),
@@ -173,21 +189,28 @@ class _NewSessionScreenState extends State<NewSessionScreen>
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Saving Session to Memory...")));
+          const SnackBar(content: Text("Saving Session to Memory...")),
+        );
       }
 
       final success = await _session.endSession(api, deepgram);
 
       if (mounted) {
         if (success) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text("Session Saved!"),
-              backgroundColor: AppColors.success));
+              backgroundColor: AppColors.success,
+            ),
+          );
           Navigator.pop(context);
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
               content: Text("Failed to save."),
-              backgroundColor: AppColors.error));
+              backgroundColor: AppColors.error,
+            ),
+          );
         }
       }
     } else {
@@ -198,9 +221,11 @@ class _NewSessionScreenState extends State<NewSessionScreen>
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       Future.delayed(const Duration(milliseconds: 100), () {
-        _scrollController.animateTo(0.0,
-            duration: AppDurations.dialog,
-            curve: Curves.easeOut);
+        _scrollController.animateTo(
+          0.0,
+          duration: AppDurations.dialog,
+          curve: Curves.easeOut,
+        );
       });
     }
   }
@@ -211,18 +236,19 @@ class _NewSessionScreenState extends State<NewSessionScreen>
 
     return Consumer<SessionProvider>(
       builder: (context, session, _) {
-        return Scaffold(
-          backgroundColor:
-              isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-          body: Stack(
-            children: [
-              ..._buildBlobs(isDark, session.isSessionActive),
-              SafeArea(
-                child: session.isSessionActive
-                    ? _buildActiveSession(isDark, session)
-                    : _buildPreSession(isDark, session),
-              ),
-            ],
+        return MeshGradientBackground(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              children: [
+                ..._buildBlobs(isDark, session.isSessionActive),
+                SafeArea(
+                  child: session.isSessionActive
+                      ? _buildActiveSession(isDark, session)
+                      : _buildPreSession(isDark, session),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -241,8 +267,9 @@ class _NewSessionScreenState extends State<NewSessionScreen>
             height: 280,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Theme.of(context).colorScheme.primary
-                  .withAlpha(isActive ? 20 : 31),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withAlpha(isActive ? 20 : 31),
             ),
           ),
         ),
@@ -277,35 +304,38 @@ class _NewSessionScreenState extends State<NewSessionScreen>
             children: [
               IconButton(
                 onPressed: () => Navigator.pop(context),
-                icon: Icon(Icons.arrow_back,
-                    color: isDark ? Colors.white : Colors.black87),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: isDark ? Colors.white : Colors.black87,
+                ),
               ),
               Expanded(
                 child: Center(
                   child: Text(
                     'Live Wingman',
                     style: GoogleFonts.manrope(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? Colors.white
-                            : AppColors.slate900),
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.slate900,
+                    ),
                   ),
                 ),
               ),
               IconButton(
                 icon: Icon(
-                    session.swapSpeakers
-                        ? Icons.swap_horiz_rounded
-                        : Icons.compare_arrows_rounded,
-                    color: isDark ? Colors.white70 : Colors.grey),
+                  session.swapSpeakers
+                      ? Icons.swap_horiz_rounded
+                      : Icons.compare_arrows_rounded,
+                  color: isDark ? Colors.white70 : Colors.grey,
+                ),
                 tooltip: "Swap Speakers",
                 onPressed: () {
                   session.toggleSwapSpeakers();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text("Speakers Swapped!"),
-                        duration: Duration(milliseconds: 500)),
+                      content: Text("Speakers Swapped!"),
+                      duration: Duration(milliseconds: 500),
+                    ),
                   );
                 },
               ),
@@ -320,77 +350,83 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _CheckItem(
-                      icon: Icons.mic,
-                      label: 'Microphone',
-                      status: 'Ready',
-                      color: AppColors.success,
-                      isDark: isDark),
+                    icon: Icons.mic,
+                    label: 'Microphone',
+                    status: 'Ready',
+                    color: AppColors.success,
+                    isDark: isDark,
+                  ),
                   const SizedBox(height: 12),
                   _CheckItem(
                     icon: Icons.wifi,
                     label: 'Server',
                     status: isServerOnline ? 'Connected' : 'Offline',
-                    color: isServerOnline
-                        ? AppColors.success
-                        : AppColors.error,
+                    color: isServerOnline ? AppColors.success : AppColors.error,
                     isDark: isDark,
                   ),
                   const SizedBox(height: 12),
                   _CheckItem(
-                      icon: Icons.bluetooth,
-                      label: 'Bluetooth',
-                      status: 'Optional',
-                      color: AppColors.warning,
-                      isDark: isDark),
+                    icon: Icons.bluetooth,
+                    label: 'Bluetooth',
+                    status: 'Optional',
+                    color: AppColors.warning,
+                    isDark: isDark,
+                  ),
                   const SizedBox(height: 20),
 
                   // Server offline warning banner
                   if (!isServerOnline) ...[
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: AppColors.error.withAlpha(26),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                              color: AppColors.error.withAlpha(102)),
+                            color: AppColors.error.withAlpha(102),
+                          ),
                         ),
                         child: Row(
                           children: [
-                            const Icon(Icons.cloud_off,
-                                color: AppColors.error, size: 20),
+                            const Icon(
+                              Icons.cloud_off,
+                              color: AppColors.error,
+                              size: 20,
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     'Server Offline',
                                     style: GoogleFonts.manrope(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        color: AppColors.error),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13,
+                                      color: AppColors.error,
+                                    ),
                                   ),
                                   Text(
                                     'Set your server URL in Connections to enable sessions.',
                                     style: GoogleFonts.manrope(
-                                        fontSize: 12,
-                                        color: AppColors.error
-                                            .withAlpha(204)),
+                                      fontSize: 12,
+                                      color: AppColors.error.withAlpha(204),
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.pushNamed(
-                                  context, '/connections'),
-                              child: Text('Fix',
-                                  style: GoogleFonts.manrope(
-                                      color: AppColors.error,
-                                      fontWeight: FontWeight.w700)),
+                              onPressed: () =>
+                                  Navigator.pushNamed(context, '/connections'),
+                              child: Text(
+                                'Fix',
+                                style: GoogleFonts.manrope(
+                                  color: AppColors.error,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -408,7 +444,8 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
-                                    'Server is offline. Connect to the server first.'),
+                                  'Server is offline. Connect to the server first.',
+                                ),
                                 backgroundColor: AppColors.error,
                                 behavior: SnackBarBehavior.floating,
                               ),
@@ -418,9 +455,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                       animation: _pulseController,
                       builder: (_, child) {
                         final scale = isServerOnline
-                            ? 1.0 +
-                                sin(_pulseController.value * 2 * pi) *
-                                    0.03
+                            ? 1.0 + sin(_pulseController.value * 2 * pi) * 0.03
                             : 1.0;
                         return Transform.scale(
                           scale: scale,
@@ -437,43 +472,47 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                                   colors: isServerOnline
                                       ? [
                                           Theme.of(context).colorScheme.primary,
-                                          Theme.of(context).colorScheme.primary.withAlpha(200),
+                                          Theme.of(
+                                            context,
+                                          ).colorScheme.primary.withAlpha(200),
                                         ]
                                       : [
                                           Colors.grey.shade500,
-                                          Colors.grey.shade700
+                                          Colors.grey.shade700,
                                         ],
                                 ),
                                 boxShadow: isServerOnline
                                     ? [
                                         BoxShadow(
-                                            color: Theme.of(context).colorScheme.primary
-                                                .withAlpha(89),
-                                            blurRadius: 30,
-                                            spreadRadius: 5)
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.primary.withAlpha(89),
+                                          blurRadius: 30,
+                                          spreadRadius: 5,
+                                        ),
                                       ]
                                     : [],
                               ),
                               child: Column(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.center,
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
-                                      isServerOnline
-                                          ? Icons.mic
-                                          : Icons.cloud_off,
-                                      color: Colors.white,
-                                      size: 36),
+                                    isServerOnline
+                                        ? Icons.mic
+                                        : Icons.cloud_off,
+                                    color: Colors.white,
+                                    size: 36,
+                                  ),
                                   const SizedBox(height: 4),
                                   Text(
-                                      isServerOnline
-                                          ? 'START'
-                                          : 'OFFLINE',
-                                      style: GoogleFonts.manrope(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
-                                          color: Colors.white,
-                                          letterSpacing: 2)),
+                                    isServerOnline ? 'START' : 'OFFLINE',
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
@@ -489,9 +528,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                         : 'Connect to server to begin',
                     style: GoogleFonts.manrope(
                       fontSize: 14,
-                      color: isDark
-                          ? AppColors.slate400
-                          : AppColors.slate500,
+                      color: isDark ? AppColors.slate400 : AppColors.slate500,
                     ),
                   ),
                 ],
@@ -517,19 +554,19 @@ class _NewSessionScreenState extends State<NewSessionScreen>
             children: [
               IconButton(
                 onPressed: () {},
-                icon: const Icon(Icons.arrow_back,
-                    color: Colors.transparent),
+                icon: const Icon(Icons.arrow_back, color: Colors.transparent),
               ),
               Expanded(
                 child: Center(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
+                      horizontal: 14,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.error.withAlpha(51),
                       borderRadius: BorderRadius.circular(20),
-                      border:
-                          Border.all(color: AppColors.error.withAlpha(102)),
+                      border: Border.all(color: AppColors.error.withAlpha(102)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -538,16 +575,20 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                              color: AppColors.error,
-                              shape: BoxShape.circle),
+                            color: AppColors.error,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        Text('LIVE',
-                            style: GoogleFonts.manrope(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.error,
-                                letterSpacing: 1)),
+                        Text(
+                          'LIVE',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.error,
+                            letterSpacing: 1,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -555,16 +596,18 @@ class _NewSessionScreenState extends State<NewSessionScreen>
               ),
               IconButton(
                 icon: Icon(
-                    session.swapSpeakers
-                        ? Icons.swap_horiz_rounded
-                        : Icons.compare_arrows_rounded,
-                    color: isDark ? Colors.white70 : Colors.grey),
+                  session.swapSpeakers
+                      ? Icons.swap_horiz_rounded
+                      : Icons.compare_arrows_rounded,
+                  color: isDark ? Colors.white70 : Colors.grey,
+                ),
                 onPressed: () {
                   session.toggleSwapSpeakers();
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text("Speakers Swapped!"),
-                        duration: Duration(milliseconds: 500)),
+                      content: Text("Speakers Swapped!"),
+                      duration: Duration(milliseconds: 500),
+                    ),
                   );
                 },
               ),
@@ -579,17 +622,23 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.graphic_eq,
-                          size: 52,
-                          color: Theme.of(context).colorScheme.primary
-                              .withAlpha(102)),
+                      Icon(
+                        Icons.graphic_eq,
+                        size: 52,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withAlpha(102),
+                      ),
                       const SizedBox(height: 10),
-                      Text("Listening...",
-                          style: GoogleFonts.manrope(
-                              color: isDark
-                                  ? AppColors.slate400
-                                  : AppColors.slate500,
-                              fontSize: 16)),
+                      Text(
+                        "Listening...",
+                        style: GoogleFonts.manrope(
+                          color: isDark
+                              ? AppColors.slate400
+                              : AppColors.slate500,
+                          fontSize: 16,
+                        ),
+                      ),
                     ],
                   ),
                 )
@@ -602,50 +651,56 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                     final msg = logs[logs.length - 1 - index];
                     bool isMe = msg['speaker'] == "User";
                     return ChatBubble(
-                        text: msg['text'],
-                        isUser: isMe,
-                        speakerLabel: isMe ? null : "Other");
+                      text: msg['text'],
+                      isUser: isMe,
+                      speakerLabel: isMe ? null : "Other",
+                    );
                   },
                 ),
         ),
 
         // HUD Panel
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          decoration: BoxDecoration(
-            color: isDark
-                ? AppColors.glassWhite
-                : Colors.white.withAlpha(242),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-            border: isDark
-                ? const Border(
-                    top: BorderSide(color: AppColors.glassBorder),
-                  )
-                : null,
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.xxl),
           ),
-          child: Column(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.backgroundDark.withAlpha(200) : Colors.white.withAlpha(220),
+                border: Border(
+                  top: BorderSide(
+                    color: isDark ? AppColors.glassBorder : Colors.white.withAlpha(255),
+                  ),
+                ),
+              ),
+              child: Column(
             children: [
               // Suggestion box
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary
-                      .withAlpha(isDark ? 26 : 13),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withAlpha(isDark ? 26 : 13),
                   borderRadius: BorderRadius.circular(AppRadius.xxl),
                   border: Border.all(
-                      color: Theme.of(context).colorScheme.primary
-                          .withAlpha(38)),
+                    color: Theme.of(context).colorScheme.primary.withAlpha(38),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.auto_awesome,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.primary),
+                        Icon(
+                          Icons.auto_awesome,
+                          size: 14,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           'AI INSIGHT',
@@ -661,9 +716,8 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                     const SizedBox(height: 8),
                     ConstrainedBox(
                       constraints: BoxConstraints(
-                          maxHeight:
-                              MediaQuery.of(context).size.height *
-                                  0.25),
+                        maxHeight: MediaQuery.of(context).size.height * 0.25,
+                      ),
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
                         child: _buildAdviceContent(isDark, session),
@@ -679,11 +733,13 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                 Column(
                   children: [
                     CircularProgressIndicator(
-                        color: Theme.of(context).colorScheme.primary),
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(height: 10),
-                    Text("Saving Memories...",
-                        style: GoogleFonts.manrope(
-                            color: AppColors.textMuted)),
+                    Text(
+                      "Saving Memories...",
+                      style: GoogleFonts.manrope(color: AppColors.textMuted),
+                    ),
                   ],
                 )
               else
@@ -699,10 +755,11 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                             ? AppColors.glassWhite
                             : Colors.grey.shade200,
                       ),
-                      child: Icon(Icons.mic_off,
-                          color:
-                              isDark ? Colors.white54 : Colors.grey,
-                          size: 22),
+                      child: Icon(
+                        Icons.mic_off,
+                        color: isDark ? Colors.white54 : Colors.grey,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 20),
                     GestureDetector(
@@ -715,13 +772,17 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                           color: AppColors.error,
                           boxShadow: [
                             BoxShadow(
-                                color: AppColors.error.withAlpha(102),
-                                blurRadius: 16,
-                                spreadRadius: 2)
+                              color: AppColors.error.withAlpha(102),
+                              blurRadius: 16,
+                              spreadRadius: 2,
+                            ),
                           ],
                         ),
-                        child: const Icon(Icons.stop_rounded,
-                            color: Colors.white, size: 32),
+                        child: const Icon(
+                          Icons.stop_rounded,
+                          color: Colors.white,
+                          size: 32,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -734,15 +795,18 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                             ? AppColors.glassWhite
                             : Colors.grey.shade200,
                       ),
-                      child: Icon(Icons.settings,
-                          color:
-                              isDark ? Colors.white54 : Colors.grey,
-                          size: 22),
+                      child: Icon(
+                        Icons.settings,
+                        color: isDark ? Colors.white54 : Colors.grey,
+                        size: 22,
+                      ),
                     ),
                   ],
                 ),
             ],
           ),
+        ),
+        ),
         ),
       ],
     );
@@ -759,30 +823,41 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         ),
         child: Row(
           children: [
-            const Icon(Icons.cloud_off_rounded,
-                color: AppColors.error, size: 18),
+            const Icon(
+              Icons.cloud_off_rounded,
+              color: AppColors.error,
+              size: 18,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 'Live updates stopped. Tap Retry to fetch response via HTTP.',
                 style: GoogleFonts.manrope(
-                    fontSize: 12, color: AppColors.error, height: 1.4),
+                  fontSize: 12,
+                  color: AppColors.error,
+                  height: 1.4,
+                ),
               ),
             ),
             TextButton(
               onPressed: () {
-                final api =
-                    Provider.of<ApiService>(context, listen: false);
+                final api = Provider.of<ApiService>(context, listen: false);
                 session.retryWingman(api);
               },
               style: TextButton.styleFrom(
                 foregroundColor: AppColors.error,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 4),
+                  horizontal: 10,
+                  vertical: 4,
+                ),
               ),
-              child: Text('Retry',
-                  style: GoogleFonts.manrope(
-                      fontWeight: FontWeight.w700, fontSize: 13)),
+              child: Text(
+                'Retry',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
             ),
           ],
         ),
@@ -795,59 +870,65 @@ class _NewSessionScreenState extends State<NewSessionScreen>
       List<Widget> sections = [];
 
       final adviceMatch = RegExp(
-              r"\*\*Context-Based Advice:\*\*\s*(.*?)(?=(?:\d+\.?\s*)?\*\*Clarification Request:|(?:\d+\.?\s*)?\*\*Apology & Confirmation.*?:?\*\*|$)",
-              dotAll: true)
-          .firstMatch(suggestion);
+        r"\*\*Context-Based Advice:\*\*\s*(.*?)(?=(?:\d+\.?\s*)?\*\*Clarification Request:|(?:\d+\.?\s*)?\*\*Apology & Confirmation.*?:?\*\*|$)",
+        dotAll: true,
+      ).firstMatch(suggestion);
       final clarificationMatch = RegExp(
-              r"\*\*Clarification Request:\*\*\s*(.*?)(?=(?:\d+\.?\s*)?\*\*Apology & Confirmation.*?:?\*\*|$)",
-              dotAll: true)
-          .firstMatch(suggestion);
-      final apologyMatch =
-          RegExp(r"\*\*Apology & Confirmation.*?:?\*\*\s*(.*)", dotAll: true)
-              .firstMatch(suggestion);
+        r"\*\*Clarification Request:\*\*\s*(.*?)(?=(?:\d+\.?\s*)?\*\*Apology & Confirmation.*?:?\*\*|$)",
+        dotAll: true,
+      ).firstMatch(suggestion);
+      final apologyMatch = RegExp(
+        r"\*\*Apology & Confirmation.*?:?\*\*\s*(.*)",
+        dotAll: true,
+      ).firstMatch(suggestion);
 
-      if (adviceMatch != null &&
-          adviceMatch.group(1)!.trim().isNotEmpty) {
-        sections.add(_buildSectionCard(
+      if (adviceMatch != null && adviceMatch.group(1)!.trim().isNotEmpty) {
+        sections.add(
+          _buildSectionCard(
             "ADVICE",
             adviceMatch.group(1)!.trim(),
             AppColors.success.withAlpha(38),
             AppColors.success,
             Icons.lightbulb_outline,
-            isDark));
+            isDark,
+          ),
+        );
       }
       if (clarificationMatch != null &&
           clarificationMatch.group(1)!.trim().isNotEmpty) {
-        sections.add(_buildSectionCard(
+        sections.add(
+          _buildSectionCard(
             "CLARIFICATION",
             clarificationMatch.group(1)!.trim(),
             AppColors.warning.withAlpha(38),
             AppColors.warning,
             Icons.help_outline,
-            isDark));
+            isDark,
+          ),
+        );
       }
-      if (apologyMatch != null &&
-          apologyMatch.group(1)!.trim().isNotEmpty) {
-        sections.add(_buildSectionCard(
+      if (apologyMatch != null && apologyMatch.group(1)!.trim().isNotEmpty) {
+        sections.add(
+          _buildSectionCard(
             "CONFIRMATION",
             apologyMatch.group(1)!.trim(),
-            Theme.of(context).colorScheme.primary
-                .withAlpha(38),
+            Theme.of(context).colorScheme.primary.withAlpha(38),
             Theme.of(context).colorScheme.primary,
             Icons.info_outline,
-            isDark));
+            isDark,
+          ),
+        );
       }
       return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: sections);
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: sections,
+      );
     }
 
     return Text(
       suggestion,
       style: GoogleFonts.manrope(
-        color: isDark
-            ? AppColors.slate200
-            : AppColors.slate900,
+        color: isDark ? AppColors.slate200 : AppColors.slate900,
         fontSize: 15,
         height: 1.5,
         fontWeight: FontWeight.w500,
@@ -855,8 +936,14 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     );
   }
 
-  Widget _buildSectionCard(String title, String content, Color bg,
-      Color fg, IconData icon, bool isDark) {
+  Widget _buildSectionCard(
+    String title,
+    String content,
+    Color bg,
+    Color fg,
+    IconData icon,
+    bool isDark,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -871,22 +958,26 @@ class _NewSessionScreenState extends State<NewSessionScreen>
             children: [
               Icon(icon, size: 14, color: fg),
               const SizedBox(width: 6),
-              Text(title,
-                  style: GoogleFonts.manrope(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                      color: fg,
-                      letterSpacing: 0.5)),
+              Text(
+                title,
+                style: GoogleFonts.manrope(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: fg,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(content,
-              style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  color: isDark
-                      ? AppColors.slate200
-                      : AppColors.slate700,
-                  height: 1.3)),
+          Text(
+            content,
+            style: GoogleFonts.manrope(
+              fontSize: 13,
+              color: isDark ? AppColors.slate200 : AppColors.slate700,
+              height: 1.3,
+            ),
+          ),
         ],
       ),
     );
@@ -914,16 +1005,19 @@ class _CheckItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 40),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.glassWhite : Colors.white,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(
-            color: isDark
-                ? AppColors.glassBorder
-                : Colors.grey.shade200),
-      ),
-      child: Row(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            decoration: BoxDecoration(
+              color: isDark ? AppColors.glassWhite : Colors.white.withAlpha(200),
+              border: Border.all(
+                color: isDark ? AppColors.glassBorder : Colors.white.withAlpha(255),
+              ),
+            ),
+            child: Row(
         children: [
           Container(
             width: 36,
@@ -954,6 +1048,9 @@ class _CheckItem extends StatelessWidget {
             ),
           ),
         ],
+            ),
+          ),
+        ),
       ),
     );
   }

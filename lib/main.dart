@@ -9,6 +9,7 @@ import 'services/deepgram_service.dart';
 import 'services/voice_assistant_service.dart';
 import 'services/wake_word_service.dart';
 import 'providers/theme_provider.dart';
+import 'providers/settings_provider.dart';
 import 'providers/consultant_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/home_provider.dart';
@@ -79,7 +80,8 @@ class BubblesApp extends StatelessWidget {
         // 4. Theme Provider
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
 
-        // 5. Deepgram Service
+          // 4.5. Settings Provider
+          ChangeNotifierProvider(create: (context) => SettingsProvider()),
         ChangeNotifierProvider(create: (context) => DeepgramService()),
 
         // 6. Wake Word Service (Porcupine)

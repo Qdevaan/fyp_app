@@ -47,13 +47,19 @@ class SessionProvider extends ChangeNotifier {
   /// Process new transcript from Deepgram.
   void onTranscriptReceived(DeepgramService deepgram, ApiService api) {
     if (deepgram.currentTranscript.isEmpty) return;
-    if (_sessionLogs.isNotEmpty && _sessionLogs.last['text'] == deepgram.currentTranscript) return;
+    if (_sessionLogs.isNotEmpty &&
+        _sessionLogs.last['text'] == deepgram.currentTranscript)
+      return;
 
     String serverSpeaker = deepgram.currentSpeaker == "user" ? "User" : "Other";
     String finalSpeaker = serverSpeaker;
-    if (_swapSpeakers) finalSpeaker = serverSpeaker == "User" ? "Other" : "User";
+    if (_swapSpeakers)
+      finalSpeaker = serverSpeaker == "User" ? "Other" : "User";
 
-    _sessionLogs.add({"speaker": finalSpeaker, "text": deepgram.currentTranscript});
+    _sessionLogs.add({
+      "speaker": finalSpeaker,
+      "text": deepgram.currentTranscript,
+    });
     notifyListeners();
 
     if (finalSpeaker == "Other") {
@@ -76,6 +82,7 @@ class SessionProvider extends ChangeNotifier {
         transcript,
         sessionId: _sessionId,
         speakerRole: 'others',
+        mode: _currentLiveTone,
       );
 
       _realtimeTimeoutTimer?.cancel();
@@ -103,7 +110,10 @@ class SessionProvider extends ChangeNotifier {
     _currentSuggestion = "Retrying...";
     notifyListeners();
 
-    final advice = await api.sendTranscriptToWingman(user.id, _lastTranscriptForRetry!);
+    final advice = await api.sendTranscriptToWingman(
+      user.id,
+      _lastTranscriptForRetry!,
+    );
     _currentSuggestion = advice ?? "No response from server.";
     notifyListeners();
   }
@@ -137,8 +147,15 @@ class SessionProvider extends ChangeNotifier {
         .subscribe();
   }
 
+  String _currentLiveTone = 'casual';
+
   /// Start a session: create server record, connect Deepgram.
-  Future<void> startSession(ApiService api, DeepgramService deepgram) async {
+  Future<void> startSession(
+    ApiService api,
+    DeepgramService deepgram, {
+    String tone = 'casual',
+  }) async {
+    _currentLiveTone = tone;
     final user = AuthService.instance.currentUser;
     if (user == null) return;
 

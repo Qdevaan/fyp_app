@@ -174,74 +174,85 @@ class _ConsultantScreenState extends State<ConsultantScreen>
             Row(
               children: [
                 Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.error.withAlpha(26),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.wifi_off_rounded, color: AppColors.error, size: 20),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Not Connected',
-                          style: GoogleFonts.manrope(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w800,
-                            color: isDark ? Colors.white : AppColors.slate900,
-                          ),
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withAlpha(26),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'The Consultant AI requires a server connection. Please connect first in Settings.',
+                  child: const Icon(
+                    Icons.wifi_off_rounded,
+                    color: AppColors.error,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Not Connected',
                     style: GoogleFonts.manrope(
-                      fontSize: 14,
-                      color: isDark ? AppColors.textSecondary : AppColors.textMuted,
-                      height: 1.5,
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.slate900,
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: Text(
-                          'Cancel',
-                          style: GoogleFonts.manrope(
-                            fontWeight: FontWeight.w600,
-                            color: isDark ? AppColors.textSecondary : AppColors.textMuted,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          Navigator.pushNamed(context, '/connections');
-                        },
-                        style: TextButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(31),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                          ),
-                        ),
-                        child: Text(
-                          'Connect',
-                          style: GoogleFonts.manrope(
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'The Consultant AI requires a server connection. Please connect first in Settings.',
+              style: GoogleFonts.manrope(
+                fontSize: 14,
+                color: isDark ? AppColors.textSecondary : AppColors.textMuted,
+                height: 1.5,
               ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? AppColors.textSecondary
+                          : AppColors.textMuted,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.pushNamed(context, '/connections');
+                  },
+                  style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withAlpha(31),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                    ),
+                  ),
+                  child: Text(
+                    'Connect',
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -430,7 +441,9 @@ class _ConsultantScreenState extends State<ConsultantScreen>
     try {
       final response = await http
           .post(
-            Uri.parse('https://api.deepgram.com/v1/speak?model=aura-orpheus-en'),
+            Uri.parse(
+              'https://api.deepgram.com/v1/speak?model=aura-orpheus-en',
+            ),
             headers: {
               'Authorization': 'Token $apiKey',
               'Content-Type': 'application/json',
@@ -556,9 +569,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                   textAlign: TextAlign.center,
                   style: GoogleFonts.manrope(
                     fontSize: 13,
-                    color: isDark
-                        ? AppColors.slate600
-                        : Colors.grey.shade400,
+                    color: isDark ? AppColors.slate600 : Colors.grey.shade400,
                     height: 1.5,
                   ),
                 ),
@@ -596,291 +607,348 @@ class _ConsultantScreenState extends State<ConsultantScreen>
 
     return Consumer<ConsultantProvider>(
       builder: (context, chat, _) {
-        return Scaffold(
-          key: _scaffoldKey,
-          drawer: _buildDrawer(isDark, chat),
-          onDrawerChanged: (isOpen) {
-            if (isOpen && !chat.drawerLoaded && !chat.drawerLoading) {
-              _loadPastChats();
-            }
-          },
-          body: SafeArea(
-            child: Column(
-              children: [
-                // -- TOP BAR --
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.transparent,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: isDark
-                            ? AppColors.glassBorder
-                            : AppColors.slate200,
+        return MeshGradientBackground(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            key: _scaffoldKey,
+            drawer: _buildDrawer(isDark, chat),
+            onDrawerChanged: (isOpen) {
+              if (isOpen && !chat.drawerLoaded && !chat.drawerLoading) {
+                _loadPastChats();
+              }
+            },
+            body: SafeArea(
+              child: Column(
+                children: [
+                  // -- TOP BAR --
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      border: Border(
+                        bottom: BorderSide(
+                          color: isDark
+                              ? AppColors.glassBorder
+                              : AppColors.slate200,
+                        ),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
+                      child: Row(
+                        children: [
+                          Semantics(
+                            label: 'Open conversations menu',
+                            child: IconButton(
+                              onPressed: () =>
+                                  _scaffoldKey.currentState?.openDrawer(),
+                              icon: Icon(
+                                Icons.menu_rounded,
+                                color: isDark
+                                    ? AppColors.textSecondary
+                                    : AppColors.textMuted,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              'Consultant',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.manrope(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: isDark
+                                    ? Colors.white
+                                    : AppColors.slate900,
+                              ),
+                            ),
+                          ),
+                          MicToggleButton(
+                            voiceMode: _voiceMode,
+                            onTap: () {
+                              if (_voiceMode == CVoiceMode.speaking) {
+                                _interruptAndListen();
+                              } else {
+                                _toggleVoiceMode();
+                              }
+                            },
+                            isDark: isDark,
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                    child: Row(
-                      children: [
-                        Semantics(
-                          label: 'Open conversations menu',
-                          child: IconButton(
-                            onPressed: () =>
-                                _scaffoldKey.currentState?.openDrawer(),
-                            icon: Icon(
-                              Icons.menu_rounded,
-                              color: isDark
-                                  ? AppColors.textSecondary
-                                  : AppColors.textMuted,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Text(
-                            'Consultant',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.manrope(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.slate900,
-                            ),
-                          ),
-                        ),
-                        MicToggleButton(
-                          voiceMode: _voiceMode,
-                          onTap: () {
-                            if (_voiceMode == CVoiceMode.speaking) {
-                              _interruptAndListen();
-                            } else {
-                              _toggleVoiceMode();
-                            }
-                          },
-                          isDark: isDark,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
 
-                // -- CONNECTION BANNER --
-                Consumer<ConnectionService>(
-                  builder: (_, conn, __) => conn.isConnected
-                      ? const SizedBox.shrink()
-                      : Semantics(
-                          label: 'Not connected to server. Tap to connect.',
-                          child: GestureDetector(
-                            onTap: () =>
-                                Navigator.pushNamed(context, '/connections'),
-                            child: Container(
-                              width: double.infinity,
-                              color: AppColors.error.withAlpha(31),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.wifi_off_rounded,
-                                      color: AppColors.error, size: 15),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Not connected to server - tap to connect',
-                                      style: GoogleFonts.manrope(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: AppColors.error,
+                  // -- CONNECTION BANNER --
+                  Consumer<ConnectionService>(
+                    builder: (_, conn, __) => conn.isConnected
+                        ? const SizedBox.shrink()
+                        : Semantics(
+                            label: 'Not connected to server. Tap to connect.',
+                            child: GestureDetector(
+                              onTap: () =>
+                                  Navigator.pushNamed(context, '/connections'),
+                              child: Container(
+                                width: double.infinity,
+                                color: AppColors.error.withAlpha(31),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.wifi_off_rounded,
+                                      color: AppColors.error,
+                                      size: 15,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Not connected to server - tap to connect',
+                                        style: GoogleFonts.manrope(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.error,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                  const Icon(Icons.chevron_right_rounded,
-                                      color: AppColors.error, size: 16),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                ),
-
-                // -- CHAT AREA --
-                Expanded(
-                  child: Stack(
-                    children: [
-                      chat.loadingChat
-                          ? const Center(child: CircularProgressIndicator())
-                          : ListView.builder(
-                              controller: _scrollController,
-                              padding:
-                                  const EdgeInsets.fromLTRB(16, 24, 16, 16),
-                              itemCount: chat.messages.length +
-                                  (chat.loading ? 1 : 0),
-                              itemBuilder: (context, index) {
-                                if (chat.loading &&
-                                    index == chat.messages.length) {
-                                  return TypingIndicator(isDark: isDark);
-                                }
-                                final msg = chat.messages[index];
-                                final isUser = msg['role'] == "user";
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 24),
-                                  child: isUser
-                                      ? UserBubble(
-                                          text: msg['text']!,
-                                          isDark: isDark,
-                                          time: msg['time'],
-                                        )
-                                      : AiBubble(
-                                          text: msg['text']!,
-                                          isDark: isDark,
-                                          streaming:
-                                              msg['streaming'] == 'true',
-                                          time: msg['time'],
-                                        ),
-                                );
-                              },
-                            ),
-                      if (_showScrollToBottom)
-                        Positioned(
-                          bottom: 16,
-                          right: 16,
-                          child: Semantics(
-                            label: 'Scroll to bottom',
-                            child: GestureDetector(
-                              onTap: _scrollToBottom,
-                              child: Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withAlpha(77),
-                                      blurRadius: 8,
+                                    const Icon(
+                                      Icons.chevron_right_rounded,
+                                      color: AppColors.error,
+                                      size: 16,
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  color: Colors.white,
+                              ),
+                            ),
+                          ),
+                  ),
+
+                  // -- CHAT AREA --
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        chat.loadingChat
+                            ? const Center(child: CircularProgressIndicator())
+                            : ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.fromLTRB(
+                                  16,
+                                  24,
+                                  16,
+                                  16,
+                                ),
+                                itemCount:
+                                    chat.messages.length +
+                                    (chat.loading ? 1 : 0),
+                                itemBuilder: (context, index) {
+                                  if (chat.loading &&
+                                      index == chat.messages.length) {
+                                    return TypingIndicator(isDark: isDark);
+                                  }
+                                  final msg = chat.messages[index];
+                                  final isUser = msg['role'] == "user";
+                                  return Padding(
+                                    padding: const EdgeInsets.only(bottom: 24),
+                                    child: isUser
+                                        ? UserBubble(
+                                            text: msg['text']!,
+                                            isDark: isDark,
+                                            time: msg['time'],
+                                          )
+                                        : AiBubble(
+                                            text: msg['text']!,
+                                            isDark: isDark,
+                                            streaming:
+                                                msg['streaming'] == 'true',
+                                            time: msg['time'],
+                                          ),
+                                  );
+                                },
+                              ),
+                        if (_showScrollToBottom)
+                          Positioned(
+                            bottom: 16,
+                            right: 16,
+                            child: Semantics(
+                              label: 'Scroll to bottom',
+                              child: GestureDetector(
+                                onTap: _scrollToBottom,
+                                child: Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary.withAlpha(77),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
+                      ],
+                    ),
+                  ),
+
+                  // -- VOICE STATUS BANNER --
+                  if (_voiceMode != CVoiceMode.off)
+                    VoiceStatusBanner(
+                      voiceMode: _voiceMode,
+                      partial: _voicePartial,
+                      isDark: isDark,
+                      micPulseAnim: _micPulseAnim,
+                      onStop: _stopVoiceMode,
+                    ),
+
+                  // -- INPUT AREA --
+                  ClipRRect(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? AppColors.backgroundDark.withAlpha(200)
+                              : Colors.white.withAlpha(220),
+                          border: Border(
+                            top: BorderSide(
+                              color: isDark
+                                  ? AppColors.glassBorder
+                                  : Colors.white.withAlpha(255),
+                            ),
+                          ),
                         ),
-                    ],
-                  ),
-                ),
-
-                // -- VOICE STATUS BANNER --
-                if (_voiceMode != CVoiceMode.off)
-                  VoiceStatusBanner(
-                    voiceMode: _voiceMode,
-                    partial: _voicePartial,
-                    isDark: isDark,
-                    micPulseAnim: _micPulseAnim,
-                    onStop: _stopVoiceMode,
-                  ),
-
-                // -- INPUT AREA --
-                Container(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? AppColors.backgroundDark
-                        : AppColors.backgroundLight,
-                    border: Border(
-                      top: BorderSide(
-                        color: isDark
-                            ? AppColors.glassBorder
-                            : AppColors.slate200,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(24.0),
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 8,
+                                    sigmaY: 8,
+                                  ),
+                                  child: TextField(
+                                    controller: _controller,
+                                    maxLines: 4,
+                                    minLines: 1,
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 14,
+                                      color: isDark
+                                          ? Colors.white
+                                          : AppColors.slate900,
+                                    ),
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: isDark
+                                          ? AppColors.glassInput
+                                          : Colors.white.withAlpha(220),
+                                      hintText:
+                                          'Ask about your conversations...',
+                                      hintStyle: GoogleFonts.manrope(
+                                        color: isDark
+                                            ? AppColors.textMuted
+                                            : AppColors.textSecondary,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(24.0),
+                                        borderSide: BorderSide(
+                                          color: isDark
+                                              ? AppColors.glassBorder
+                                              : AppColors.slate300,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      enabledBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(24.0),
+                                        borderSide: BorderSide(
+                                          color: isDark
+                                              ? AppColors.glassBorder
+                                              : AppColors.slate300,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      focusedBorder: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(24.0),
+                                        borderSide: BorderSide(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 14,
+                                          ),
+                                    ),
+                                    onSubmitted: (_) => _sendMessage(),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Semantics(
+                              label: 'Send message',
+                              child: GestureDetector(
+                                onTap: (chat.loading || chat.loadingChat)
+                                    ? null
+                                    : _sendMessage,
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: (chat.loading || chat.loadingChat)
+                                        ? (isDark
+                                              ? AppColors.glassWhite
+                                              : Colors.grey.shade300)
+                                        : Theme.of(context).colorScheme.primary,
+                                    shape: BoxShape.circle,
+                                    boxShadow:
+                                        (chat.loading || chat.loadingChat)
+                                        ? null
+                                        : [
+                                            BoxShadow(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .primary
+                                                  .withAlpha(77),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
+                                            ),
+                                          ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.send_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.glassInput
-                                : AppColors.slate100,
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                            border: Border.all(
-                              color: isDark ? AppColors.glassBorder : Colors.transparent,
-                            ),
-                          ),
-                          child: TextField(
-                            controller: _controller,
-                            maxLines: 4,
-                            minLines: 1,
-                            style: GoogleFonts.manrope(
-                              fontSize: 14,
-                              color: isDark
-                                  ? Colors.white
-                                  : AppColors.slate900,
-                            ),
-                            decoration: InputDecoration(
-                              hintText: 'Ask about your conversations...',
-                              hintStyle: GoogleFonts.manrope(
-                                color: isDark
-                                    ? AppColors.textMuted
-                                    : AppColors.textSecondary,
-                              ),
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 14,
-                              ),
-                            ),
-                            onSubmitted: (_) => _sendMessage(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Semantics(
-                        label: 'Send message',
-                        child: GestureDetector(
-                          onTap: (chat.loading || chat.loadingChat)
-                              ? null
-                              : _sendMessage,
-                          child: Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: (chat.loading || chat.loadingChat)
-                                  ? (isDark
-                                      ? AppColors.glassWhite
-                                      : Colors.grey.shade300)
-                                  : Theme.of(context).colorScheme.primary,
-                              shape: BoxShape.circle,
-                              boxShadow: (chat.loading || chat.loadingChat)
-                                  ? null
-                                  : [
-                                      BoxShadow(
-                                        color: Theme.of(context).colorScheme.primary.withAlpha(77),
-                                        blurRadius: 12,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                            ),
-                            child: const Icon(
-                              Icons.send_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
@@ -42,13 +43,9 @@ class ChatBubble extends StatelessWidget {
           ),
           border: isUser
               ? Border.all(
-                  color: isDark
-                      ? AppColors.glassBorder
-                      : Colors.grey.shade300,
+                  color: isDark ? AppColors.glassBorder : Colors.grey.shade300,
                 )
-              : (isDark
-                  ? Border.all(color: AppColors.glassBorder)
-                  : null),
+              : (isDark ? Border.all(color: AppColors.glassBorder) : null),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,9 +67,7 @@ class ChatBubble extends StatelessWidget {
                 Text(
                   text,
                   style: GoogleFonts.manrope(
-                    color: isDark
-                        ? AppColors.slate200
-                        : AppColors.slate900,
+                    color: isDark ? AppColors.slate200 : AppColors.slate900,
                     fontSize: 15,
                     height: 1.4,
                   ),

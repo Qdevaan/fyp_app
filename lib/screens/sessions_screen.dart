@@ -121,9 +121,10 @@ class _SessionsScreenState extends State<SessionsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final primary = Theme.of(context).colorScheme.primary;
 
-    return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: SafeArea(
+    return MeshGradientBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
         child: Column(
           children: [
             // --- Header ---
@@ -213,7 +214,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -427,17 +428,9 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                     ),
                   );
                 },
-                child: Container(
+                child: GlassPanel(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.glassWhite : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.xxl),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.glassBorder
-                          : Colors.grey.shade200,
-                    ),
-                  ),
+                  borderRadius: AppRadius.xxl,
                   child: Row(
                     children: [
                       Container(
@@ -641,17 +634,9 @@ class _ConsultantHistoryListState extends State<ConsultantHistoryList> {
                     ),
                   );
                 },
-                child: Container(
+                child: GlassPanel(
                   padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.glassWhite : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.xxl),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.glassBorder
-                          : Colors.grey.shade200,
-                    ),
-                  ),
+                  borderRadius: AppRadius.xxl,
                   child: Row(
                     children: [
                       Container(
@@ -806,8 +791,10 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      body: SafeArea(
+    return MeshGradientBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
         child: Column(
           children: [
             Padding(
@@ -959,6 +946,6 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
           ],
         ),
       ),
-    );
+    ));
   }
 }

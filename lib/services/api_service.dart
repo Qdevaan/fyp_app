@@ -21,7 +21,10 @@ class ApiService {
 
   /// Retries [action] up to [_maxRetries] times with exponential backoff + jitter.
   /// Only retries on network / timeout errors – not on successful HTTP responses.
-  Future<T> _withRetry<T>(Future<T> Function() action, {int? maxRetries}) async {
+  Future<T> _withRetry<T>(
+    Future<T> Function() action, {
+    int? maxRetries,
+  }) async {
     final retries = maxRetries ?? _maxRetries;
     for (int attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -35,7 +38,9 @@ class ApiService {
         if (e is! TimeoutException && e is! http.ClientException) rethrow;
       }
       final delay = _baseDelay * pow(2, attempt).toInt();
-      final jitter = Duration(milliseconds: Random().nextInt(delay.inMilliseconds ~/ 2 + 1));
+      final jitter = Duration(
+        milliseconds: Random().nextInt(delay.inMilliseconds ~/ 2 + 1),
+      );
       await Future.delayed(delay + jitter);
       debugPrint('Retry attempt ${attempt + 1}/$retries');
     }
@@ -46,14 +51,16 @@ class ApiService {
     if (_baseUrl.isEmpty) return null;
     try {
       return await _withRetry(() async {
-        final response = await http.post(
-          Uri.parse('$_baseUrl/getToken'),
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-          },
-          body: jsonEncode({'userId': userId}),
-        ).timeout(const Duration(seconds: 10));
+        final response = await http
+            .post(
+              Uri.parse('$_baseUrl/getToken'),
+              headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+              },
+              body: jsonEncode({'userId': userId}),
+            )
+            .timeout(const Duration(seconds: 10));
         if (response.statusCode == 200) {
           return jsonDecode(response.body) as Map<String, dynamic>;
         }
@@ -198,23 +205,23 @@ class ApiService {
 
     try {
       return await _withRetry(() async {
-      var uri = Uri.parse("$_baseUrl/ask_consultant");
-      var response = await http
-          .post(
-            uri,
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-            body: jsonEncode({"user_id": userId, "question": question}),
-          )
-          .timeout(const Duration(seconds: 30));
+        var uri = Uri.parse("$_baseUrl/ask_consultant");
+        var response = await http
+            .post(
+              uri,
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              body: jsonEncode({"user_id": userId, "question": question}),
+            )
+            .timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
-        return data['answer'] as String;
-      }
-      return "Brain Error: ${response.statusCode}";
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+          return data['answer'] as String;
+        }
+        return "Brain Error: ${response.statusCode}";
       });
     } catch (e) {
       return "Connection Error: $e";
@@ -227,34 +234,36 @@ class ApiService {
     String transcript, {
     String? sessionId,
     String speakerRole = 'others',
+    String mode = 'casual',
   }) async {
     if (_baseUrl.isEmpty) return null;
 
     try {
       return await _withRetry(() async {
-      var uri = Uri.parse("$_baseUrl/process_transcript_wingman");
-      final body = <String, dynamic>{
-        "user_id": userId,
-        "transcript": transcript,
-        "speaker_role": speakerRole,
-        if (sessionId != null) "session_id": sessionId,
-      };
-      var response = await http
-          .post(
-            uri,
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 10));
+        var uri = Uri.parse("$_baseUrl/process_transcript_wingman");
+        final body = <String, dynamic>{
+          "user_id": userId,
+          "transcript": transcript,
+          "speaker_role": speakerRole,
+          "mode": mode,
+          if (sessionId != null) "session_id": sessionId,
+        };
+        var response = await http
+            .post(
+              uri,
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              body: jsonEncode(body),
+            )
+            .timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
-        return data['advice'] as String?;
-      }
-      return null;
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+          return data['advice'] as String?;
+        }
+        return null;
       });
     } catch (e) {
       debugPrint("Wingman API Error: $e");
@@ -318,6 +327,7 @@ class ApiService {
     String userId,
     String question, {
     String? sessionId,
+    String mode = 'casual',
     void Function(String sessionId)? onSessionCreated,
   }) async* {
     if (_baseUrl.isEmpty) {
@@ -336,6 +346,7 @@ class ApiService {
       request.body = jsonEncode({
         'user_id': userId,
         'question': question,
+        'mode': mode,
         if (sessionId != null) 'session_id': sessionId,
       });
 
