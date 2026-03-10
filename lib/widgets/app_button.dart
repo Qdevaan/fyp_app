@@ -89,13 +89,13 @@ class AppButton extends StatelessWidget {
         child: Container(
           height: 52,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.primaryGlow],
+            gradient: LinearGradient(
+              colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withAlpha(200)],
             ),
             borderRadius: BorderRadius.circular(AppRadius.full),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withAlpha(51),
+                color: Theme.of(context).colorScheme.primary.withAlpha(51),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
                 spreadRadius: -2,

@@ -60,7 +60,7 @@ class ChatBubble extends StatelessWidget {
                   speakerLabel!,
                   style: GoogleFonts.manrope(
                     fontSize: 10,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.5,
                   ),

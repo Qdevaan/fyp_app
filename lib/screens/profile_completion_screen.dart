@@ -246,14 +246,14 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                                 color: isSelected
-                                    ? AppColors.primary
+                                    ? Theme.of(context).colorScheme.primary
                                     : null,
                               ),
                             ),
                             trailing: isSelected
                                 ? Icon(
                                     Icons.check,
-                                    color: AppColors.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                   )
                                 : null,
                             onTap: () {
@@ -368,7 +368,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -480,12 +480,12 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: AppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   width: 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary
+                                    color: Theme.of(context).colorScheme.primary
                                         .withAlpha(51),
                                     blurRadius: 15,
                                     offset: const Offset(0, 5),
@@ -517,7 +517,7 @@ class _ProfileCompletionScreenState extends State<ProfileCompletionScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: theme.scaffoldBackgroundColor,

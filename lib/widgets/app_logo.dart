@@ -21,7 +21,7 @@ class AppLogo extends StatelessWidget {
       errorBuilder: (c, o, s) => Icon(
         Icons.bubble_chart,
         size: size,
-        color: fallbackColor ?? AppColors.primary,
+        color: fallbackColor ?? Theme.of(context).colorScheme.primary,
       ),
     );
   }

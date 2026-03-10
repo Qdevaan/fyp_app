@@ -73,7 +73,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       leading: Icon(
                         icon,
                         color: selected
-                            ? AppColors.primary
+                            ? Theme.of(context).colorScheme.primary
                             : (isDark
                                   ? AppColors.slate400
                                   : Colors.grey.shade500),
@@ -87,7 +87,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                               ? FontWeight.w700
                               : FontWeight.w500,
                           color: selected
-                              ? AppColors.primary
+                              ? Theme.of(context).colorScheme.primary
                               : (isDark
                                     ? AppColors.slate300
                                     : AppColors.slate700),
@@ -96,7 +96,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                       trailing: selected
                           ? Icon(
                               Icons.check_circle_rounded,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                               size: 20,
                             )
                           : null,
@@ -119,7 +119,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
@@ -239,12 +239,12 @@ class _FilterChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.primary
+              ? Theme.of(context).colorScheme.primary
               : (isDark ? AppColors.glassWhite : Colors.white),
           borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
             color: selected
-                ? AppColors.primary
+                ? Theme.of(context).colorScheme.primary
                 : (isDark ? AppColors.glassBorder : Colors.grey.shade300),
           ),
         ),
@@ -444,12 +444,12 @@ class _LiveSessionsListState extends State<LiveSessionsList> {
                         width: 42,
                         height: 42,
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(51),
+                          color: Theme.of(context).colorScheme.primary.withAlpha(51),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Icon(
                           Icons.mic,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                           size: 22,
                         ),
                       ),

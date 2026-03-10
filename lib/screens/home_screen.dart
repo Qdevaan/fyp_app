@@ -243,7 +243,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
-                                colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                                colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                               ),
                             ),
                           ),
@@ -257,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: RadialGradient(
-                                colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                                colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                               ),
                             ),
                           ),
@@ -288,7 +288,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: AppColors.primary,
+                                          color: Theme.of(context).colorScheme.primary,
                                           width: 2,
                                         ),
                                       ),
@@ -428,9 +428,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ),
                                       ShaderMask(
                                         shaderCallback: (bounds) =>
-                                            const LinearGradient(
+                                            LinearGradient(
                                           colors: [
-                                            AppColors.primary,
+                                            Theme.of(context).colorScheme.primary,
                                             Color(0xFF93C5FD),
                                           ],
                                         ).createShader(bounds),
@@ -506,8 +506,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                         child: _QuickActionCard(
                                           icon: Icons.forum,
                                           iconColor:
-                                              AppColors.accent,
-                                          iconBg: AppColors.accent
+                                              Theme.of(context).colorScheme.secondary,
+                                          iconBg: Theme.of(context).colorScheme.secondary
                                               .withAlpha(51),
                                           title: 'Consultant AI',
                                           subtitle: 'Strategy & advice',
@@ -592,7 +592,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     padding: const EdgeInsets.fromLTRB(
                                         16, 8, 16, 8),
                                     child: _InsightCard(
-                                      accentColor: AppColors.primary,
+                                      accentColor: Theme.of(context).colorScheme.primary,
                                       title: 'No insights yet',
                                       badge: 'Waiting',
                                       description:
@@ -733,7 +733,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.pushNamed(context, '/connections');
                         },
                         style: TextButton.styleFrom(
-                          backgroundColor: AppColors.primary.withAlpha(38),
+                          backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(38),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.full),
@@ -743,7 +743,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           'Connect',
                           style: GoogleFonts.manrope(
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -766,7 +766,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withAlpha(isDark ? 38 : 20),
+            color: Theme.of(context).colorScheme.primary.withAlpha(isDark ? 38 : 20),
             blurRadius: 24,
             spreadRadius: -4,
           ),
@@ -831,14 +831,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: isDark
                         ? AppColors.glassWhite
-                        : AppColors.primary.withAlpha(26),
+                        : Theme.of(context).colorScheme.primary.withAlpha(26),
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   child: Icon(
                     Icons.mic,
                     color: isDark
                         ? Colors.white
-                        : AppColors.primary,
+                        : Theme.of(context).colorScheme.primary,
                     size: 22,
                   ),
                 ),
@@ -863,14 +863,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Container(
                     height: 48,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryGlow],
+                      gradient: LinearGradient(
+                        colors: [Theme.of(context).colorScheme.primary, Theme.of(context).colorScheme.primary.withAlpha(200)],
                       ),
                       borderRadius:
                           BorderRadius.circular(AppRadius.full),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withAlpha(51),
+                          color: Theme.of(context).colorScheme.primary.withAlpha(51),
                           blurRadius: 12,
                         ),
                       ],
@@ -971,7 +971,7 @@ class _PulseDotState extends State<_PulseDot>
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: Theme.of(context).colorScheme.primary,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -981,7 +981,7 @@ class _PulseDotState extends State<_PulseDot>
             width: 10,
             height: 10,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               shape: BoxShape.circle,
             ),
           ),

@@ -22,7 +22,7 @@ class ChatHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -106,7 +106,7 @@ class UserBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -200,7 +200,7 @@ class AiBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -422,7 +422,7 @@ class MicToggleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     final isActive = voiceMode != CVoiceMode.off;
     final isSpeaking = voiceMode == CVoiceMode.speaking;
 
@@ -480,7 +480,7 @@ class VoiceStatusBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     final label = switch (voiceMode) {
       CVoiceMode.listening => partial.isEmpty ? 'ListeningÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦' : partial,
       CVoiceMode.processing => 'ThinkingÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦',

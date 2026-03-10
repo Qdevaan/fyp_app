@@ -174,11 +174,11 @@ class _SplashScreenState extends State<SplashScreen> {
                 Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(26),
+                          color: Theme.of(context).colorScheme.primary.withAlpha(26),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(51)),
                         ),
-                        child: const Icon(Icons.settings_outlined, color: AppColors.primary, size: 20),
+                        child: Icon(Icons.settings_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -223,15 +223,15 @@ class _SplashScreenState extends State<SplashScreen> {
                           await openAppSettings();
                         },
                         style: TextButton.styleFrom(
-                          backgroundColor: AppColors.primary.withAlpha(38),
+                          backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(38),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Open Settings',
-                          style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
+                          style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.primary),
                         ),
                       ),
                     ],
@@ -264,7 +264,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                   ),
                 ),
               ),
@@ -278,7 +278,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                   ),
                 ),
               ),
@@ -296,7 +296,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withAlpha(38),
+                        color: Theme.of(context).colorScheme.primary.withAlpha(38),
                         blurRadius: 60,
                         spreadRadius: 20,
                       ),
@@ -329,8 +329,8 @@ class _SplashScreenState extends State<SplashScreen> {
                           backgroundColor: isDark
                               ? AppColors.glassBorder
                               : AppColors.slate200,
-                          valueColor: const AlwaysStoppedAnimation<Color>(
-                            AppColors.primary,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Theme.of(context).colorScheme.primary,
                           ),
                         );
                       },

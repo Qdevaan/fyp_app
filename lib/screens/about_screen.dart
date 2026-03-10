@@ -1,4 +1,4 @@
-﻿import 'dart:ui';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../widgets/app_logo.dart';
@@ -132,16 +132,16 @@ class AboutScreen extends StatelessWidget {
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: AppColors.glassPrimary,
+                                  color: theme.colorScheme.primary.withAlpha(38),
                                   borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: AppColors.glassPrimaryBorder),
+                                  border: Border.all(color: theme.colorScheme.primary.withAlpha(77)),
                                 ),
                                 child: Text(
                                   'Bubbles v$appVersion',
                                   style: GoogleFonts.manrope(
                                     fontSize: 13,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.primary,
+                                    color: theme.colorScheme.primary,
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -178,7 +178,7 @@ class AboutScreen extends StatelessWidget {
       expandedHeight: 300.0,
       pinned: true,
       stretch: true,
-      backgroundColor: isDark ? AppColors.backgroundDark.withAlpha(220) : AppColors.primary.withAlpha(200),
+      backgroundColor: isDark ? AppColors.backgroundDark.withAlpha(220) : theme.colorScheme.primary.withAlpha(200),
       foregroundColor: Colors.white,
       elevation: 0,
       flexibleSpace: FlexibleSpaceBar(
@@ -200,7 +200,7 @@ class AboutScreen extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     AppColors.backgroundDark,
-                    AppColors.primary.withAlpha(128),
+                    theme.colorScheme.primary.withAlpha(128),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -276,11 +276,11 @@ class AboutScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: AppColors.primary.withAlpha(26),
+            color: theme.colorScheme.primary.withAlpha(26),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.primary.withAlpha(51)),
+            border: Border.all(color: theme.colorScheme.primary.withAlpha(51)),
           ),
-          child: Icon(icon, color: AppColors.primary, size: 26),
+          child: Icon(icon, color: theme.colorScheme.primary, size: 26),
         ),
         const SizedBox(width: 16),
         Text(

@@ -120,10 +120,10 @@ class _VoiceOverlayState extends State<VoiceOverlay>
         child: GlassCard(
           padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
           borderRadius: AppRadius.xxl,
-          borderColor: AppColors.primary.withAlpha(isDark ? 80 : 40),
+          borderColor: Theme.of(context).colorScheme.primary.withAlpha(isDark ? 80 : 40),
           backgroundColor: isDark 
               ? AppColors.backgroundDark.withAlpha(200) 
-              : AppColors.primary.withAlpha(20), // Accent tint
+              : Theme.of(context).colorScheme.primary.withAlpha(20), // Accent tint
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

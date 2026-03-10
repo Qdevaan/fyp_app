@@ -224,7 +224,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                           Navigator.pushNamed(context, '/connections');
                         },
                         style: TextButton.styleFrom(
-                          backgroundColor: AppColors.primary.withAlpha(31),
+                          backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(31),
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.full),
@@ -234,7 +234,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                           'Connect',
                           style: GoogleFonts.manrope(
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -489,7 +489,7 @@ class _ConsultantScreenState extends State<ConsultantScreen>
 
   // -- Drawer (reads from provider) --
   Widget _buildDrawer(bool isDark, ConsultantProvider chat) {
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     return Drawer(
       backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
       child: SafeArea(
@@ -755,11 +755,11 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: AppColors.primary,
+                                  color: Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primary.withAlpha(77),
+                                      color: Theme.of(context).colorScheme.primary.withAlpha(77),
                                       blurRadius: 8,
                                     ),
                                   ],
@@ -857,13 +857,13 @@ class _ConsultantScreenState extends State<ConsultantScreen>
                                   ? (isDark
                                       ? AppColors.glassWhite
                                       : Colors.grey.shade300)
-                                  : AppColors.primary,
+                                  : Theme.of(context).colorScheme.primary,
                               shape: BoxShape.circle,
                               boxShadow: (chat.loading || chat.loadingChat)
                                   ? null
                                   : [
                                       BoxShadow(
-                                        color: AppColors.primary.withAlpha(77),
+                                        color: Theme.of(context).colorScheme.primary.withAlpha(77),
                                         blurRadius: 12,
                                         offset: const Offset(0, 4),
                                       ),

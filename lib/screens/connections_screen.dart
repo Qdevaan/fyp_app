@@ -101,7 +101,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     final isConnected = connectionService.isConnected;
     final isConnecting =
         connectionService.status == ConnectionStatus.connecting;
-    final primary = AppColors.primary;
+    final primary = Theme.of(context).colorScheme.primary;
     final serverUrl = connectionService.serverUrl;
 
     return Scaffold(
@@ -120,7 +120,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                   ),
                 ),
               ),
@@ -134,7 +134,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                   ),
                 ),
               ),
@@ -554,7 +554,7 @@ class _ActionButton extends StatelessWidget {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: AppColors.primary,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               )

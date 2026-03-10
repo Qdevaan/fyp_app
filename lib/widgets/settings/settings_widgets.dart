@@ -119,7 +119,7 @@ class ProfileTileState extends State<ProfileTile> {
               height: 56,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: AppColors.primary.withAlpha(51),
+                color: Theme.of(context).colorScheme.primary.withAlpha(51),
               ),
               child: ClipOval(
                 child: avatarUrl != null
@@ -144,7 +144,7 @@ class ProfileTileState extends State<ProfileTile> {
                           style: GoogleFonts.manrope(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -302,7 +302,7 @@ class ToggleTile extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primary,
+            activeColor: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),

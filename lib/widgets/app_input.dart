@@ -113,7 +113,7 @@ class _AppInputState extends State<AppInput> {
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppRadius.lg),
               borderSide: BorderSide(
-                color: AppColors.primary,
+                color: Theme.of(context).colorScheme.primary,
                 width: 2,
               ),
             ),

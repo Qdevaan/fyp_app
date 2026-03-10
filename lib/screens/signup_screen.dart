@@ -78,7 +78,7 @@ class _SignupScreenState extends State<SignupScreen> {
   Color get _strengthColor {
     if (_passwordStrength < 0.3) return AppColors.error;
     if (_passwordStrength < 0.6) return AppColors.warning;
-    if (_passwordStrength < 0.8) return AppColors.primary;
+    if (_passwordStrength < 0.8) return Theme.of(context).colorScheme.primary;
     return AppColors.success;
   }
 
@@ -141,7 +141,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                   ),
                 ),
               ),
@@ -155,7 +155,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                   ),
                 ),
               ),
@@ -347,7 +347,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                   'Log In',
                                   style: GoogleFonts.manrope(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ),

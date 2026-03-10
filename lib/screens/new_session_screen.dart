@@ -241,7 +241,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
             height: 280,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary
+              color: Theme.of(context).colorScheme.primary
                   .withAlpha(isActive ? 20 : 31),
             ),
           ),
@@ -436,8 +436,8 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                                   end: Alignment.bottomRight,
                                   colors: isServerOnline
                                       ? [
-                                          AppColors.primary,
-                                          AppColors.primaryGlow,
+                                          Theme.of(context).colorScheme.primary,
+                                          Theme.of(context).colorScheme.primary.withAlpha(200),
                                         ]
                                       : [
                                           Colors.grey.shade500,
@@ -447,7 +447,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                                 boxShadow: isServerOnline
                                     ? [
                                         BoxShadow(
-                                            color: AppColors.primary
+                                            color: Theme.of(context).colorScheme.primary
                                                 .withAlpha(89),
                                             blurRadius: 30,
                                             spreadRadius: 5)
@@ -581,7 +581,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                     children: [
                       Icon(Icons.graphic_eq,
                           size: 52,
-                          color: AppColors.primary
+                          color: Theme.of(context).colorScheme.primary
                               .withAlpha(102)),
                       const SizedBox(height: 10),
                       Text("Listening...",
@@ -631,11 +631,11 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.primary
+                  color: Theme.of(context).colorScheme.primary
                       .withAlpha(isDark ? 26 : 13),
                   borderRadius: BorderRadius.circular(AppRadius.xxl),
                   border: Border.all(
-                      color: AppColors.primary
+                      color: Theme.of(context).colorScheme.primary
                           .withAlpha(38)),
                 ),
                 child: Column(
@@ -645,12 +645,12 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                       children: [
                         Icon(Icons.auto_awesome,
                             size: 14,
-                            color: AppColors.primary),
+                            color: Theme.of(context).colorScheme.primary),
                         const SizedBox(width: 6),
                         Text(
                           'AI INSIGHT',
                           style: GoogleFonts.manrope(
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                             fontWeight: FontWeight.w800,
                             fontSize: 11,
                             letterSpacing: 1.2,
@@ -679,7 +679,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                 Column(
                   children: [
                     CircularProgressIndicator(
-                        color: AppColors.primary),
+                        color: Theme.of(context).colorScheme.primary),
                     const SizedBox(height: 10),
                     Text("Saving Memories...",
                         style: GoogleFonts.manrope(
@@ -831,9 +831,9 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         sections.add(_buildSectionCard(
             "CONFIRMATION",
             apologyMatch.group(1)!.trim(),
-            AppColors.primary
+            Theme.of(context).colorScheme.primary
                 .withAlpha(38),
-            AppColors.primary,
+            Theme.of(context).colorScheme.primary,
             Icons.info_outline,
             isDark));
       }

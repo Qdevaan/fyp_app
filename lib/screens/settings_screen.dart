@@ -83,7 +83,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                      colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                     ),
                   ),
                 ),
@@ -97,7 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: RadialGradient(
-                      colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                      colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                     ),
                   ),
                 ),
@@ -129,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         style: GoogleFonts.manrope(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ),
                     ),
@@ -169,8 +169,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           // Subscription
                           SettingsTile(
                             isDark: isDark,
-                            iconBg: AppColors.accent.withAlpha(51),
-                            iconColor: AppColors.accent,
+                            iconBg: Theme.of(context).colorScheme.secondary.withAlpha(51),
+                            iconColor: Theme.of(context).colorScheme.secondary,
                             icon: Icons.diamond_outlined,
                             title: 'Subscription',
                             trailing: Text(
@@ -178,7 +178,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               style: GoogleFonts.manrope(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.primary,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
                             onTap: () =>
@@ -271,8 +271,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             children: [
                               ToggleTile(
                                 isDark: isDark,
-                                iconBg: AppColors.primary.withAlpha(51),
-                              iconColor: AppColors.primary,
+                                iconBg: Theme.of(context).colorScheme.primary.withAlpha(51),
+                              iconColor: Theme.of(context).colorScheme.primary,
                                 icon: Icons.hearing_rounded,
                                 title: '"Hey Bubbles" Wake Word',
                                 value: voice.isWakeWordEnabled,
@@ -283,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               SettingsTile(
                                 isDark: isDark,
                                 iconBg: Colors.teal.withAlpha(51),
-                                iconColor: Colors.tealAccent.shade700,
+                                iconColor: Theme.of(context).colorScheme.primary,
                                 icon: Icons.record_voice_over_outlined,
                                 title: 'Voice Mode',
                                 trailing: Text(
@@ -367,8 +367,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           SettingsTile(
                             isDark: isDark,
-                            iconBg: AppColors.primary.withAlpha(38),
-                            iconColor: AppColors.primary,
+                            iconBg: Theme.of(context).colorScheme.primary.withAlpha(38),
+                            iconColor: Theme.of(context).colorScheme.primary,
                             icon: Icons.info_outline_rounded,
                             title: 'About Bubbles',
                             onTap: () => Navigator.pushNamed(context, '/about'),

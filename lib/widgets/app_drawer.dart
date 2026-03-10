@@ -190,7 +190,7 @@ class AppDrawer extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.backgroundDark, AppColors.primary.withAlpha(38)],
+          colors: [AppColors.backgroundDark, Theme.of(context).colorScheme.primary.withAlpha(38)],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(AppRadius.xxl),
@@ -205,7 +205,7 @@ class AppDrawer extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.primary.withAlpha(128),
+                    color: Theme.of(context).colorScheme.primary.withAlpha(128),
                     width: 2,
                   ),
                 ),
@@ -214,7 +214,7 @@ class AppDrawer extends StatelessWidget {
                   backgroundImage: photoUrl != null
                       ? CachedNetworkImageProvider(photoUrl)
                       : null,
-                  backgroundColor: AppColors.primary.withAlpha(51),
+                  backgroundColor: Theme.of(context).colorScheme.primary.withAlpha(51),
                   child: photoUrl == null
                       ? Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',

@@ -53,7 +53,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Verification email sent!'),
-              backgroundColor: AppColors.primary,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -94,7 +94,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                   ),
                 ),
               ),
@@ -108,7 +108,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                   ),
                 ),
               ),
@@ -172,7 +172,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           decoration: BoxDecoration(
                             color: isDark
                                 ? AppColors.glassWhite
-                                : AppColors.primary.withAlpha(26),
+                                : Theme.of(context).colorScheme.primary.withAlpha(26),
                             shape: BoxShape.circle,
                             border: isDark
                                 ? Border.all(color: AppColors.glassBorder)
@@ -181,7 +181,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           child: Icon(
                             Icons.mark_email_unread_rounded,
                             size: 64,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                         const SizedBox(height: 32),

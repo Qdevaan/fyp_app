@@ -30,8 +30,8 @@ class _EntityScreenState extends State<EntityScreen> {
   String _search = '';
   String _filterType = 'all';
 
-  static const _typeColors = {
-    'person': AppColors.accent,
+  Map<String, Color> get _typeColors => {
+    'person': Theme.of(context).colorScheme.secondary,
     'place': Color(0xFF34D399),
     'organization': Color(0xFFFBBF24),
     'event': Color(0xFFF87171),
@@ -161,7 +161,7 @@ class _EntityScreenState extends State<EntityScreen> {
                           color: AppColors.error.withAlpha(26),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
+                        child: Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -531,10 +531,10 @@ class _EntityCardState extends State<_EntityCard> {
                       ),
                       Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.auto_awesome,
                             size: 18,
-                            color: AppColors.primary,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -767,22 +767,22 @@ class _EntityCardState extends State<_EntityCard> {
                                   strokeWidth: 2,
                                 ),
                               )
-                            : const Icon(
+                            : Icon(
                                 Icons.auto_awesome,
                                 size: 16,
-                                color: AppColors.accent,
+                                color: Theme.of(context).colorScheme.secondary,
                               ),
                         label: Text(
                           'Ask AI',
                           style: GoogleFonts.manrope(
                             fontSize: 13,
-                            color: AppColors.accent,
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
                         ),
                       ),
                       TextButton.icon(
                         onPressed: widget.onDelete,
-                        icon: const Icon(
+                        icon: Icon(
                           Icons.delete_outline,
                           size: 16,
                           color: AppColors.error,
@@ -826,7 +826,7 @@ class _TypeChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = color ?? AppColors.primary;
+    final activeColor = color ?? Theme.of(context).colorScheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -944,7 +944,7 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: AppColors.error, size: 48),
+            Icon(Icons.error_outline, color: AppColors.error, size: 48),
             const SizedBox(height: 12),
             Text(
               'Failed to load entities',
@@ -965,7 +965,7 @@ class _ErrorView extends StatelessWidget {
             const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh),
               label: const Text('Retry'),
             ),
           ],

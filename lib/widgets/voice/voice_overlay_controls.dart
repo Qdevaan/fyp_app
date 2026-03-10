@@ -25,7 +25,7 @@ class VoiceStatusChip extends StatelessWidget {
     switch (state) {
       case VoiceAssistantState.listening:
         label = 'LISTENING';
-        accentColor = AppColors.primary;
+        accentColor = Theme.of(context).colorScheme.primary;
         icon = Icons.hearing_rounded;
         break;
       case VoiceAssistantState.processing:
@@ -40,7 +40,7 @@ class VoiceStatusChip extends StatelessWidget {
         break;
       default:
         label = 'READY';
-        accentColor = AppColors.primary;
+        accentColor = Theme.of(context).colorScheme.primary;
         icon = Icons.mic_rounded;
     }
 
@@ -242,22 +242,22 @@ class VoiceBottomBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        color: AppColors.primary.withAlpha(20),
+        color: Theme.of(context).colorScheme.primary.withAlpha(20),
         border: Border.all(
-          color: AppColors.primary.withAlpha(38),
+          color: Theme.of(context).colorScheme.primary.withAlpha(38),
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: AppColors.primary),
+          Icon(icon, size: 14, color: Theme.of(context).colorScheme.primary),
           const SizedBox(width: 6),
           Text(
             label,
             style: GoogleFonts.manrope(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppColors.primary,
+              color: Theme.of(context).colorScheme.primary,
               letterSpacing: 0.5,
             ),
           ),
