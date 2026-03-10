@@ -1,9 +1,10 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:ui';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/theme_provider.dart';
 import '../theme/design_tokens.dart';
@@ -37,10 +38,13 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((
       data,
-    ) {
+    ) async {
       if (data.event == AuthChangeEvent.signedIn && data.session != null) {
         if (!_isEmailLoading && mounted) {
-          Navigator.pushReplacementNamed(context, '/home');
+          await _checkAndShowThemeDialog();
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, '/home');
+          }
         }
       }
     });
@@ -52,6 +56,15 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkAndShowThemeDialog() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasSelectedTheme = prefs.getBool('has_selected_theme') ?? false;
+    if (!hasSelectedTheme) {
+      await _showThemeSelectionDialog();
+      await prefs.setBool('has_selected_theme', true);
+    }
   }
 
   Future<void> _showThemeSelectionDialog() async {
@@ -70,11 +83,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.primary.withAlpha(26),
+                          color: Theme.of(context).colorScheme.primary.withAlpha(26),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: AppColors.primary.withAlpha(51)),
+                          border: Border.all(color: Theme.of(context).colorScheme.primary.withAlpha(51)),
                         ),
-                        child: const Icon(Icons.palette_outlined, color: AppColors.primary, size: 20),
+                        child: Icon(Icons.palette_outlined, color: Theme.of(context).colorScheme.primary, size: 20),
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -124,10 +137,10 @@ class _LoginScreenState extends State<LoginScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(26) : Colors.transparent,
+          color: isSelected ? Theme.of(context).colorScheme.primary.withAlpha(26) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary.withAlpha(76) : (isDark ? Colors.white10 : Colors.black12),
+            color: isSelected ? Theme.of(context).colorScheme.primary.withAlpha(76) : (isDark ? Colors.white10 : Colors.black12),
           ),
         ),
         child: Row(
@@ -135,7 +148,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Icon(
               icon,
               size: 20,
-              color: isSelected ? AppColors.primary : (isDark ? Colors.white70 : Colors.black87),
+              color: isSelected ? Theme.of(context).colorScheme.primary : (isDark ? Colors.white70 : Colors.black87),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -144,12 +157,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: GoogleFonts.manrope(
                   fontSize: 15,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? AppColors.primary : (isDark ? Colors.white : Colors.black87),
+                  color: isSelected ? Theme.of(context).colorScheme.primary : (isDark ? Colors.white : Colors.black87),
                 ),
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: AppColors.primary, size: 20),
+              Icon(Icons.check_circle_rounded, color: Theme.of(context).colorScheme.primary, size: 20),
           ],
         ),
       ),
@@ -166,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _passCtrl.text,
       );
       if (mounted) {
-        await _showThemeSelectionDialog();
+        await _checkAndShowThemeDialog();
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/home');
         }
@@ -220,7 +233,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(38), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                   ),
                 ),
               ),
@@ -234,7 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [AppColors.primary.withAlpha(26), Colors.transparent],
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                   ),
                 ),
               ),
@@ -319,7 +332,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: GoogleFonts.manrope(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
+                                    color: Theme.of(context).colorScheme.primary,
                                   ),
                                 ),
                               ),
@@ -408,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: GoogleFonts.manrope(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                              color: Theme.of(context).colorScheme.primary,
                             ),
                           ),
                         ),
@@ -432,7 +445,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    AppColors.primary.withAlpha(128),
+                    Theme.of(context).colorScheme.primary.withAlpha(128),
                     Colors.transparent,
                   ],
                 ),
