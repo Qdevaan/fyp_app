@@ -1,0 +1,853 @@
+================================================================================
+  BUBBLES AI ASSISTANT — COMPREHENSIVE PROJECT REPORT
+  Date: March 20, 2026
+  Author: Project Analysis (AI-Assisted Review)
+  Version: 1.0 — Based on codebase at fyp_app/
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 1: EXECUTIVE SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Bubbles is a "Dual-AI" mobile application built as a Final Year Project (FYP)
+that acts as an AI-powered social and professional assistant. It runs on Flutter
+(mobile) and a Python FastAPI backend, using a stack of modern AI infrastructure:
+
+  • Groq LPU for ultra-low-latency LLM inference (Llama 3 8B + 70B)
+  • Supabase for authentication, Postgres DB, realtime subscriptions, and pgvector
+  • LiveKit for real-time audio room management (WebRTC)
+  • Deepgram for speech-to-text (STT) and text-to-speech (TTS/Aura)
+  • NetworkX for in-memory knowledge graphs per user
+  • SentenceTransformers (MiniLM-L6-v2) for semantic embeddings
+  • Porcupine (Picovoice) for "Hey Bubbles" offline wake word detection
+  • SpeechBrain ECAPA-TDNN for voice enrollment / speaker identification
+
+The app provides two core modes:
+
+  1. WINGMAN MODE — Real-time listening during live conversations. Provides
+     instant, context-aware advice to the user (target: < 2 second latency)
+     using the fast Llama 3.1 8B model via Groq.
+
+  2. CONSULTANT MODE — Deep-dive personal consulting. The user types detailed
+     questions; the system injects long-term memory (pgvector), graph context
+     (NetworkX), session history, and session summaries before sending to the
+     powerful Llama 3.3 70B model for comprehensive answers.
+
+This is a genuinely ambitious final-year project. The architecture reflects
+real-world production patterns and the breadth of features implemented goes
+well beyond a typical undergraduate project.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 2: TECHNOLOGY STACK (FULL INVENTORY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  LAYER              TECHNOLOGY                         PURPOSE
+  ─────────────────────────────────────────────────────────────────────────────
+  Mobile Frontend    Flutter / Dart (SDK >= 3.10.1)     Cross-platform UI
+  State Mgmt         Provider (^6.1.2)                  Reactive state
+  Auth + DB          Supabase Flutter (^2.8.1)           Auth, CRUD, Realtime
+  Real-time Audio    LiveKit Client (^2.2.1)             WebRTC audio sessions
+  Wake Word          Porcupine Flutter (^4.0.0)          "Hey Bubbles" detection
+  STT (command)      speech_to_text (^7.0.0)             Voice command capture
+  TTS                Deepgram Aura API (http calls)      Voice response playback
+  Media Recording    record (^6.1.2) + flutter_sound     Audio capture
+  QR Scanning        mobile_scanner (^5.2.3)             Server URL setup
+  Markdown           flutter_markdown (^0.7.4)           Consultant response UX
+  Animations         flutter_animate (^4.5.0)            Micro-animations
+  Fonts              google_fonts (^6.2.1)               Typography
+  Connectivity       connectivity_plus (^7.0.0)          Network state detection
+  ─────────────────────────────────────────────────────────────────────────────
+  Backend Server     Python FastAPI + Uvicorn            HTTP API + SSE streaming
+  LLM Inference      Groq SDK (AsyncGroq + Groq)         Llama 3.1 8B / 3.3 70B
+  Embeddings         SentenceTransformers (MiniLM-L6)    384-dim text vectors
+  Speaker ID         SpeechBrain ECAPA-TDNN              192-dim voice embeddings
+  Knowledge Graph    NetworkX                            In-memory graph per user
+  Database           Supabase (PostgreSQL)               All persistent storage
+  Vector Search      pgvector (HNSW index)               Semantic memory search
+  Tunneling          Ngrok                               Local-to-public URL
+  Rate Limiting      SlowAPI                             IP-based rate limits
+  Input Safety       Custom regex sanitizer              Prompt injection defense
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 3: ARCHITECTURE OVERVIEW
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3.1  BACKEND (new_server.py — 1,921 lines)
+
+  The server is structured into five service classes, all instantiated at
+  module load time and shared across requests:
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  GraphService    — Per-user NetworkX knowledge graph            │
+  │    • load_graph / save_graph — persisted to Supabase JSONB      │
+  │    • find_context — semantic cosine search over node embeddings  │
+  │    • update_local_graph — adds edges from LLM extraction         │
+  │    • Shared SentenceTransformer model (avoids double-loading)    │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  VectorService   — Long-term semantic memory                    │
+  │    • SentenceTransformer(all-MiniLM-L6-v2) → 384-dim vectors    │
+  │    • search_memory — pgvector HNSW cosine similarity RPC        │
+  │    • save_memory — async thread-safe embedding + insert          │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  SessionService  — Session & transcript CRUD                    │
+  │    • start_session / end_session with summary                    │
+  │    • log_message / log_batch_messages (session_logs)            │
+  │    • log_consultant_qa (consultant_logs + session_logs)          │
+  │    • fetch_consultant_history / fetch_session_summaries          │
+  │    • Rolling turn counter for mid-session summarization          │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  BrainService    — All LLM calls via Groq                       │
+  │    • get_wingman_advice — Llama 3.1 8B, max 60 tokens, ~<2s     │
+  │    • extract_knowledge — relationship extraction (JSON mode)     │
+  │    • extract_entities_full — rich NER + relations (JSON mode)    │
+  │    • extract_events — calendar/deadline extraction               │
+  │    • generate_summary — 2-3 sentence session summaries           │
+  │    • detect_conflicts — fact-checker vs. existing graph facts    │
+  │    • ask_consultant — Llama 3.3 70B, up to 800 tokens           │
+  │    • _build_consultant_system_prompt — unified prompt builder    │
+  ├─────────────────────────────────────────────────────────────────┤
+  │  EntityService   — Structured entity persistence                │
+  │    • _upsert_entity — canonical + fuzzy dedup (0.85 threshold)  │
+  │    • _upsert_attributes — key-value facts per entity            │
+  │    • _upsert_relation — directed edges in entity_relations       │
+  │    • persist_extraction — full payload with partial rollback     │
+  │    • save_conflicts — writes to highlights table                 │
+  │    • save_events — writes to events table                        │
+  └─────────────────────────────────────────────────────────────────┘
+
+  KEY API ENDPOINTS:
+    GET  /                          Root status
+    GET  /health                    Health check (DB + embeddings + LLM key)
+    POST /v1/start_session          Create live wingman session record
+    POST /v1/getToken               Issue LiveKit JWT room token
+    POST /v1/process_transcript_wingman   Process transcript + advice
+    POST /v1/end_session            Summarize + mark complete
+    POST /v1/ask_consultant         Blocking consultant Q&A (70B)
+    POST /v1/ask_consultant_stream  SSE streaming consultant (70B)
+    POST /v1/voice_command          LLM intent parsing for voice assistant
+    POST /v1/enroll                 Voice enrollment (ECAPA-TDNN)
+    DELETE /v1/entities/{id}        Delete entity
+    DELETE /v1/sessions/{id}        Delete session
+    POST /v1/ask_consultant/batch   Batch Q&A (sequential)
+
+  BACKGROUND TASKS:
+    • Session TTL cleanup every 30 minutes (_SESSION_TTL_HOURS = 2)
+    • Capacity eviction if LIVE_SESSIONS > 1,000 entries
+
+3.2  DATABASE (Supabase PostgreSQL — 13 Tables)
+
+  TABLE                PURPOSE                           REALTIME?
+  ─────────────────────────────────────────────────────────────────
+  profiles             User display info, avatar, DOB     No
+  sessions             Session metadata (mode/status)     No
+  session_logs         Full conversation transcripts      YES
+  consultant_logs      Consultant Q&A chat history        No
+  memory               Long-term vector memory (384-dim)  No
+  knowledge_graphs     NetworkX graph as JSONB per user   No
+  entities             Named entity registry (NER)        No
+  entity_attributes    Key-value facts per entity         No
+  entity_relations     Directed graph edges               No
+  highlights           Conflict flags + important facts   YES
+  events               Calendar deadlines extracted       YES
+  audio_sessions       Device recording metadata          No
+  voice_enrollments    Speaker fingerprint (192-dim)      No
+
+  INDEXES: HNSW on memory.embedding, B-tree indexes on all foreign keys
+  and common query patterns (user_id, session_id, created_at, status).
+
+  FUNCTIONS:
+    match_memory() — pgvector cosine similarity RPC, called before every
+    LLM prompt to inject relevant past facts.
+
+3.3  FLUTTER APP (lib/ — 13 screens, 7 services)
+
+  SCREENS:
+    splash_screen         — Splash + auth routing
+    login_screen          — Email/password login (Supabase auth)
+    signup_screen         — Registration flow
+    verify_email_screen   — Email verification gate
+    profile_completion    — DOB, gender, country setup
+    home_screen           — Dashboard: highlights, events, sessions list
+    new_session_screen    — Live Wingman session (LiveKit audio + advice)
+    consultant_screen     — Consultant chat UI (streaming + markdown)
+    connections_screen    — People/entity browser and relations
+    entity_screen         — Entity detail editor
+    sessions_screen       — Full session history browser
+    settings_screen       — Voice mode, wake word, profile, server config
+    about_screen          — App info and credits
+
+  SERVICES:
+    auth_service            — Supabase auth + profile upsert
+    api_service             — HTTP client to backend (all endpoints)
+    livekit_service         — LiveKit room connect/disconnect
+    deepgram_service        — STT during live sessions (via LiveKit)
+    voice_assistant_service — Wake word → STT → LLM → TTS pipeline
+    wake_word_service       — Porcupine ("Hey Bubbles") offline detection
+    connection_service      — Server URL management + health polling
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 4: THE GOOD — WHAT IS WORKING WELL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4.1  DUAL-MODEL ARCHITECTURE
+     Using llama-3.1-8b-instant for the Wingman and llama-3.3-70b-versatile
+     for the Consultant is the right architectural call. The trade-off between
+     latency and quality is correctly matched to each use case.
+
+4.2  MULTI-LAYER MEMORY SYSTEM
+     The combination of three memory sources — vector memory (pgvector),
+     structured knowledge graph (NetworkX), and conversation history
+     (consultant_logs) — is sophisticated. This is a genuine RAG
+     (Retrieval-Augmented Generation) system, not just a chat history dump.
+
+4.3  ENTITY DEDUPLICATION
+     The fuzzy-match deduplication in EntityService using SequenceMatcher with
+     an 0.85 threshold is thoughtful. It handles real-world name variants like
+     "samrin"/"samreen" that would otherwise pollute the entity graph.
+
+4.4  PARALLEL CONTEXT FETCHING
+     asyncio.gather() is correctly used in /ask_consultant and
+     /ask_consultant_stream to fetch graph context, vector context, history,
+     and session summaries simultaneously. This dramatically reduces latency
+     vs. sequential fetching.
+
+4.5  SSE STREAMING FOR CONSULTANT
+     Server-Sent Events (SSE) streaming in /ask_consultant_stream gives the UI
+     a typewriter effect for consultant responses. This is a modern UX pattern.
+
+4.6  VOICE PIPELINE DESIGN
+     The Porcupine (offline) → speech_to_text → /voice_command LLM → Deepgram
+     Aura TTS pipeline is well-structured. Separating wake word detection (100%
+     on-device) from command capture and response is the correct architecture.
+
+4.7  INPUT SANITIZATION
+     The _INJECTION_PATTERNS regex blocks common prompt-injection vectors
+     ([INST], <|im_start|>, "ignore all previous instructions", etc.). This
+     shows security awareness that many student projects completely skip.
+
+4.8  RATE LIMITING
+     SlowAPI rate limiting is applied per-endpoint with sensible defaults.
+     This is production-minded design.
+
+4.9  REAL-TIME DATABASE SUBSCRIPTIONS
+     Three tables (session_logs, highlights, events) are published to
+     supabase_realtime. The Flutter client subscribes to these, allowing the
+     UI to update in real-time as the server writes new rows. This is a clean
+     decoupled streaming approach.
+
+4.10 HEALTH CHECK ENDPOINT
+     /health checks database connectivity, embeddings model loading, and
+     Groq API key presence. It returns 503 on failure. This is production-grade.
+
+4.11 SESSION TTL & CAPACITY MANAGEMENT
+     Background cleanup task purges stale sessions every 30 minutes.
+     Capacity eviction prevents unbounded memory growth in LIVE_SESSIONS dict.
+
+4.12 ENTITY ROLLBACK ON FAILURE
+     persist_extraction() tracks created entity IDs and attempts a cleanup
+     delete if downstream operations fail. This prevents orphaned records.
+
+4.13 QR CODE SERVER DISCOVERY
+     The QR code printed at server startup (scanned via the app's
+     mobile_scanner) is an elegant solution to the "how does the mobile app
+     find the local dev server" problem.
+
+4.14 VERSIONED API ROUTER (/v1/)
+     All business endpoints are mounted under an /v1/ prefix using APIRouter.
+     This enables future breaking-change management without disrupting clients.
+
+4.15 SHARED MODEL INSTANCE
+     graph_svc.model = vector_svc.model avoids loading SentenceTransformer
+     twice. This is correct memory optimization.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5: THE BAD — NOTABLE WEAKNESSES & PROBLEMS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5.1  HARDCODED API KEYS IN SOURCE CODE
+     CRITICAL SECURITY ISSUE. In new_server.py (Settings class), all API keys
+     are hardcoded as default fallback values:
+       DEEPGRAM_KEY = os.getenv("DEEPGRAM_KEY", "8f4f1c36dd57bd...")
+       GROQ_KEY     = os.getenv("GROQ_API_KEY",  "gsk_0V8yw5KK...")
+       SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "sb_secret_...")
+     These keys are visible to anyone who reads the source file. Even if
+     wrapped with os.getenv(), committing fallback key values to git means
+     they appear in git history forever. This is a critical pre-production fix.
+     The secrets.txt file consolidates them, but the fallbacks in code remain.
+
+5.2  ROW LEVEL SECURITY (RLS) IS DISABLED ON ALL 13 TABLES
+     The database schema explicitly disables RLS:
+       alter table public.profiles disable row level security;
+       [...for all 13 tables...]
+     The justification is "development convenience." However, User A can query
+     User B's memory, entities, highlights, and sessions with zero enforcement.
+     Data isolation is entirely reliant on application-level user_id filtering,
+     which is a single point of failure. This is unacceptable for a production
+     system handling personal conversation data.
+
+5.3  NGROK AS INFRASTRUCTURE
+     The server cannot function without Ngrok. For a real deployment, this is
+     an architectural problem. Ngrok is a tunneling tool for development only;
+     it introduces an Ngrok dependency in the hot path of every API call,
+     limits on tunneling bandwidth, and instability on free tiers.
+
+5.4  SINGLE-FILE SERVER (1,921 LINES)
+     new_server.py is a monolith. All service classes, API routes, background
+     tasks, config, and startup logic are crammed into a single file. This
+     makes testing, maintenance, and collaboration difficult. There is no module
+     separation, no test suite for the server, and no separation of concerns
+     at the file level.
+
+5.5  IN-MEMORY GRAPH STATE IS EPHEMERAL
+     GraphService.active_graphs is a plain Python dict on the server. If the
+     server restarts (which happens on every Colab session restart or deploy),
+     all in-flight graphs are lost. Graphs are only saved to Supabase when
+     save_graph() is explicitly called at end-of-session. A crash mid-session
+     risks losing the graph updates from that session.
+
+5.6  SYNCHRONOUS SUPABASE CALLS INSIDE ASYNC HANDLERS
+     Many Supabase operations are called synchronously inside async handlers
+     without asyncio.to_thread():
+       self.supabase.table("entities").insert(...).execute()
+     These are blocking I/O operations that will stall the FastAPI event loop
+     under load, degrading performance for all concurrent requests.
+
+5.7  TOKEN ESTIMATION IS APPROXIMATE
+     BrainService._estimate_tokens() calculates tokens as word_count × 1.3.
+     This is not a real tokenizer. It can overestimate or underestimate by
+     30-50%, causing unexpected context window overflows or unnecessary
+     truncation, especially with non-English input or code snippets.
+
+5.8  BATCH CONSULTANT ENDPOINT IS BROKEN
+     The /ask_consultant/batch endpoint calls ask_consultant_endpoint(creq)
+     without passing a Request object, which is required by SlowAPI's
+     @limiter.limit() decorator. This will raise a TypeError at runtime.
+
+5.9  DELETE MEMORY ENDPOINT REFERENCES WRONG TABLE
+     @v1.delete("/memories/{memory_id}") deletes from "document_chunks" table,
+     which does not exist in the schema. The correct table is "memory".
+
+5.10 ENTITY DELETE TYPE MISMATCH
+     @v1.delete("/entities/{entity_id}") declares entity_id as Python int,
+     but the entities table uses UUID primary keys. A UUID cannot be parsed
+     as int; this endpoint will always return a 422 validation error.
+
+5.11 NO AUTHENTICATION ON API ENDPOINTS
+     None of the API endpoints verify a JWT or session token. Any client that
+     knows the Ngrok URL can call /ask_consultant, /enroll, /start_session,
+     or /end_session for any user_id it chooses. User impersonation is trivial.
+
+5.12 FLUTTER_TTS PACKAGE LEFT IN pubspec.yaml
+     flutter_tts (^4.2.0) is listed as a dependency even though TTS was
+     migrated to Deepgram Aura. This is dead code adding bloat to the build.
+
+5.13 MULTIPLE SUPABASE CLIENT INSTANCES
+     VectorService, GraphService, SessionService, and EntityService each
+     create their own supabase.create_client() instance. Five clients for the
+     same credentials wastes connection pool resources.
+
+5.14 SERVER.PY LEFT IN REPOSITORY
+     An older, 28KB iteration of the server (server.py) remains in the repo
+     with a note that it "will be removed in a future cleanup." Dead files in
+     production repositories create confusion and risk accidental deployment.
+
+5.15 NO FORMAL TEST SUITE
+     The test/ directory contains only the default Flutter widget_test.dart
+     placeholder. There are no unit tests for services, no integration tests
+     for API endpoints, and no mock-based testing for LLM interactions.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 6: THE UGLY — CRITICAL ISSUES REQUIRING IMMEDIATE ACTION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6.1  EXPOSED SECRETS IN VERSION CONTROL
+     All API keys are visible in the source code. Any git clone, any code
+     review, any collaborator, or any future repository leak exposes:
+       - Groq API key  (LLM inference — can run up unlimited billing)
+       - Deepgram key  (STT/TTS — can run up billing)
+       - Supabase service-role key  (bypasses ALL security; full DB access)
+       - LiveKit API key + secret   (can create/join any room)
+       - Ngrok token   (can steal tunnels)
+     IMMEDIATE ACTION REQUIRED: Rotate all keys. Remove fallbacks from code.
+     Use .env exclusively and ensure .env is in .gitignore.
+
+6.2  RLS DISABLED MEANS ZERO DATA ISOLATION
+     With RLS disabled and no server-side auth checks, the system has no
+     privacy enforcement. User A's therapy conversations, relationship graphs,
+     and highlights are readable by User B if they know their user_id.
+     If this were deployed to real users, it would be a GDPR / privacy
+     violation. Enable RLS with proper policies before any public deployment.
+
+6.3  API HAS NO AUTHENTICATION
+     The server trusts user_id passed in request bodies with no verification.
+     A malicious client can call /ask_consultant with any user_id and read or
+     write to any user's memory, history, or knowledge graph. The LLM responses
+     will even include private context from the impersonated user's long-term
+     memory.
+
+6.4  pip INSTALL COMMAND LEFT AT TOP OF PRODUCTION FILE
+     Line 7 of new_server.py contains a bare Python statement:
+       pip install fastapi uvicorn pyngrok ...
+     This is a shell command commented out for Colab use. If executed by a
+     Python interpreter (not a shell), this will raise a NameError at runtime.
+     The comment marker is a comment (#) in a Jupyter notebook cell, but in
+     a .py file it is an error. It should be inside a "# noqa" comment block
+     or moved to a Makefile/requirements.txt.
+
+     CORRECTION: Upon re-reading, it appears this is indeed a Jupyter-compat
+     artifact where the line was used as a magic cell. It should be clearly
+     commented or removed entirely from new_server.py.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 7: INDUSTRY COMPARISON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Comparable industry products and what they offer vs. Bubbles:
+
+  PRODUCT           STRENGTHS THEY HAVE THAT BUBBLES LACKS
+  ─────────────────────────────────────────────────────────────────────────────
+  Otter.ai          • Cloud-based speaker diarization (identifies who said
+                      what without enrollment, works across multiple speakers)
+                    • Collaborative shared transcripts (multi-user)
+                    • Calendar integration (Google/Outlook auto-join)
+                    • Export to PDF, DOCX, SRT
+                    • Meeting summary AI that sends email summaries
+
+  Fireflies.ai      • Bot that joins meetings (Zoom/Teams/Meet) automatically
+                    • CRM integration (Salesforce, HubSpot)
+                    • Action item extraction + task assignment
+                    • Team collaboration workspace
+                    • Analytics dashboard (talk time, sentiment trends)
+
+  Notion AI         • Full document workspace integration
+                    • AI writing, summarization, Q&A over documents
+                    • Multi-device sync with offline support
+                    • Team spaces and permissions
+
+  Character.ai /    • Persistent, long-running AI personalities
+  Pi AI             • Emotional support / mental health positioning
+                    • Proactive check-ins (app pushes to you)
+                    • Monetization model (subscription tiers)
+
+  Apple Intelligence • On-device inference (private, no API costs)
+  / Microsoft Copilot• System-level integration (reads notifications, emails)
+                    • Cross-app context (what you're looking at matters)
+
+  WHAT BUBBLES HAS THAT MOST COMPETITORS DON'T:
+  ─────────────────────────────────────────────────────────────────────────────
+  ✓ Real-time live conversation coaching (most tools are post-meeting)
+  ✓ Dual-mode AI (fast wingman + deep consultant) in one app
+  ✓ Personal knowledge graph that grows from conversations
+  ✓ Conflict detection (when new info contradicts known facts)
+  ✓ Voice enrollment for speaker identification (innovative for a mobile app)
+  ✓ "Hey Bubbles" offline wake word (fully on-device, private)
+  ✓ Calendar event extraction from conversations
+  ✓ Entity relationship tracking (people, places, organizations)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 8: FEATURES MISSING COMPARED TO INDUSTRY STANDARDS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+8.1  AUTOMATIC SPEAKER DIARIZATION (WITHOUT ENROLLMENT)
+     Current State: Users must actively enroll their voice for speaker ID.
+     Industry Standard: Otter.ai, Fireflies.ai, and Whisper-Diarize identify
+     speakers automatically using unsupervised clustering (UMAP + HDBSCAN).
+     Impact: Without enrollment, all audio is treated as undifferentiated.
+     The "others" role in session_logs is unused effectively.
+
+8.2  MEETING/CALL PLATFORM INTEGRATION
+     Current State: The wingman only works when the user runs the app manually.
+     Industry Standard: Otter.ai joins Google Meet, Zoom, Teams calls as a
+     "bot participant." This is the primary use case for most users.
+     Impact: The most common use case (business meetings) requires the user
+     to hold their phone up next to the computer — highly impractical.
+
+8.3  PUSH NOTIFICATIONS
+     Current State: The app relies on the user opening it to see highlights.
+     Industry Standard: AI assistants send proactive push notifications for
+     detected events, conflicts, and reminders.
+     Impact: The real-time value of conflict detection and event extraction
+     is wasted if the user never opens the app to check the home screen.
+
+8.4  OFFLINE MODE / ON-DEVICE LLM
+     Current State: 100% dependent on Groq API and internet.
+     Industry Standard: Apple Intelligence, Samsung Galaxy AI, Gemini Nano
+     run smaller models (1-3B params) directly on-device.
+     Impact: No internet = no functionality. Privacy-conscious users cannot
+     trust an app that sends all conversations to a cloud server.
+
+8.5  MULTI-LANGUAGE SUPPORT
+     Current State: English only (Deepgram models, Porcupine, prompts).
+     Industry Standard: Otter.ai supports 100+ languages; Whisper supports
+     99 languages natively.
+     Impact: Bubbles is inaccessible to the vast majority of the world's
+     population. Even within Pakistan (likely the primary user base), Urdu
+     support is absent.
+
+8.6  EXPORT AND SHARING
+     Current State: No export functionality.
+     Industry Standard: Every transcription tool exports to PDF, DOCX, TXT,
+     SRT/VTT (subtitles), and Markdown. Some send email summaries automatically.
+     Impact: Session data is locked inside the app. Users cannot share
+     meeting notes with colleagues or file them in external systems.
+
+8.7  CALENDAR INTEGRATION (READ/WRITE)
+     Current State: Events are extracted and stored in the app's own events
+     table. No integration with real calendars.
+     Industry Standard: Fireflies.ai and Otter.ai write extracted events
+     directly to Google Calendar / Outlook Calendar via OAuth.
+     Impact: The event extraction feature is impressive technically but
+     delivers limited practical value without a real calendar sync.
+
+8.8  ANALYTICS DASHBOARD
+     Current State: No usage analytics shown to users.
+     Industry Standard: Otter.ai shows talk-time ratios, filler word counts,
+     sentiment trends, meeting frequency, and speaking speed.
+     Impact: Users cannot learn from their conversations or track improvement
+     over time, which reduces engagement and long-term retention.
+
+8.9  MULTI-USER / TEAM FEATURES
+     Current State: Completely single-user. No sharing, no teams.
+     Industry Standard: Fireflies.ai has team workspaces, shared transcripts,
+     shared entity databases, and comment threads on conversation moments.
+     Impact: Locks Bubbles into a personal-use niche and removes entire
+     B2B enterprise market segments.
+
+8.10 CRM / PRODUCTIVITY INTEGRATION
+     Current State: Isolated app with no external integrations.
+     Industry Standard: Salesforce, HubSpot, Notion, Linear, Slack, and
+     Jira are standard integration targets for meeting AI tools.
+     Impact: Professionals won't switch tools if AI output doesn't flow
+     into their existing workflow systems.
+
+8.11 SENTIMENT & EMOTIONAL INTELLIGENCE
+     Current State: No sentiment analysis.
+     Industry Standard: Tools like Gong.io detect emotion, engagement level,
+     competitor mentions, and sales risk signals in conversations.
+     Impact: The Wingman advice is limited to factual context; it cannot
+     detect when the conversation tone is becoming hostile or uncertain.
+
+8.12 CONVERSATION COACHING METRICS
+     Current State: No post-session feedback.
+     Industry Standard: Apps like Speeko, Yoodli, and Poised analyze speech
+     patterns — pace, filler words, eye contact (via video), confidence level.
+     Impact: After a session, users get no actionable feedback on how they
+     could communicate more effectively next time.
+
+8.13 SUBSCRIPTION / MONETIZATION MODEL
+     Current State: No monetization model exists.
+     Industry Standard: Freemium models with usage caps (e.g., Otter.ai
+     free: 300 min/month; Pro: unlimited). Enterprise plans with SLAs.
+     Impact: No pathway to sustainability or commercial viability beyond FYP.
+
+8.14 ACCESSIBILITY FEATURES
+     Current State: No specific accessibility considerations found.
+     Industry Standard: Caption overlays, high-contrast modes, font size
+     scaling, VoiceOver/TalkBack compatibility are all standard requirements.
+     Impact: Excludes users with hearing impairments (who could benefit
+     most from real-time captioning), visual impairments, or motor limitations.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 9: CRITIQUE — AREAS WHERE WE ARE LACKING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+9.1  DEPLOYMENT & INFRASTRUCTURE
+     The application literally cannot be deployed to production today:
+     - Ngrok cannot be the primary tunnel for production traffic
+     - No containerization (Docker, Kubernetes)
+     - No CI/CD pipeline (GitHub Actions, Bitbucket Pipelines)
+     - No cloud hosting configuration (Railway, Render, GCP Cloud Run, AWS)
+     - No domain name or SSL certificate management
+     - No environment-based configuration (dev/staging/production)
+     A product can only be "industry grade" when it can be deployed
+     reliably, repeatedly, and automatically.
+
+9.2  SCALABILITY
+     - GraphService uses a Python in-memory dict as the session store.
+       At 2+ server instances, graphs will be inconsistent across replicas.
+     - There is no horizontal scaling strategy.
+     - Supabase's pgvector HNSW is excellent, but NetworkX graphs are
+       not distributed. At scale, NetworkX should be replaced with
+       Neo4j, Neptune, or Memgraph.
+     - The synchronous Supabase calls inside async routes will become a
+       bottleneck under concurrent users.
+
+9.3  QUALITY OF THE WINGMAN ADVICE
+     The Wingman currently:
+     - Returns "WAITING" when it decides there's nothing actionable
+     - Gives ONE advice sentence
+     - Has no confidence score
+     - Has no differentiation between tactical vs. strategic advice
+     Industry-grade real-time coaching tools provide multiple signals
+     simultaneously (sentiment, tone recommendation, factual context,
+     risk detection) rather than a single advice sentence.
+
+9.4  KNOWLEDGE GRAPH VISUALIZATION
+     The app tracks entity relationships but has no visual graph rendering.
+     Users cannot see a force-directed network of their connections.
+     Tools like Obsidian, Roam Research, and Mem.ai have graph views
+     that are central to their value proposition.
+
+9.5  ONBOARDING EXPERIENCE
+     New users face:
+     - Setting up their own Supabase project
+     - Running a Python server themselves
+     - Scanning a QR code to connect
+     - Enrolling their voice manually
+     This is a developer-only onboarding flow. A real product needs a
+     "sign up, install, and it just works" experience within 60 seconds.
+
+9.6  ERROR HANDLING UX
+     When the server is unreachable, the Wingman mode simply shows nothing.
+     When Deepgram TTS fails, audio is silently skipped. Users are not given
+     actionable error messages that explain what went wrong and what to do.
+     Industry standard: Clear error states, retry mechanisms, offline fallback.
+
+9.7  DATA PRIVACY & COMPLIANCE
+     The app processes deeply personal information (relationship dynamics,
+     work politics, family details) with:
+     - No privacy policy
+     - No data retention policy
+     - No data deletion mechanism for users
+     - No GDPR/PDPA compliance framework
+     - RLS disabled (as noted above)
+     This is both a legal and ethical concern for a product handling
+     sensitive personal conversations.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 10: RECOMMENDED IMPROVEMENTS — PRIORITY ORDER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PRIORITY 1 — SECURITY (Do before any public demo or deployment)
+──────────────────────────────────────────────────────────────────
+P1.1  Rotate all API keys. Remove hardcoded fallbacks from Settings class.
+      Use os.getenv() with NO default. Crash explicitly if key is missing.
+
+P1.2  Enable RLS on all 13 Supabase tables. Restore the commented-out policies
+      from database_schema.txt. Test each table with the anon key.
+
+P1.3  Add API endpoint authentication. Use Supabase JWT verification:
+      extract the Authorization header, verify with supabase-py, extract
+      auth.uid() and compare to the user_id in the request body.
+
+P1.4  Create a proper .env pipeline. Server reads from .env (python-dotenv).
+      Never commit .env. Provide a complete .env.example with placeholder values.
+
+PRIORITY 2 — RELIABILITY (Do before FYP submission demo)
+──────────────────────────────────────────────────────────────────
+P2.1  Fix the three broken endpoints:
+        - /ask_consultant/batch: pass Request object
+        - DELETE /memories/{id}: change table from "document_chunks" to "memory"
+        - DELETE /entities/{id}: change type from int to str (UUID)
+
+P2.2  Wrap all synchronous Supabase calls in asyncio.to_thread() within
+      async endpoint handlers. This prevents event loop blocking.
+
+P2.3  Replace approximate token counter with tiktoken or a proper tokenizer
+      for accurate context window management.
+
+P2.4  Write at minimum a smoke-test suite: test that each endpoint returns
+      a 200 with valid data for a mock user. Use pytest + httpx.AsyncClient.
+
+PRIORITY 3 — DEPLOYMENT (For real-world use)
+──────────────────────────────────────────────────────────────────
+P3.1  Replace Ngrok with a proper deployment:
+        - Containerize with Docker (Dockerfile + docker-compose.yml)
+        - Deploy to Railway, Render, or GCP Cloud Run
+        - Assign a static domain for the API
+        - Update Flutter to use the static URL (remove QR code setup for prod)
+
+P3.2  Split new_server.py into modules:
+        server/
+          app.py          — FastAPI app init, middleware, startup
+          config.py       — Settings class
+          services/
+            brain.py      — BrainService
+            graph.py      — GraphService
+            vector.py     — VectorService
+            session.py    — SessionService
+            entity.py     — EntityService
+          routes/
+            consultant.py — /ask_consultant endpoints
+            wingman.py    — /start_session, /process_transcript, /end_session
+            voice.py      — /voice_command, /enroll
+            auth.py       — /getToken
+          tests/          — pytest test suite
+
+P3.3  Replace per-service Supabase clients with a single shared client
+      in a db.py module, imported by all services.
+
+PRIORITY 4 — NEW FEATURES (For v2.0 / commercial viability)
+──────────────────────────────────────────────────────────────────
+P4.1  PUSH NOTIFICATIONS
+      Integrate Firebase Cloud Messaging (FCM). Trigger notifications when:
+        - A new highlight is created (conflict detected)
+        - A deadline event is due within 24 hours
+        - The Consultant has a proactive insight ("You haven't followed up
+          with X since your meeting last week")
+
+P4.2  AUTOMATIC SPEAKER DIARIZATION
+      Replace manual voice enrollment as the primary speaker ID with
+      pyannote.audio (speaker diarization model). Detect speaker changes
+      automatically. Map enrolled voices to detected segments.
+
+P4.3  KNOWLEDGE GRAPH VISUALIZATION
+      Render the NetworkX graph as an interactive force-directed graph
+      in the Connections screen (use flutter_force_directed_graph or
+      a WebView with D3.js / vis.js).
+
+P4.4  MULTI-LANGUAGE SUPPORT
+      Switch STT to Whisper (via Groq's Whisper endpoint — already paid for).
+      Detect language automatically. Route to language-appropriate TTS voice.
+      Translate prompts and system messages as needed. Start with Urdu.
+
+P4.5  SESSION EXPORT
+      Add "Export Session" to the sessions screen:
+        - PDF (formatted transcript + entities + highlights)
+        - Plain TXT transcript
+        - Markdown (for Obsidian/Notion import)
+      Use the pdf package in Flutter or generate on the server.
+
+P4.6  SENTIMENT & TONE ANALYSIS
+      Add a sentiment analysis call (VADER or a Groq prompt) to
+      /process_transcript_wingman. Return sentiment score alongside advice.
+      Display tone indicator in the live session UI (positive/neutral/tense).
+
+P4.7  CALENDAR INTEGRATION
+      Implement Google Calendar OAuth2 write-back. When an event is extracted
+      and confirmed by the user, add it to their Google Calendar automatically.
+      Use the googleapis Flutter package.
+
+P4.8  CONVERSATION COACHING REPORT
+      After each session, generate a coaching report:
+        - Talk time ratio (user vs. others)
+        - Topics covered
+        - Key decisions made
+        - Suggested follow-up actions
+        - Tone analysis across the session
+      Display in a new "Session Insights" screen.
+
+P4.9  ON-DEVICE INFERENCE FALLBACK
+      Integrate llama.cpp or MLKit for a tiny on-device model (e.g. Phi-3-mini
+      or Gemma 2B). Use it when internet is unavailable for basic Wingman
+      responses. This dramatically improves reliability and privacy.
+
+P4.10 USER MEMORY MANAGEMENT
+      Add a "My Memory" screen where users can:
+        - View all stored memories
+        - Delete specific memories
+        - Edit incorrect memories
+        - See when a memory was created and from which session
+      This is essential for user trust and GDPR compliance.
+
+P4.11 SUBSCRIPTION MODEL
+      Define a freemium tier structure:
+        Free: 60 min/month Wingman, 10 Consultant queries/day
+        Pro ($9.99/month): unlimited Wingman, unlimited Consultant, export
+        Team ($24.99/user/month): shared entities, team spaces, CRM sync
+      Use RevenueCat for in-app purchase management.
+
+P4.12 ACCESSIBILITY
+      - Implement dynamic text scaling throughout the app
+      - Add semantic labels to all interactive widgets for VoiceOver/TalkBack
+      - Add a high-contrast mode
+      - Ensure all custom widgets pass the Flutter accessibility checker
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 11: MAKING IT INDUSTRY GRADE — THE CHECKLIST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+The following is the definitive list of what separates this project from a
+production-grade commercial application:
+
+  SECURITY
+  [ ] All API keys in environment only (no code fallbacks)
+  [ ] RLS enabled on all Supabase tables with proper policies
+  [ ] JWT-verified API endpoint authentication
+  [ ] HTTPS enforced on all traffic (no HTTP fallback)
+  [ ] Input sanitization extended to file uploads (/enroll)
+  [ ] API key rotation strategy documented
+
+  RELIABILITY
+  [ ] All broken endpoints fixed (see Section 5.8–5.10)
+  [ ] Async Supabase calls (no sync I/O in async handlers)
+  [ ] Unit test suite (>70% coverage on services)
+  [ ] Integration tests for all API endpoints
+  [ ] Error monitoring (Sentry or similar)
+  [ ] Structured logging (JSON logs to a log aggregator)
+
+  SCALABILITY
+  [ ] Server stateless (move graph cache to Redis)
+  [ ] Horizontal scaling tested (2+ replicas)
+  [ ] Database connection pooling (PgBouncer or Supabase pooling)
+  [ ] CDN for static assets
+  [ ] Load testing completed (e.g., Locust or k6)
+
+  DEPLOYMENT
+  [ ] Dockerized application
+  [ ] CI/CD pipeline (GitHub Actions)
+  [ ] Staging + Production environments
+  [ ] Static domain with TLS certificate
+  [ ] Health check integrated with uptime monitor (UptimeRobot, etc.)
+  [ ] Rollback strategy for failed deployments
+
+  PRODUCT
+  [ ] Privacy policy and terms of service written
+  [ ] GDPR data deletion mechanism ("Delete my account")
+  [ ] User onboarding flow (< 60 seconds to first value)
+  [ ] App Store / Play Store listing prepared
+  [ ] Analytics instrumentation (Amplitude, Mixpanel, or Posthog)
+  [ ] Customer support channel
+  [ ] Pricing + payment processing
+
+  EXPERIENCE
+  [ ] Push notifications (FCM)
+  [ ] Session export (PDF/TXT)
+  [ ] Multi-language support (at minimum: English + Urdu)
+  [ ] Graph visualization
+  [ ] Accessibility audit completed
+  [ ] Dark mode and light mode tested across all screens
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 12: FINAL VERDICT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OVERALL SCORE  (as FYP / Academic Project):  8.5 / 10
+OVERALL SCORE  (as Industry-Ready Product):  3.5 / 10
+
+The gap is not a failure — it reflects the inherent difference between an
+academic proof-of-concept and a commercial product. Bubbles is genuinely
+impressive for a final year project. The ideas are good, the architecture is
+defensible, and the technology choices are modern and appropriate.
+
+What keeps it from being industry-grade is not the core architecture — it's
+the layers that surround it: security, testing, deployment, compliance, and
+the user-facing polish that transforms a functional demo into a trusted product
+that someone is willing to pay for and entrust with their private conversations.
+
+The strongest asset this project has is its differentiator: real-time live
+conversation coaching with a personal knowledge graph. No mainstream consumer
+app does exactly this combination well. That is a viable commercial niche.
+
+The path from here to there is clear. It starts with security and reliability
+(Priority 1 and 2), then moves to proper deployment (Priority 3), and then
+builds the features that expand the market (Priority 4). If this team pursues
+this as a real product, the core is there — it just needs engineering
+discipline, security hardening, and the product thinking to go from "cool
+demo" to "app I would actually install and trust."
+
+================================================================================
+END OF REPORT
+================================================================================
