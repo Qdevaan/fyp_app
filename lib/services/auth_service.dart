@@ -171,6 +171,9 @@ class AuthService {
       // Merge new updates into current cache
       final newCache = {...currentCache, ...updates};
       await prefs.setString(_profileCacheKey, jsonEncode(newCache));
+
+      // Mark profile as done in onboarding_progress
+      await updateOnboardingProgress({'profile_done': true});
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -203,6 +206,29 @@ class AuthService {
       return publicUrl;
     } catch (e) {
       throw _handleAuthError(e);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // ONBOARDING PROGRESS
+  // ---------------------------------------------------------------------------
+
+  /// Upserts user onboarding progress. Valid keys: 
+  /// profile_done, voice_enrolled, first_wingman, first_consultant
+  Future<void> updateOnboardingProgress(Map<String, bool> updates) async {
+    try {
+      final user = currentUser;
+      if (user == null) return;
+      
+      final row = {
+        'user_id': user.id,
+        ...updates,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      };
+      
+      await _client.from('onboarding_progress').upsert(row);
+    } catch (e) {
+      print('updateOnboardingProgress error: $e');
     }
   }
 

@@ -216,6 +216,10 @@ class ConsultantProvider extends ChangeNotifier {
       }
       _loading = false;
       notifyListeners();
+      
+      // Mark onboarding
+      await AuthService.instance.updateOnboardingProgress({'first_consultant': true});
+      
       onComplete?.call(buf.toString());
     } catch (e) {
       if (firstToken) {

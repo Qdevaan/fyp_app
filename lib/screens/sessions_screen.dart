@@ -1058,3 +1058,78 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
     ));
   }
 }
+
+class _StarRating extends StatelessWidget {
+  final String logId;
+  final String sessionId;
+  final int? initialValue;
+  final ValueChanged<int> onRate;
+
+  const _StarRating({
+    required this.logId,
+    required this.sessionId,
+    this.initialValue,
+    required this.onRate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        final starValue = index + 1;
+        final isSelected = initialValue != null && initialValue! >= starValue;
+        return GestureDetector(
+          onTap: () => onRate(starValue),
+          child: Icon(
+            isSelected ? Icons.star : Icons.star_border,
+            size: 20,
+            color: isSelected ? Colors.amber : Colors.grey,
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _ThumbsFeedback extends StatelessWidget {
+  final String logId;
+  final int? currentValue; // 1 for thumbs up, -1 for thumbs down
+  final ValueChanged<int> onFeedback;
+
+  const _ThumbsFeedback({
+    required this.logId,
+    this.currentValue,
+    required this.onFeedback,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: Icon(
+            currentValue == 1 ? Icons.thumb_up : Icons.thumb_up_outlined,
+            size: 18,
+            color: currentValue == 1 ? Colors.green : Colors.grey,
+          ),
+          onPressed: () => onFeedback(1),
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.all(4),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: Icon(
+            currentValue == -1 ? Icons.thumb_down : Icons.thumb_down_outlined,
+            size: 18,
+            color: currentValue == -1 ? Colors.red : Colors.grey,
+          ),
+          onPressed: () => onFeedback(-1),
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.all(4),
+        ),
+      ],
+    );
+  }
+}

@@ -207,6 +207,8 @@ class SessionProvider extends ChangeNotifier {
       if (_sessionId != null) {
         await api.endLiveSession(_sessionId!, user.id);
         success = true;
+        // Mark first wingman as done
+        await AuthService.instance.updateOnboardingProgress({'first_wingman': true});
       } else if (_sessionLogs.isNotEmpty) {
         success = await api.saveSession(user.id, _sessionLogs);
       } else {
