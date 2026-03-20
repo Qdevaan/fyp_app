@@ -11,4 +11,5 @@ class AppRoutes {
   static const about = '/about';
   static const settings = '/settings';
   static const entities = '/entities';
+  static const sessionAnalytics = '/session-analytics';
 }

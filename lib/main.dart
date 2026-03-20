@@ -27,6 +27,8 @@ import 'screens/new_session_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/entity_screen.dart';
+import 'screens/session_analytics_screen.dart';
+import 'providers/tags_provider.dart';
 import 'widgets/auth_guard.dart';
 import 'routes/app_routes.dart';
 
@@ -114,6 +116,9 @@ class BubblesApp extends StatelessWidget {
 
         // 10. Home Provider (home screen data)
         ChangeNotifierProvider(create: (_) => HomeProvider()),
+
+        // 11. Tags Provider (schema_v2 tagging)
+        ChangeNotifierProvider(create: (_) => TagsProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -177,6 +182,27 @@ class BubblesApp extends StatelessWidget {
                         var offsetAnimation = animation.drive(tween);
                         return SlideTransition(
                           position: offsetAnimation,
+                          child: child,
+                        );
+                      },
+                );
+              } else if (settings.name == AppRoutes.sessionAnalytics) {
+                final args = settings.arguments as Map<String, String>?;
+                return PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      SessionAnalyticsScreen(
+                        sessionId: args?['sessionId'] ?? '',
+                        sessionTitle: args?['sessionTitle'] ?? 'Session',
+                      ),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 1.0); // Slide from bottom
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(begin: begin, end: end)
+                            .chain(CurveTween(curve: curve));
+                        return SlideTransition(
+                          position: animation.drive(tween),
                           child: child,
                         );
                       },

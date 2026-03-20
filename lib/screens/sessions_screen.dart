@@ -1,12 +1,18 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 import '../theme/design_tokens.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/glass_morphism.dart';
+import '../widgets/tags_bottom_sheet.dart';
+import '../providers/tags_provider.dart';
+import '../services/api_service.dart';
+import '../routes/app_routes.dart';
+import '../services/auth_service.dart';
 
 enum _SortOrder { newestFirst, oldestFirst }
 
@@ -775,6 +781,8 @@ class GenericSessionDetail extends StatefulWidget {
 
 class _GenericSessionDetailState extends State<GenericSessionDetail> {
   late final Future<List<Map<String, dynamic>>> _logsFuture;
+  final Map<String, int> _feedbackMap = {};
+  List<Map<String, dynamic>> _sessionTags = [];
 
   @override
   void initState() {
@@ -785,6 +793,12 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
         .eq('session_id', widget.sessionId)
         .order('created_at', ascending: true)
         .then((data) => List<Map<String, dynamic>>.from(data));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadTags());
+  }
+
+  Future<void> _loadTags() async {
+    final tags = await context.read<TagsProvider>().getTagsForSession(widget.sessionId);
+    if (mounted) setState(() => _sessionTags = tags);
   }
 
   @override
@@ -824,7 +838,55 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 48),
+                  // Tags button
+                  IconButton(
+                    icon: Stack(
+                      children: [
+                        const Icon(Icons.label_outline, size: 22),
+                        if (_sessionTags.isNotEmpty)
+                          Positioned(
+                            right: 0, top: 0,
+                            child: Container(
+                              width: 8, height: 8,
+                              decoration: const BoxDecoration(
+                                color: Colors.blue,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    tooltip: 'Tags',
+                    onPressed: () async {
+                      await showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        builder: (_) => TagsBottomSheet(
+                          sessionId: widget.sessionId,
+                          currentTags: _sessionTags,
+                        ),
+                      );
+                      _loadTags();
+                    },
+                  ),
+                  // View Report button (wingman only)
+                  if (!widget.isConsultant)
+                    IconButton(
+                      icon: const Icon(Icons.analytics_outlined, size: 22),
+                      tooltip: 'View Report',
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.sessionAnalytics,
+                        arguments: {
+                          'sessionId': widget.sessionId,
+                          'sessionTitle': widget.title,
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -887,6 +949,29 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
                                     isUser: false,
                                     speakerLabel: 'Consultant AI',
                                   ),
+                                  // ── Star rating for consultant answer ──
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8, bottom: 4),
+                                    child: _StarRating(
+                                      logId: log['id'] as String? ?? '',
+                                      sessionId: widget.sessionId,
+                                      initialValue: _feedbackMap[log['id'] as String? ?? ''],
+                                      onRate: (val) {
+                                        setState(() => _feedbackMap[log['id'] as String] = val);
+                                        final userId = AuthService.instance.currentUser?.id ?? '';
+                                        context.read<ApiService>().saveFeedback(
+                                          userId: userId,
+                                          sessionId: widget.sessionId,
+                                          consultantLogId: log['id'] as String?,
+                                          feedbackType: 'star',
+                                          value: val,
+                                        );
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Feedback saved'), duration: Duration(seconds: 1)),
+                                        );
+                                      },
+                                    ),
+                                  ),
                                   Padding(
                                     padding: const EdgeInsets.only(
                                       left: 4,
@@ -904,40 +989,64 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
                               ),
                           ],
                         );
-                      } else {
-                        final role =
-                            log['role']?.toString().toLowerCase() ?? 'unknown';
-                        bool isUser = role == 'user';
-                        bool isOther = role == 'other';
-                        return Column(
-                          crossAxisAlignment: isUser
-                              ? CrossAxisAlignment.end
-                              : CrossAxisAlignment.start,
-                          children: [
-                            ChatBubble(
-                              text: log['content'],
-                              isUser: isUser,
-                              speakerLabel: isUser
-                                  ? null
-                                  : (isOther ? "Other" : "System"),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                left: 4,
-                                right: 4,
-                                bottom: 8,
+                        } else {
+                          final role =
+                              log['role']?.toString().toLowerCase() ?? 'unknown';
+                          bool isUser = role == 'user';
+                          bool isOther = role == 'other';
+                          final isLlm = role == 'llm';
+                          return Column(
+                            crossAxisAlignment: isUser
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                            children: [
+                              ChatBubble(
+                                text: log['content'],
+                                isUser: isUser,
+                                speakerLabel: isUser
+                                    ? null
+                                    : (isOther ? 'Other' : 'Wingman'),
                               ),
-                              child: Text(
-                                isUser ? "You" : (isOther ? "Other" : "System"),
-                                style: GoogleFonts.manrope(
-                                  fontSize: 10,
-                                  color: AppColors.textMuted,
+                              // ── Thumbs feedback for LLM advice ──
+                              if (isLlm)
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 8, bottom: 4),
+                                  child: _ThumbsFeedback(
+                                    logId: log['id'] as String? ?? '',
+                                    currentValue: _feedbackMap[log['id'] as String? ?? ''],
+                                    onFeedback: (val) {
+                                      setState(() => _feedbackMap[log['id'] as String] = val);
+                                      final userId = AuthService.instance.currentUser?.id ?? '';
+                                      context.read<ApiService>().saveFeedback(
+                                        userId: userId,
+                                        sessionId: widget.sessionId,
+                                        sessionLogId: log['id'] as String?,
+                                        feedbackType: 'thumbs',
+                                        value: val,
+                                      );
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(content: Text('Feedback saved'), duration: Duration(seconds: 1)),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                  left: 4,
+                                  right: 4,
+                                  bottom: 8,
+                                ),
+                                child: Text(
+                                  isUser ? 'You' : (isOther ? 'Other' : 'Wingman'),
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 10,
+                                    color: AppColors.textMuted,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      }
+                            ],
+                          );
+                        }
                     },
                   );
                 },

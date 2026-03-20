@@ -416,6 +416,90 @@ class ApiService {
     }
   }
 
+
+  // --- 9. SAVE FEEDBACK ---
+  /// Saves thumbs up/down or star rating feedback on a session_log or consultant_log.
+  Future<bool> saveFeedback({
+    required String userId,
+    String? sessionId,
+    String? sessionLogId,
+    String? consultantLogId,
+    required String feedbackType, // 'thumbs' | 'star' | 'text'
+    int? value,
+    String? comment,
+  }) async {
+    if (_baseUrl.isEmpty) return false;
+    try {
+      final body = <String, dynamic>{
+        'user_id': userId,
+        'feedback_type': feedbackType,
+      };
+      if (sessionId != null) body['session_id'] = sessionId;
+      if (sessionLogId != null) body['session_log_id'] = sessionLogId;
+      if (consultantLogId != null) body['consultant_log_id'] = consultantLogId;
+      if (value != null) body['value'] = value;
+      if (comment != null && comment.isNotEmpty) body['comment'] = comment;
+
+      final res = await http
+          .post(
+            Uri.parse('$_baseUrl/v1/save_feedback'),
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('saveFeedback error: $e');
+      return false;
+    }
+  }
+
+  // --- 10. GET SESSION ANALYTICS ---
+  /// Returns pre-computed session_analytics data for a session (null if not ready).
+  Future<Map<String, dynamic>?> getSessionAnalytics(String sessionId) async {
+    if (_baseUrl.isEmpty) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/v1/session_analytics/$sessionId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getSessionAnalytics error: $e');
+      return null;
+    }
+  }
+
+  // --- 11. GET COACHING REPORT ---
+  /// Returns (and lazily generates) the coaching report for a session.
+  Future<Map<String, dynamic>?> getCoachingReport(String sessionId) async {
+    if (_baseUrl.isEmpty) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/v1/coaching_report/$sessionId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 30)); // Generation can take a moment
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getCoachingReport error: $e');
+      return null;
+    }
+  }
+
+  // --- 12. PARSE VOICE COMMAND ---
   Future<Map<String, dynamic>?> parseVoiceCommand(
     String userId,
     String command,
