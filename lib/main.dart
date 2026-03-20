@@ -44,10 +44,13 @@ Future<void> main() async {
     debugPrint('⚠️ .env not found as asset — using platform environment / --dart-define');
   }
 
+  final supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  final supabaseAnonKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
+
   // Initialize Supabase using environment variables
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: supabaseUrl.isNotEmpty ? supabaseUrl : dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: supabaseAnonKey.isNotEmpty ? supabaseAnonKey : dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
   // Set up global error handling
