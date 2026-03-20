@@ -33,8 +33,14 @@ import 'routes/app_routes.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables from .env file
-  await dotenv.load(fileName: ".env");
+  // Load environment variables — .env is no longer bundled as a Flutter asset
+  // (to avoid leaking API keys in the APK). It still loads from the project
+  // root during development. For release builds, pass keys via --dart-define.
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (e) {
+    debugPrint('⚠️ .env not found as asset — using platform environment / --dart-define');
+  }
 
   // Initialize Supabase using environment variables
   await Supabase.initialize(

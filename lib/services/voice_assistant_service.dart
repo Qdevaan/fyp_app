@@ -237,21 +237,9 @@ class VoiceAssistantService extends ChangeNotifier {
     _partialText = result.recognizedWords;
     notifyListeners();
 
-    final partialLower = _partialText.toLowerCase();
-    bool isEarlyMatch =
-        partialLower.contains('start wingman') ||
-        partialLower.contains('wingman session') ||
-        partialLower.contains('new session') ||
-        partialLower.contains('wingman') ||
-        partialLower.contains('consultant') ||
-        partialLower.contains('tell me') ||
-        partialLower.contains('what is') ||
-        partialLower.contains('who is');
-
-    if (result.finalResult || isEarlyMatch) {
-      if (isEarlyMatch) {
-        _stt.stop();
-      }
+    // Wait for STT to finalize — all intent parsing is handled by the
+    // server's /voice_command endpoint via LLM, not keyword matching.
+    if (result.finalResult) {
       final command = result.recognizedWords.trim();
       debugPrint('🎙️ Command captured: "$command"');
       if (command.isNotEmpty) {
@@ -355,7 +343,7 @@ class VoiceAssistantService extends ChangeNotifier {
     String command,
   ) async {
     try {
-      final uri = Uri.parse('${_connectionService.serverUrl}/voice_command');
+      final uri = Uri.parse('${_connectionService.serverUrl}/v1/voice_command');
       final response = await http
           .post(
             uri,

@@ -50,4 +50,3 @@ flutter:
     - assets/logos/
     - assets/text/
     - assets/wake_word/
-    - .env

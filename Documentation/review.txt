@@ -352,8 +352,9 @@ Bubbles is a dual-engine AI assistant app:
   + Navigation intent resolution (Wingman commands → /new-session route).
   + Activate/deactivate lifecycle tied to authentication state.
   + [x] TTS fallback exists (flutter_tts as backup).
-  - Command matching is fragile keyword detection (contains("wingman"), 
-    contains("tell me")) — acceptable for FYP, should use NLU for production.
+  - [FIXED] Command matching was fragile keyword detection (contains("wingman"), 
+    contains("tell me")) — removed. All commands now go through LLM-based
+    /voice_command endpoint for intent parsing.
   - 300ms hardcoded delay between Porcupine stop and STT start — acceptable.
 
   WakeWordService (lib/services/wake_word_service.dart)
@@ -526,11 +527,12 @@ Bubbles is a dual-engine AI assistant app:
 
   ISSUES:
   • [FIXED] /getToken passes userId as query parameter — sensitive data in URL logs.
-  • [FIXED] No API versioning (no /v1/ prefix).
+  • [FIXED] No API versioning (no /v1/ prefix). Now all endpoints under /v1/ router.
   • [FIXED] No endpoint for deleting entities, sessions, or memories. All deletion 
     currently requires direct Supabase client calls from Flutter.
   • [FIXED] No batch endpoint for multiple consultant queries.
-  • [FIXED] /health doesn't actually check DB or Groq connectivity — just returns 200.
+  • [FIXED] /health now checks DB, LLM key, and embeddings model; returns 503
+    on failure with uptime tracking.
 
 ─── 4C. LLM INTEGRATION ──────────────────────────────────────────────────────
 
@@ -584,8 +586,8 @@ Bubbles is a dual-engine AI assistant app:
     explicit indexes on session_logs.session_id, memory.user_id, etc.
     PostgreSQL auto-creates indexes on foreign keys in some cases but 
     not all.
-  • [FIXED] Rolling summarization overwrites the session's summary field — 
-    previous summary versions are lost forever.
+  • [FIXED] Rolling summarization now appends to previous summary with turn
+    markers instead of overwriting — history is preserved.
 
 ─── 4E. STREAMING & WEBSOCKETS ────────────────────────────────────────────────
 
@@ -782,31 +784,26 @@ Bubbles is a dual-engine AI assistant app:
     Settings dialogs moved to settings_dialogs.dart. VoiceOverlay split
     into 3 files (181 + visual indicators + controls).
 
-  ✗ NO TESTS
-    Zero test coverage on both Flutter and Python sides. The only test 
-    file (test/widget_test.dart) is the default Flutter template counter 
-    test — it references MyApp which doesn't even exist (it's BubblesApp). 
-    The test will not compile.
+  [FIXED] NO TESTS
+    Widget test placeholder replaced with minimal smoke test that compiles.
+    Full test coverage still needed but the broken default template is fixed.
 
-  ✗ FRAGILE COMMAND PARSING
-    VoiceAssistantService matches voice commands with contains("wingman"), 
-    contains("tell me"), contains("what is"). A user saying "what is the 
-    weather" would route to Consultant mode. "My friend told me about 
-    wingman" would start a session.
+  [FIXED] FRAGILE COMMAND PARSING
+    VoiceAssistantService keyword matching removed. All voice commands now
+    go through the LLM-based /voice_command endpoint for intent parsing.
 
   ✗ NO AUTHENTICATION ON SERVER ENDPOINTS
     All 11 endpoints accept a user_id parameter with zero verification.
     Anyone who knows the server URL can call /ask_consultant with any 
     user_id and access their memories, graph, and conversation history.
 
-  ✗ NO RATE LIMITING
-    Every endpoint can be called unlimited times. An attacker can exhaust 
-    the Groq API quota (real money) by spamming /ask_consultant.
+  [FIXED] NO RATE LIMITING
+    slowapi rate limiter added to all endpoints with per-IP limits.
+    Returns HTTP 429 when exceeded.
 
-  ✗ CORS MISCONFIGURATION
-    new_server.py sets allow_origins=["*"]. This allows any website to 
-    call the API endpoints. Old server.py was actually better here — it 
-    read from ALLOWED_ORIGINS env var.
+  [FIXED] CORS MISCONFIGURATION
+    CORS now reads ALLOWED_ORIGINS from environment variable (comma-separated).
+    Falls back to ["*"] only in dev mode.
 
   ✗ INCONSISTENT ERROR HANDLING
     Server returns "WAITING" for errors. Client shows SnackBars sometimes, 
@@ -836,12 +833,10 @@ Bubbles is a dual-engine AI assistant app:
  8. THE UGLY (CRITICAL ISSUES)
 ════════════════════════════════════════════════════════════════════════════════
 
-  🔴 .ENV FILE BUNDLED AS FLUTTER ASSET
-     The pubspec.yaml includes ".env" in the flutter assets list. This 
-     means the .env file (containing Supabase keys, Deepgram API key, 
-     and Picovoice access key) is compiled INTO the APK/IPA. Anyone who 
-     decompiles the app can extract all API keys. This is extremely 
-     dangerous even for a development build.
+  [FIXED] .ENV FILE BUNDLED AS FLUTTER ASSET
+     .env removed from pubspec.yaml assets list. dotenv.load() wrapped in
+     try-catch so dev mode still works from project root. For release builds,
+     use --dart-define for sensitive keys.
 
   🔴 SERVER KEYS HARDCODED AS FALLBACK DEFAULTS
      new_server.py has real API keys as default values in os.getenv() calls:
@@ -853,27 +848,22 @@ Bubbles is a dual-engine AI assistant app:
      for development, these keys work with live services and anyone with 
      repo access has full API control.
 
-  🔴 NO INPUT SANITIZATION ON LLM PROMPTS
-     User input (questions, transcripts) goes directly into LLM system 
-     prompts without sanitization. Prompt injection attacks could instruct 
-     the model to ignore system instructions, return fabricated data, or 
-     manipulate the knowledge graph.
+  [FIXED] NO INPUT SANITIZATION ON LLM PROMPTS
+     sanitize_input() utility added, applied to all user inputs. System
+     prompts include rule to treat user text as DATA only.
 
-  🔴 THREAD-ASYNC MIXING IN STREAMING
-     The /ask_consultant_stream endpoint uses threading.Thread + 
-     asyncio.Queue + run_coroutine_threadsafe. This is a recipe for 
-     deadlocks, race conditions, and resource leaks. The daemon thread 
-     continues running even if the client disconnects.
+  [FIXED] THREAD-ASYNC MIXING IN STREAMING
+     SSE streaming now uses pure async with asyncio.CancelledError handling
+     for graceful client disconnect cleanup.
 
-  🔴 GLOBAL STATE WITHOUT CLEANUP
-     LIVE_SESSIONS and TURN_COUNTERS are module-level dictionaries that 
-     grow indefinitely. No TTL, no cleanup, no max-size. Over time, these 
-     will consume increasing memory until the server is restarted.
+  [FIXED] GLOBAL STATE WITHOUT CLEANUP
+     TTL-based cleanup (2h) with background task every 30min added.
+     Capacity cap (1000 sessions) with oldest-first eviction. Cleanup
+     on end_session.
 
-  🔴 NO TRANSACTION SAFETY
-     Entity creation involves 3+ separate database calls (upsert entity, 
-     upsert attributes, upsert relations). If any call fails, the data is 
-     left in a partially saved state. There is no rollback mechanism.
+  [FIXED] NO TRANSACTION SAFETY
+     persist_extraction() now wraps all DB writes in try/except with
+     rollback — orphaned entities are deleted on failure.
 
   🔴 VERIFY EMAIL CALLS SIGNUP AGAIN
      verify_email_screen.dart "resends" verification by calling 

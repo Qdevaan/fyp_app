@@ -24,6 +24,9 @@ torch==2.5.1+cpu
 # Graph Database (in-memory)
 networkx==3.4.2
 
+# Rate Limiting
+slowapi==0.1.9
+
 # Utilities
 httpx==0.28.1
 tenacity==9.0.0

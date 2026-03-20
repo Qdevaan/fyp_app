@@ -53,7 +53,7 @@ class ApiService {
       return await _withRetry(() async {
         final response = await http
             .post(
-              Uri.parse('$_baseUrl/getToken'),
+              Uri.parse('$_baseUrl/v1/getToken'),
               headers: {
                 'Content-Type': 'application/json',
                 'ngrok-skip-browser-warning': 'true',
@@ -82,7 +82,7 @@ class ApiService {
   }) async {
     if (_baseUrl.isEmpty) throw Exception('Server URL not set.');
 
-    final uri = Uri.parse('$_baseUrl/enroll');
+    final uri = Uri.parse('$_baseUrl/v1/enroll');
 
     try {
       final request = http.MultipartRequest('POST', uri);
@@ -138,7 +138,7 @@ class ApiService {
       return {"transcript": "", "suggestion": "No Server URL"};
 
     try {
-      var uri = Uri.parse("$_baseUrl/process_audio");
+      var uri = Uri.parse("$_baseUrl/v1/process_audio");
       var request = http.MultipartRequest('POST', uri);
       request.headers['ngrok-skip-browser-warning'] = 'true';
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
@@ -170,7 +170,7 @@ class ApiService {
 
     try {
       return await _withRetry(() async {
-        var uri = Uri.parse("$_baseUrl/save_session");
+        var uri = Uri.parse("$_baseUrl/v1/save_session");
         String fullTranscript = logs
             .map((l) => "${l['speaker']}: ${l['text']}")
             .join("\n");
@@ -205,7 +205,7 @@ class ApiService {
 
     try {
       return await _withRetry(() async {
-        var uri = Uri.parse("$_baseUrl/ask_consultant");
+        var uri = Uri.parse("$_baseUrl/v1/ask_consultant");
         var response = await http
             .post(
               uri,
@@ -240,7 +240,7 @@ class ApiService {
 
     try {
       return await _withRetry(() async {
-        var uri = Uri.parse("$_baseUrl/process_transcript_wingman");
+        var uri = Uri.parse("$_baseUrl/v1/process_transcript_wingman");
         final body = <String, dynamic>{
           "user_id": userId,
           "transcript": transcript,
@@ -279,7 +279,7 @@ class ApiService {
       return await _withRetry(() async {
         final res = await http
             .post(
-              Uri.parse("$_baseUrl/start_session"),
+              Uri.parse("$_baseUrl/v1/start_session"),
               headers: {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true",
@@ -305,7 +305,7 @@ class ApiService {
       await _withRetry(() async {
         await http
             .post(
-              Uri.parse("$_baseUrl/end_session"),
+              Uri.parse("$_baseUrl/v1/end_session"),
               headers: {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true",
@@ -338,7 +338,7 @@ class ApiService {
     try {
       final request = http.Request(
         'POST',
-        Uri.parse("$_baseUrl/ask_consultant_stream"),
+        Uri.parse("$_baseUrl/v1/ask_consultant_stream"),
       );
       request.headers['Content-Type'] = 'application/json';
       request.headers['ngrok-skip-browser-warning'] = 'true';
@@ -399,7 +399,7 @@ class ApiService {
     try {
       final res = await http
           .post(
-            Uri.parse("$_baseUrl/ask_entity"),
+            Uri.parse("$_baseUrl/v1/ask_entity"),
             headers: {
               "Content-Type": "application/json",
               "ngrok-skip-browser-warning": "true",
@@ -421,7 +421,7 @@ class ApiService {
     String command,
   ) async {
     if (!_connectionService.isConnected) return null;
-    final url = Uri.parse("${_connectionService.serverUrl}/voice_command");
+    final url = Uri.parse("${_connectionService.serverUrl}/v1/voice_command");
     try {
       final response = await http
           .post(
