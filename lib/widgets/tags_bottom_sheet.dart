@@ -5,14 +5,16 @@ import '../providers/tags_provider.dart';
 /// Bottom sheet displaying the user's tags with checkboxes for a given session.
 /// Allows toggling tags on/off and creating new tags.
 class TagsBottomSheet extends StatefulWidget {
-  final String sessionId;
-  final List<Map<String, dynamic>> currentTags; // already applied to this session
+  final String? sessionId;
+  final String? entityId;
+  final List<Map<String, dynamic>> currentTags; // already applied to this session/entity
 
   const TagsBottomSheet({
     super.key,
-    required this.sessionId,
+    this.sessionId,
+    this.entityId,
     required this.currentTags,
-  });
+  }) : assert(sessionId != null || entityId != null, 'Must provide sessionId or entityId');
 
   @override
   State<TagsBottomSheet> createState() => _TagsBottomSheetState();
@@ -53,10 +55,14 @@ class _TagsBottomSheetState extends State<TagsBottomSheet> {
 
   Future<void> _toggleTag(String tagId, TagsProvider provider) async {
     if (_appliedTagIds.contains(tagId)) {
-      final ok = await provider.untagSession(widget.sessionId, tagId);
+      final ok = widget.sessionId != null
+          ? await provider.untagSession(widget.sessionId!, tagId)
+          : await provider.untagEntity(widget.entityId!, tagId);
       if (ok && mounted) setState(() => _appliedTagIds.remove(tagId));
     } else {
-      final ok = await provider.tagSession(widget.sessionId, tagId);
+      final ok = widget.sessionId != null
+          ? await provider.tagSession(widget.sessionId!, tagId)
+          : await provider.tagEntity(widget.entityId!, tagId);
       if (ok && mounted) setState(() => _appliedTagIds.add(tagId));
     }
   }
@@ -67,7 +73,11 @@ class _TagsBottomSheetState extends State<TagsBottomSheet> {
     setState(() => _adding = true);
     final newTag = await provider.createTag(name, _newTagColor);
     if (newTag != null) {
-      await provider.tagSession(widget.sessionId, newTag['id']);
+      if (widget.sessionId != null) {
+        await provider.tagSession(widget.sessionId!, newTag['id']);
+      } else {
+        await provider.tagEntity(widget.entityId!, newTag['id']);
+      }
       if (mounted) {
         setState(() {
           _appliedTagIds.add(newTag['id'] as String);

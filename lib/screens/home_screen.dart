@@ -122,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Expanded(
                 child: Consumer<HomeProvider>(
                   builder: (_, hp, __) {
-                    if (hp.highlights.isEmpty && hp.events.isEmpty) {
+                    if (hp.highlights.isEmpty && hp.events.isEmpty && hp.notifications.isEmpty) {
                       return Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -163,6 +163,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       controller: scrollController,
                       padding: const EdgeInsets.all(16),
                       children: [
+                        ...hp.notifications.map(
+                          (n) {
+                            final type = n['notif_type'] as String? ?? 'info';
+                            IconData icon = Icons.notifications;
+                            Color c = AppColors.primary;
+                            if (type == 'alert') { icon = Icons.warning_rounded; c = AppColors.error; }
+                            else if (type == 'system') { icon = Icons.info_outline; c = Colors.blue; }
+
+                            return _NotificationCard(
+                              isDark: isDark,
+                              accentColor: c,
+                              icon: icon,
+                              title: n['title'] as String? ?? 'Notification',
+                              body: n['body'] as String? ?? '',
+                              badge: 'Update',
+                              createdAt: n['created_at'] as String?,
+                            );
+                          }
+                        ),
                         ...hp.highlights.map(
                           (hl) => _NotificationCard(
                             isDark: isDark,
@@ -585,8 +604,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 strokeWidth: 2)),
                                   ),
                                 )
-                              else if (home.events.isEmpty &&
-                                  home.highlights.isEmpty)
+                                  home.highlights.isEmpty &&
+                                  home.notifications.isEmpty)
                                 SliverToBoxAdapter(
                                   child: Padding(
                                     padding: const EdgeInsets.fromLTRB(
@@ -648,6 +667,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                         isDark: isDark,
                                         icon: Icons
                                             .warning_amber_rounded,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                ...home.notifications.map(
+                                  (tn) => SliverToBoxAdapter(
+                                    child: Padding(
+                                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                                      child: _InsightCard(
+                                        accentColor: Theme.of(context).colorScheme.primary,
+                                        title: tn['title'] as String? ?? 'Notification',
+                                        badge: 'Update',
+                                        description: tn['body'] as String? ?? '',
+                                        isDark: isDark,
+                                        icon: Icons.notifications_active_outlined,
                                       ),
                                     ),
                                   ),

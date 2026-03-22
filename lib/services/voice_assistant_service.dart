@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart';
 import 'package:speech_to_text/speech_recognition_result.dart';
 import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'auth_service.dart';
 import 'connection_service.dart';
 import 'wake_word_service.dart';
 
@@ -122,6 +124,51 @@ class VoiceAssistantService extends ChangeNotifier {
         VoiceMode.values[modeIndex.clamp(0, VoiceMode.values.length - 1)];
     _isWakeWordEnabled = prefs.getBool(_wakeWordKey) ?? true;
     notifyListeners();
+    _loadFromSupabase();
+  }
+
+  Future<void> _loadFromSupabase() async {
+    try {
+      final user = AuthService.instance.currentUser;
+      if (user == null) return;
+      final row = await Supabase.instance.client
+          .from('user_settings')
+          .select('voice_mode')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (row != null && row['voice_mode'] != null) {
+        final modeStr = row['voice_mode'] as String;
+        VoiceMode? matchedMode;
+        for (var vm in VoiceMode.values) {
+          if (vm.name == modeStr) {
+            matchedMode = vm;
+            break;
+          }
+        }
+        if (matchedMode != null && matchedMode != _voiceMode) {
+          _voiceMode = matchedMode;
+          notifyListeners();
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt(_voiceModeKey, _voiceMode.index);
+        }
+      }
+    } catch (e) {
+      debugPrint('VoiceAssistantService._loadFromSupabase: $e');
+    }
+  }
+
+  Future<void> _upsertVoiceMode(VoiceMode mode) async {
+    try {
+      final user = AuthService.instance.currentUser;
+      if (user == null) return;
+      await Supabase.instance.client.from('user_settings').upsert({
+        'user_id': user.id,
+        'voice_mode': mode.name,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('VoiceAssistantService._upsertVoiceMode: $e');
+    }
   }
 
   Future<void> _initSTT() async {
@@ -175,6 +222,7 @@ class VoiceAssistantService extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_voiceModeKey, mode.index);
+    _upsertVoiceMode(mode);
     // No need to reconfigure anything — _deepgramModel getter handles it
   }
 

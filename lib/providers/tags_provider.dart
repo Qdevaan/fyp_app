@@ -109,4 +109,52 @@ class TagsProvider extends ChangeNotifier {
       return [];
     }
   }
+
+  // ── Tag an entity ─────────────────────────────────────────────────────────
+  Future<bool> tagEntity(String entityId, String tagId) async {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return false;
+    try {
+      await _supabase.from('entity_tags').upsert({
+        'entity_id': entityId,
+        'tag_id': tagId,
+        'user_id': user.id,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('TagsProvider.tagEntity: $e');
+      return false;
+    }
+  }
+
+  // ── Untag an entity ───────────────────────────────────────────────────────
+  Future<bool> untagEntity(String entityId, String tagId) async {
+    try {
+      await _supabase
+          .from('entity_tags')
+          .delete()
+          .eq('entity_id', entityId)
+          .eq('tag_id', tagId);
+      return true;
+    } catch (e) {
+      debugPrint('TagsProvider.untagEntity: $e');
+      return false;
+    }
+  }
+
+  // ── Get tags for a specific entity ──────────────────────────────────────
+  Future<List<Map<String, dynamic>>> getTagsForEntity(String entityId) async {
+    try {
+      final res = await _supabase
+          .from('entity_tags')
+          .select('tag_id, tags(id, name, color)')
+          .eq('entity_id', entityId);
+      return List<Map<String, dynamic>>.from(
+        (res as List).map((r) => r['tags'] as Map<String, dynamic>),
+      );
+    } catch (e) {
+      debugPrint('TagsProvider.getTagsForEntity: $e');
+      return [];
+    }
+  }
 }

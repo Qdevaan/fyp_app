@@ -9,6 +9,8 @@ import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../theme/design_tokens.dart';
 import '../widgets/glass_morphism.dart';
+import '../widgets/tags_bottom_sheet.dart';
+import '../providers/tags_provider.dart';
 
 /// Displays the user's knowledge graph entities (people, places, orgs, etc.)
 /// backed by the `entities`, `entity_attributes`, and `entity_relations` tables.
@@ -95,6 +97,12 @@ class _EntityScreenState extends State<EntityScreen> {
           .select('source_id, target_id, relation')
           .eq('user_id', user.id);
 
+      // Fetch tags
+      final tagRes = await _supabase
+          .from('entity_tags')
+          .select('entity_id, tags(id, name, color)')
+          .eq('user_id', user.id);
+
       // Build attribute map
       final Map<String, List<Map<String, String>>> attrMap = {};
       for (final a in (attRes as List)) {
@@ -121,12 +129,21 @@ class _EntityScreenState extends State<EntityScreen> {
         relMap[src]!.add({'relation': rel, 'target': tgt});
       }
 
+      // Build tag map
+      final Map<String, List<Map<String, dynamic>>> tagMap = {};
+      for (final t in (tagRes as List)) {
+        final eid = t['entity_id'] as String;
+        tagMap.putIfAbsent(eid, () => []);
+        tagMap[eid]!.add(t['tags'] as Map<String, dynamic>);
+      }
+
       final enriched = entRes.map<Map<String, dynamic>>((e) {
         final id = e['id'] as String;
         return {
           ...e,
           'attributes': attrMap[id] ?? [],
           'relations': relMap[id] ?? [],
+          'tags': tagMap[id] ?? [],
         };
       }).toList();
 
@@ -449,6 +466,7 @@ class _EntityScreenState extends State<EntityScreen> {
                           isDark: isDark,
                           typeColors: _typeColors,
                           typeIcons: _typeIcons,
+                          onRefresh: _loadEntities,
                           onDelete: () =>
                               _deleteEntity(_filtered[i]['id'] as String),
                         ),
@@ -472,6 +490,7 @@ class _EntityCard extends StatefulWidget {
   final bool isDark;
   final Map<String, Color> typeColors;
   final Map<String, IconData> typeIcons;
+  final VoidCallback onRefresh;
   final VoidCallback onDelete;
 
   const _EntityCard({
@@ -479,6 +498,7 @@ class _EntityCard extends StatefulWidget {
     required this.isDark,
     required this.typeColors,
     required this.typeIcons,
+    required this.onRefresh,
     required this.onDelete,
   });
 
@@ -590,7 +610,14 @@ class _EntityCardState extends State<_EntityCard> {
     final icon = widget.typeIcons[entityType] ?? Icons.circle_outlined;
     final attrs = e['attributes'] as List<Map<String, String>>? ?? [];
     final rels = e['relations'] as List<Map<String, String>>? ?? [];
+    final tags = e['tags'] as List<Map<String, dynamic>>? ?? [];
     final mentionCount = e['mention_count'] as int? ?? 1;
+
+    Color hexToColor(String hexString) {
+      var hexColor = hexString.replaceAll('#', '');
+      if (hexColor.length == 6) hexColor = 'FF$hexColor';
+      return Color(int.tryParse(hexColor, radix: 16) ?? 0xFF6C63FF);
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -637,12 +664,27 @@ class _EntityCardState extends State<_EntityCard> {
                                 : AppColors.slate900,
                           ),
                         ),
-                        Text(
-                          entityType[0].toUpperCase() + entityType.substring(1),
-                          style: GoogleFonts.manrope(
-                            fontSize: 12,
-                            color: color,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              entityType[0].toUpperCase() + entityType.substring(1),
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                color: color,
+                              ),
+                            ),
+                            if (tags.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              ...tags.take(3).map((t) => Container(
+                                margin: const EdgeInsets.only(right: 3),
+                                width: 8, height: 8,
+                                decoration: BoxDecoration(
+                                  color: hexToColor(t['color'] as String? ?? ''),
+                                  shape: BoxShape.circle,
+                                ),
+                              )),
+                            ],
+                          ],
                         ),
                       ],
                     ),
@@ -750,10 +792,41 @@ class _EntityCardState extends State<_EntityCard> {
                     const SizedBox(height: 10),
                   ],
 
-                  // Delete + Ask AI actions
+                  // Delete + Ask AI + Tags actions
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
+                      TextButton.icon(
+                        onPressed: () async {
+                          final pTags = await context.read<TagsProvider>().getTagsForEntity(widget.entity['id'] as String);
+                          if (!mounted) return;
+                          await showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Theme.of(context).colorScheme.surface,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                            ),
+                            builder: (_) => TagsBottomSheet(
+                              entityId: widget.entity['id'] as String,
+                              currentTags: pTags,
+                            ),
+                          );
+                          widget.onRefresh();
+                        },
+                        icon: Icon(
+                          Icons.label_outline,
+                          size: 16,
+                          color: color,
+                        ),
+                        label: Text(
+                          'Tags',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            color: color,
+                          ),
+                        ),
+                      ),
                       // Ask AI button
                       TextButton.icon(
                         onPressed: _askingAi

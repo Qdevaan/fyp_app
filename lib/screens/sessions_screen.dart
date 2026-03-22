@@ -9,6 +9,7 @@ import '../theme/design_tokens.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/glass_morphism.dart';
 import '../widgets/tags_bottom_sheet.dart';
+import '../widgets/export_bottom_sheet.dart';
 import '../providers/tags_provider.dart';
 import '../services/api_service.dart';
 import '../routes/app_routes.dart';
@@ -872,6 +873,16 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
                       );
                       _loadTags();
                     },
+                  ),
+                  // Export button
+                  IconButton(
+                    icon: const Icon(Icons.download_outlined, size: 22),
+                    tooltip: 'Export Session',
+                    onPressed: () => ExportBottomSheet.show(
+                      context,
+                      widget.sessionId,
+                      widget.title,
+                    ),
                   ),
                   // View Report button (wingman only)
                   if (!widget.isConsultant)

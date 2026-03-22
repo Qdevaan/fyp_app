@@ -15,9 +15,18 @@ class SettingsProvider with ChangeNotifier {
   String _defaultConsultantTone = 'casual';
   bool _alwaysPromptForTone = false;
 
+  bool _pushHighlights = true;
+  bool _pushEvents = true;
+  bool _pushWeeklyDigest = true;
+  bool _pushReminders = true;
+
   String get defaultLiveTone => _defaultLiveTone;
   String get defaultConsultantTone => _defaultConsultantTone;
   bool get alwaysPromptForTone => _alwaysPromptForTone;
+  bool get pushHighlights => _pushHighlights;
+  bool get pushEvents => _pushEvents;
+  bool get pushWeeklyDigest => _pushWeeklyDigest;
+  bool get pushReminders => _pushReminders;
 
   SettingsProvider() {
     _loadSettings();
@@ -29,6 +38,12 @@ class SettingsProvider with ChangeNotifier {
     _defaultLiveTone = prefs.getString(_liveToneKey) ?? 'casual';
     _defaultConsultantTone = prefs.getString(_consultantToneKey) ?? 'casual';
     _alwaysPromptForTone = prefs.getBool(_alwaysPromptKey) ?? false;
+
+    _pushHighlights = prefs.getBool('push_highlights') ?? true;
+    _pushEvents = prefs.getBool('push_events') ?? true;
+    _pushWeeklyDigest = prefs.getBool('push_weekly_digest') ?? true;
+    _pushReminders = prefs.getBool('push_reminders') ?? true;
+
     notifyListeners();
 
     // Overlay with remote values if available
@@ -41,7 +56,7 @@ class SettingsProvider with ChangeNotifier {
       if (user == null) return;
       final row = await Supabase.instance.client
           .from('user_settings')
-          .select('wingman_mode, consultant_mode')
+          .select('wingman_mode, consultant_mode, push_highlights, push_events, push_weekly_digest, push_reminders')
           .eq('user_id', user.id)
           .maybeSingle();
       if (row == null) return;
@@ -53,6 +68,22 @@ class SettingsProvider with ChangeNotifier {
       if (row['consultant_mode'] != null) {
         _defaultConsultantTone = row['consultant_mode'] as String;
         await prefs.setString(_consultantToneKey, _defaultConsultantTone);
+      }
+      if (row['push_highlights'] != null) {
+        _pushHighlights = row['push_highlights'] as bool;
+        await prefs.setBool('push_highlights', _pushHighlights);
+      }
+      if (row['push_events'] != null) {
+        _pushEvents = row['push_events'] as bool;
+        await prefs.setBool('push_events', _pushEvents);
+      }
+      if (row['push_weekly_digest'] != null) {
+        _pushWeeklyDigest = row['push_weekly_digest'] as bool;
+        await prefs.setBool('push_weekly_digest', _pushWeeklyDigest);
+      }
+      if (row['push_reminders'] != null) {
+        _pushReminders = row['push_reminders'] as bool;
+        await prefs.setBool('push_reminders', _pushReminders);
       }
       notifyListeners();
     } catch (e) {
@@ -97,5 +128,37 @@ class SettingsProvider with ChangeNotifier {
     await prefs.setString(_consultantToneKey, tone);
     notifyListeners();
     _upsertUserSettings({'consultant_mode': tone});
+  }
+
+  Future<void> setPushHighlights(bool val) async {
+    _pushHighlights = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('push_highlights', val);
+    notifyListeners();
+    _upsertUserSettings({'push_highlights': val});
+  }
+
+  Future<void> setPushEvents(bool val) async {
+    _pushEvents = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('push_events', val);
+    notifyListeners();
+    _upsertUserSettings({'push_events': val});
+  }
+
+  Future<void> setPushWeeklyDigest(bool val) async {
+    _pushWeeklyDigest = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('push_weekly_digest', val);
+    notifyListeners();
+    _upsertUserSettings({'push_weekly_digest': val});
+  }
+
+  Future<void> setPushReminders(bool val) async {
+    _pushReminders = val;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('push_reminders', val);
+    notifyListeners();
+    _upsertUserSettings({'push_reminders': val});
   }
 }

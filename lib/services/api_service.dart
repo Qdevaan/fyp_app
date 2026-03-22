@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'connection_service.dart';
+import 'auth_service.dart';
 
 class ApiService {
   final ConnectionService _connectionService;
@@ -109,6 +110,7 @@ class ApiService {
           'Enrollment uploaded but embedding not found in database.',
         );
       }
+      AuthService.instance.updateOnboardingProgress({'voice_enrolled': true});
       return status;
     } catch (e) {
       throw Exception('Enrollment failed: $e');
@@ -190,7 +192,11 @@ class ApiService {
             )
             .timeout(const Duration(seconds: 15));
 
-        return response.statusCode == 200;
+        if (response.statusCode == 200) {
+          AuthService.instance.updateOnboardingProgress({'first_wingman': true});
+          return true;
+        }
+        return false;
       });
     } catch (e) {
       debugPrint("Save Session Error: $e");
@@ -219,6 +225,7 @@ class ApiService {
 
         if (response.statusCode == 200) {
           var data = jsonDecode(response.body);
+          AuthService.instance.updateOnboardingProgress({'first_consultant': true});
           return data['answer'] as String;
         }
         return "Brain Error: ${response.statusCode}";
@@ -288,6 +295,7 @@ class ApiService {
             )
             .timeout(const Duration(seconds: 10));
         if (res.statusCode == 200) {
+          AuthService.instance.updateOnboardingProgress({'first_wingman': true});
           return jsonDecode(res.body)['session_id'] as String?;
         }
         return null;
@@ -373,6 +381,7 @@ class ApiService {
               if (parsed['token'] != null) {
                 yield parsed['token'] as String;
               } else if (parsed['done'] == true) {
+                AuthService.instance.updateOnboardingProgress({'first_consultant': true});
                 final sid = parsed['session_id'] as String?;
                 if (sid != null && onSessionCreated != null)
                   onSessionCreated(sid);

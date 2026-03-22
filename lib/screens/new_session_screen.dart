@@ -13,6 +13,7 @@ import '../services/connection_service.dart';
 import '../providers/session_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/chat_bubble.dart';
+import '../widgets/feedback_dialog.dart';
 
 // ============================================================================
 //  NEW SESSION SCREEN  (Live Wingman)
@@ -193,6 +194,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         );
       }
 
+      final completedSessionId = _session.sessionId;
       final success = await _session.endSession(api, deepgram);
 
       if (mounted) {
@@ -203,7 +205,12 @@ class _NewSessionScreenState extends State<NewSessionScreen>
               backgroundColor: AppColors.success,
             ),
           );
-          Navigator.pop(context);
+          
+          await FeedbackDialog.show(context, sessionId: completedSessionId);
+
+          if (mounted) {
+            Navigator.pop(context);
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

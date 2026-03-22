@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/auth_service.dart';
 import '../theme/design_tokens.dart';
 
 class ThemeProvider extends ChangeNotifier {
@@ -28,6 +30,48 @@ class ThemeProvider extends ChangeNotifier {
       _themeMode = ThemeMode.values[modeValue];
     }
     notifyListeners();
+    _loadFromSupabase();
+  }
+
+  Future<void> _loadFromSupabase() async {
+    try {
+      final user = AuthService.instance.currentUser;
+      if (user == null) return;
+      final row = await Supabase.instance.client
+          .from('user_settings')
+          .select('theme')
+          .eq('user_id', user.id)
+          .maybeSingle();
+      if (row != null && row['theme'] != null) {
+        final String t = row['theme'];
+        ThemeMode mode = ThemeMode.system;
+        if (t == 'dark') mode = ThemeMode.dark;
+        else if (t == 'light') mode = ThemeMode.light;
+        
+        if (mode != _themeMode) {
+          _themeMode = mode;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setInt(_themeModeKey, mode.index);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('ThemeProvider._loadFromSupabase: $e');
+    }
+  }
+
+  Future<void> _upsertThemePref(String val) async {
+    try {
+      final user = AuthService.instance.currentUser;
+      if (user == null) return;
+      await Supabase.instance.client.from('user_settings').upsert({
+        'user_id': user.id,
+        'theme': val,
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('ThemeProvider._upsertThemePref: $e');
+    }
   }
 
   Future<void> setThemeColor(Color color) async {
@@ -42,6 +86,10 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_themeModeKey, mode.index);
+    String tStr = 'system';
+    if (mode == ThemeMode.dark) tStr = 'dark';
+    else if (mode == ThemeMode.light) tStr = 'light';
+    _upsertThemePref(tStr);
   }
 
   TextTheme get _manropeTextTheme => GoogleFonts.manropeTextTheme();
