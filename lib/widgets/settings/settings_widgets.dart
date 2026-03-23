@@ -356,11 +356,11 @@ class VoiceEnrollmentSectionState extends State<VoiceEnrollmentSection> {
     try {
       final res = await Supabase.instance.client
           .from('voice_enrollments')
-          .select('enrolled_at')
+          .select('updated_at')
           .eq('user_id', user.id)
           .maybeSingle();
       setState(() {
-        _enrolledAt = res?['enrolled_at'] as String?;
+        _enrolledAt = res?['updated_at'] as String?;
         _state = EnrollState.idle;
       });
     } catch (_) {

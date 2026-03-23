@@ -926,8 +926,8 @@ class _GenericSessionDetailState extends State<GenericSessionDetail> {
                       final log = logs[index];
 
                       if (widget.isConsultant) {
-                        final question = log['question']?.toString() ?? '';
-                        final answer = log['answer']?.toString() ?? '';
+                        final question = log['question']?.toString() ?? log['query']?.toString() ?? '';
+                        final answer = log['answer']?.toString() ?? log['response']?.toString() ?? '';
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [

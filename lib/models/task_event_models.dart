@@ -1,42 +1,42 @@
-class TaskItem {
+class EventItem {
   final String id;
   final String userId;
   final String title;
   final String? description;
-  final DateTime? dueDate;
-  final String priority;
-  final String status;
-  final String? category;
-  final String? sourceSessionId;
-  final DateTime? completedAt;
+  final String? dueText;
+  final DateTime? startTime;
+  final DateTime? endTime;
+  final String? relatedEntityId;
+  final String? sessionId;
+  final String? status;
   final DateTime createdAt;
 
-  TaskItem({
+  EventItem({
     required this.id,
     required this.userId,
     required this.title,
     this.description,
-    this.dueDate,
-    this.priority = 'medium',
+    this.dueText,
+    this.startTime,
+    this.endTime,
+    this.relatedEntityId,
+    this.sessionId,
     this.status = 'pending',
-    this.category,
-    this.sourceSessionId,
-    this.completedAt,
     required this.createdAt,
   });
 
-  factory TaskItem.fromJson(Map<String, dynamic> json) {
-    return TaskItem(
+  factory EventItem.fromJson(Map<String, dynamic> json) {
+    return EventItem(
       id: json['id'],
       userId: json['user_id'],
       title: json['title'],
       description: json['description'],
-      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date']) : null,
-      priority: json['priority'] ?? 'medium',
+      dueText: json['due_text'],
+      startTime: json['start_time'] != null ? DateTime.parse(json['start_time']) : null,
+      endTime: json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
+      relatedEntityId: json['related_entity_id'],
+      sessionId: json['session_id'],
       status: json['status'] ?? 'pending',
-      category: json['category'],
-      sourceSessionId: json['source_session_id'],
-      completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at']) : null,
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -47,12 +47,12 @@ class TaskItem {
       'user_id': userId,
       'title': title,
       'description': description,
-      'due_date': dueDate?.toIso8601String(),
-      'priority': priority,
+      'due_text': dueText,
+      'start_time': startTime?.toIso8601String(),
+      'end_time': endTime?.toIso8601String(),
+      'related_entity_id': relatedEntityId,
+      'session_id': sessionId,
       'status': status,
-      'category': category,
-      'source_session_id': sourceSessionId,
-      'completed_at': completedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
     };
   }

@@ -66,7 +66,7 @@ class ConsultantProvider extends ChangeNotifier {
       final rows = List<Map<String, dynamic>>.from(
         await _supabase
             .from('consultant_logs')
-            .select('session_id, question, created_at')
+            .select('session_id, question, query, created_at')
             .eq('user_id', user.id)
             .not('session_id', 'is', null)
             .order('created_at', ascending: true),
@@ -80,7 +80,7 @@ class ConsultantProvider extends ChangeNotifier {
           sid,
           () => {
             'session_id': sid,
-            'title': r['question'] as String? ?? 'Chat',
+            'title': (r['question'] as String?) ?? (r['query'] as String?) ?? 'Chat',
             'created_at': r['created_at'] as String? ?? '',
           },
         );
@@ -117,7 +117,7 @@ class ConsultantProvider extends ChangeNotifier {
       final rows = List<Map<String, dynamic>>.from(
         await _supabase
             .from('consultant_logs')
-            .select('question, answer, created_at')
+            .select('question, query, answer, response, created_at')
             .eq('session_id', sessionId)
             .eq('user_id', user.id)
             .order('created_at', ascending: true),
@@ -125,11 +125,13 @@ class ConsultantProvider extends ChangeNotifier {
 
       _currentSessionId = sessionId;
       for (final r in rows) {
-        if (r['question'] != null) {
-          _messages.add({"role": "user", "text": r['question'] as String});
+        final q = (r['question'] as String?) ?? (r['query'] as String?);
+        if (q != null) {
+          _messages.add({"role": "user", "text": q});
         }
-        if (r['answer'] != null) {
-          _messages.add({"role": "ai", "text": r['answer'] as String});
+        final a = (r['answer'] as String?) ?? (r['response'] as String?);
+        if (a != null) {
+          _messages.add({"role": "ai", "text": a});
         }
       }
       if (_messages.isEmpty) {

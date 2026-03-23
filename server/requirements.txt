@@ -2,31 +2,31 @@
 # Install with: pip install -r requirements.txt
 
 # Web Framework
-fastapi==0.115.6
-uvicorn==0.34.0
-pydantic==2.10.6
+fastapi
+uvicorn
+pydantic
 
 # AI & LLM
-groq==0.13.0
+groq
 
 # Database
-supabase==2.11.0
+supabase
 
 # Real-time Communication
-livekit==0.18.1
+livekit-api
 
 # NLP & Embeddings
-sentence-transformers==3.3.1
+sentence-transformers
 --extra-index-url https://download.pytorch.org/whl/cpu
-torch==2.5.1+cpu
+torch
 
 # Graph Database (in-memory)
-networkx==3.4.2
+networkx
 
 # Rate Limiting
-slowapi==0.1.9
+slowapi
 
 # Utilities
-httpx==0.28.1
-python-dotenv==1.0.1
-python-multipart==0.0.20
+httpx
+python-dotenv
+python-multipart

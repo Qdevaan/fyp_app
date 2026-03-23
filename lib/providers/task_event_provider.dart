@@ -5,11 +5,11 @@ import '../services/task_event_service.dart';
 class TaskEventProvider with ChangeNotifier {
   final TaskEventService _service = TaskEventService();
 
-  List<TaskItem> _tasks = [];
+  List<EventItem> _events = [];
   List<AppNotification> _notifications = [];
   bool _isLoading = false;
 
-  List<TaskItem> get tasks => _tasks;
+  List<EventItem> get events => _events;
   List<AppNotification> get notifications => _notifications;
   bool get isLoading => _isLoading;
 
@@ -18,19 +18,19 @@ class TaskEventProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _tasks = await _service.getTasks(userId);
+      _events = await _service.getEvents(userId);
       _notifications = await _service.getNotifications(userId);
     } catch (e) {
-      print('Failed to load tasks and notifications: $e');
+      print('Failed to load events and notifications: $e');
     } finally {
       _isLoading = false;
       notifyListeners();
     }
   }
 
-  Future<void> addTask(TaskItem task) async {
-    await _service.addTask(task);
-    _tasks.insert(0, task);
+  Future<void> addEvent(EventItem event) async {
+    await _service.addEvent(event);
+    _events.insert(0, event);
     notifyListeners();
   }
 }

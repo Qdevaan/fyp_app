@@ -4,26 +4,26 @@ import '../models/task_event_models.dart';
 class TaskEventService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  Future<List<TaskItem>> getTasks(String userId) async {
+  Future<List<EventItem>> getEvents(String userId) async {
     try {
       final response = await _supabase
-          .from('tasks')
+          .from('events')
           .select()
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
-      return (response as List).map((json) => TaskItem.fromJson(json)).toList();
+      return (response as List).map((json) => EventItem.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching tasks: $e');
+      print('Error fetching events: $e');
       return [];
     }
   }
 
-  Future<void> addTask(TaskItem task) async {
+  Future<void> addEvent(EventItem event) async {
     try {
-      await _supabase.from('tasks').insert(task.toJson());
+      await _supabase.from('events').insert(event.toJson());
     } catch (e) {
-      print('Error adding task: $e');
+      print('Error adding event: $e');
       rethrow;
     }
   }

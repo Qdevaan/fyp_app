@@ -127,10 +127,10 @@ class ApiService {
     try {
       final res = await Supabase.instance.client
           .from('voice_enrollments')
-          .select('enrolled_at')
+          .select('updated_at')
           .eq('user_id', userId)
           .maybeSingle();
-      return res?['enrolled_at'] as String?;
+      return res?['updated_at'] as String?;
     } catch (e) {
       debugPrint('checkEnrollmentStatus error: $e');
       return null;
