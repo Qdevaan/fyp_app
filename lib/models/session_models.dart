@@ -18,6 +18,7 @@ class Session {
   final int tokenUsagePrompt;
   final int tokenUsageCompletion;
   final double totalCostUsd;
+  final DateTime? deletedAt;
   final DateTime createdAt;
 
   Session({
@@ -40,6 +41,7 @@ class Session {
     this.tokenUsagePrompt = 0,
     this.tokenUsageCompletion = 0,
     this.totalCostUsd = 0.0,
+    this.deletedAt,
     required this.createdAt,
   });
 
@@ -64,6 +66,7 @@ class Session {
       tokenUsagePrompt: json['token_usage_prompt'] ?? 0,
       tokenUsageCompletion: json['token_usage_completion'] ?? 0,
       totalCostUsd: (json['total_cost_usd'] ?? 0).toDouble(),
+      deletedAt: json['deleted_at'] != null ? DateTime.parse(json['deleted_at']) : null,
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -89,6 +92,7 @@ class Session {
       'token_usage_prompt': tokenUsagePrompt,
       'token_usage_completion': tokenUsageCompletion,
       'total_cost_usd': totalCostUsd,
+      'deleted_at': deletedAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
     };
   }
@@ -164,7 +168,7 @@ class SessionLog {
         'sentiment_score': sentimentScore,
         'sentiment_label': sentimentLabel,
         'confidence': confidence,
-        'modelUsed': modelUsed,
+        'model_used': modelUsed,
         'latency_ms': latencyMs,
         'tokens_used': tokensUsed,
         'finish_reason': finishReason,

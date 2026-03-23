@@ -1,10 +1,10 @@
 class Profile {
   final String id;
-  final String? firstName;
-  final String? lastName;
+  final String? fullName;
   final String? avatarUrl;
-  final DateTime? dateOfBirth;
+  final DateTime? dob;
   final String? gender;
+  final String? country;
   final String locale;
   final String timezone;
   final String? occupation;
@@ -16,11 +16,11 @@ class Profile {
 
   Profile({
     required this.id,
-    this.firstName,
-    this.lastName,
+    this.fullName,
     this.avatarUrl,
-    this.dateOfBirth,
+    this.dob,
     this.gender,
+    this.country,
     this.locale = 'en_US',
     this.timezone = 'UTC',
     this.occupation,
@@ -34,11 +34,11 @@ class Profile {
   factory Profile.fromJson(Map<String, dynamic> json) {
     return Profile(
       id: json['id'],
-      firstName: json['first_name'],
-      lastName: json['last_name'],
+      fullName: json['full_name'],
       avatarUrl: json['avatar_url'],
-      dateOfBirth: json['date_of_birth'] != null ? DateTime.parse(json['date_of_birth']) : null,
+      dob: json['dob'] != null ? DateTime.parse(json['dob']) : null,
       gender: json['gender'],
+      country: json['country'],
       locale: json['locale'] ?? 'en_US',
       timezone: json['timezone'] ?? 'UTC',
       occupation: json['occupation'],
@@ -53,11 +53,11 @@ class Profile {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'first_name': firstName,
-      'last_name': lastName,
+      'full_name': fullName,
       'avatar_url': avatarUrl,
-      'date_of_birth': dateOfBirth?.toIso8601String(),
+      'dob': dob?.toIso8601String()?.split('T').first,
       'gender': gender,
+      'country': country,
       'locale': locale,
       'timezone': timezone,
       'occupation': occupation,

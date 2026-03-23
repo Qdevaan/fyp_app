@@ -1,43 +1,55 @@
 class EventItem {
   final String id;
   final String userId;
+  final String? sessionId;
   final String title;
   final String? description;
   final String? dueText;
   final DateTime? startTime;
   final DateTime? endTime;
-  final String? relatedEntityId;
-  final String? sessionId;
-  final String? status;
+  final String? location;
+  final bool isAllDay;
+  final bool isCompleted;
+  final String? externalEventId;
+  final String? syncProvider;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   EventItem({
     required this.id,
     required this.userId,
+    this.sessionId,
     required this.title,
     this.description,
     this.dueText,
     this.startTime,
     this.endTime,
-    this.relatedEntityId,
-    this.sessionId,
-    this.status = 'pending',
+    this.location,
+    this.isAllDay = false,
+    this.isCompleted = false,
+    this.externalEventId,
+    this.syncProvider,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   factory EventItem.fromJson(Map<String, dynamic> json) {
     return EventItem(
       id: json['id'],
       userId: json['user_id'],
+      sessionId: json['session_id'],
       title: json['title'],
       description: json['description'],
       dueText: json['due_text'],
       startTime: json['start_time'] != null ? DateTime.parse(json['start_time']) : null,
       endTime: json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
-      relatedEntityId: json['related_entity_id'],
-      sessionId: json['session_id'],
-      status: json['status'] ?? 'pending',
+      location: json['location'],
+      isAllDay: json['is_all_day'] ?? false,
+      isCompleted: json['is_completed'] ?? false,
+      externalEventId: json['external_event_id'],
+      syncProvider: json['sync_provider'],
       createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
     );
   }
 
@@ -45,15 +57,19 @@ class EventItem {
     return {
       'id': id,
       'user_id': userId,
+      'session_id': sessionId,
       'title': title,
       'description': description,
       'due_text': dueText,
       'start_time': startTime?.toIso8601String(),
       'end_time': endTime?.toIso8601String(),
-      'related_entity_id': relatedEntityId,
-      'session_id': sessionId,
-      'status': status,
+      'location': location,
+      'is_all_day': isAllDay,
+      'is_completed': isCompleted,
+      'external_event_id': externalEventId,
+      'sync_provider': syncProvider,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 }

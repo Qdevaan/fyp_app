@@ -215,16 +215,34 @@ class AuthService {
 
   /// Upserts user onboarding progress. Valid keys: 
   /// profile_done, voice_enrolled, first_wingman, first_consultant
+  /// These are remapped to schema columns: has_completed_welcome, has_set_voice,
+  /// has_completed_tutorial, current_step
   Future<void> updateOnboardingProgress(Map<String, bool> updates) async {
     try {
       final user = currentUser;
       if (user == null) return;
       
-      final row = {
+      // Remap app-level keys to actual schema column names
+      const keyMap = {
+        'profile_done': 'has_completed_welcome',
+        'voice_enrolled': 'has_set_voice',
+        'first_wingman': 'has_completed_tutorial',
+      };
+      
+      final row = <String, dynamic>{
         'user_id': user.id,
-        ...updates,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       };
+      
+      for (final entry in updates.entries) {
+        final schemaKey = keyMap[entry.key];
+        if (schemaKey != null) {
+          row[schemaKey] = entry.value;
+        } else if (entry.key == 'first_consultant') {
+          // Store as current_step marker
+          row['current_step'] = entry.value ? 'consultant_done' : null;
+        }
+      }
       
       await _client.from('onboarding_progress').upsert(row);
     } catch (e) {

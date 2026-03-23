@@ -1,21 +1,27 @@
 class SubscriptionTier {
   final String id;
   final String userId;
+  final String? stripeCustomerId;
+  final String? stripeSubscriptionId;
   final String planId;
   final String status;
-  final DateTime currentPeriodStart;
-  final DateTime currentPeriodEnd;
+  final DateTime? currentPeriodStart;
+  final DateTime? currentPeriodEnd;
   final bool cancelAtPeriodEnd;
+  final DateTime createdAt;
   final DateTime updatedAt;
 
   SubscriptionTier({
     required this.id,
     required this.userId,
+    this.stripeCustomerId,
+    this.stripeSubscriptionId,
     required this.planId,
     required this.status,
-    required this.currentPeriodStart,
-    required this.currentPeriodEnd,
+    this.currentPeriodStart,
+    this.currentPeriodEnd,
     this.cancelAtPeriodEnd = false,
+    required this.createdAt,
     required this.updatedAt,
   });
 
@@ -23,11 +29,18 @@ class SubscriptionTier {
     return SubscriptionTier(
       id: json['id'],
       userId: json['user_id'],
+      stripeCustomerId: json['stripe_customer_id'],
+      stripeSubscriptionId: json['stripe_subscription_id'],
       planId: json['plan_id'],
       status: json['status'],
-      currentPeriodStart: DateTime.parse(json['current_period_start']),
-      currentPeriodEnd: DateTime.parse(json['current_period_end']),
+      currentPeriodStart: json['current_period_start'] != null
+          ? DateTime.parse(json['current_period_start'])
+          : null,
+      currentPeriodEnd: json['current_period_end'] != null
+          ? DateTime.parse(json['current_period_end'])
+          : null,
       cancelAtPeriodEnd: json['cancel_at_period_end'] ?? false,
+      createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
   }
@@ -65,25 +78,37 @@ class Integration {
 class TeamWorkspace {
   final String id;
   final String ownerId;
-  final String workspaceName;
-  final int maxMembers;
+  final String name;
+  final String? domain;
+  final String? billingEmail;
+  final bool enterpriseTier;
+  final bool ssoEnabled;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   TeamWorkspace({
     required this.id,
     required this.ownerId,
-    required this.workspaceName,
-    this.maxMembers = 5,
+    required this.name,
+    this.domain,
+    this.billingEmail,
+    this.enterpriseTier = false,
+    this.ssoEnabled = false,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   factory TeamWorkspace.fromJson(Map<String, dynamic> json) {
     return TeamWorkspace(
       id: json['id'],
       ownerId: json['owner_id'],
-      workspaceName: json['workspace_name'],
-      maxMembers: json['max_members'] ?? 5,
+      name: json['name'],
+      domain: json['domain'],
+      billingEmail: json['billing_email'],
+      enterpriseTier: json['enterprise_tier'] ?? false,
+      ssoEnabled: json['sso_enabled'] ?? false,
       createdAt: DateTime.parse(json['created_at']),
+      updatedAt: DateTime.parse(json['updated_at']),
     );
   }
 }
