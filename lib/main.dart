@@ -8,7 +8,10 @@ import 'services/livekit_service.dart';
 import 'services/deepgram_service.dart';
 import 'services/voice_assistant_service.dart';
 import 'services/wake_word_service.dart';
+import 'services/analytics_service.dart';
+import 'services/device_service.dart';
 import 'providers/theme_provider.dart';
+import 'providers/settings_provider.dart';
 import 'providers/consultant_provider.dart';
 import 'providers/session_provider.dart';
 import 'providers/home_provider.dart';
@@ -26,24 +29,45 @@ import 'screens/new_session_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/entity_screen.dart';
-import 'screens/session_history_screen.dart';
-import 'screens/ai_insights_dashboard_screen.dart';
+import 'screens/session_analytics_screen.dart';
+import 'screens/roleplay_setup_screen.dart';
+import 'screens/quests_screen.dart';
+import 'screens/graph_explorer_screen.dart';
+import 'screens/health_dashboard_screen.dart';
+import 'screens/expense_tracker_screen.dart';
+import 'screens/tasks_screen.dart';
+import 'screens/smart_home_dashboard_screen.dart';
+import 'screens/trips_planner_screen.dart';
+import 'screens/integrations_hub_screen.dart';
 import 'screens/subscription_screen.dart';
-import 'screens/expanded_user_profile_screen.dart';
-import 'screens/search_discovery_screen.dart';
+import 'providers/tags_provider.dart';
+import 'providers/profile_provider.dart';
+import 'providers/health_finance_provider.dart';
+import 'providers/task_event_provider.dart';
+import 'providers/iot_manager_provider.dart';
+import 'providers/enterprise_provider.dart';
 import 'widgets/auth_guard.dart';
 import 'routes/app_routes.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables from .env file
-  await dotenv.load(fileName: ".env");
+  // Load environment variables — .env is no longer bundled as a Flutter asset
+  // (to avoid leaking API keys in the APK). It still loads from the project
+  // root during development. For release builds, pass keys via --dart-define.
+  try {
+    await dotenv.load(fileName: "env/.env");
+  } catch (e) {
+    debugPrint('⚠️ .env not found as asset — using platform environment / --dart-define');
+  }
+
+  final supabaseUrl = const String.fromEnvironment('SUPABASE_URL', defaultValue: '');
+  final supabaseAnonKey = const String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: '');
 
   // Initialize Supabase using environment variables
   await Supabase.initialize(
-    url: dotenv.env['SUPABASE_URL']!,
-    anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+    url: supabaseUrl.isNotEmpty ? supabaseUrl : dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: supabaseAnonKey.isNotEmpty ? supabaseAnonKey : dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
 
   // Set up global error handling
@@ -51,6 +75,16 @@ Future<void> main() async {
     FlutterError.presentError(details);
     debugPrint('FlutterError: ${details.exceptionAsString()}');
   };
+
+  // ── Auth-state listener: register device & flush analytics on login/logout ──
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    final event = data.event;
+    if (event == AuthChangeEvent.signedIn) {
+      DeviceService.instance.registerDevice();
+    } else if (event == AuthChangeEvent.signedOut) {
+      AnalyticsService.instance.flushNow();
+    }
+  });
 
   runApp(const BubblesApp());
 }
@@ -84,7 +118,8 @@ class BubblesApp extends StatelessWidget {
         // 4. Theme Provider
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
 
-        // 5. Deepgram Service
+          // 4.5. Settings Provider
+          ChangeNotifierProvider(create: (context) => SettingsProvider()),
         ChangeNotifierProvider(create: (context) => DeepgramService()),
 
         // 6. Wake Word Service (Porcupine)
@@ -111,11 +146,30 @@ class BubblesApp extends StatelessWidget {
 
         // 10. Home Provider (home screen data)
         ChangeNotifierProvider(create: (_) => HomeProvider()),
+
+        // 11. Tags Provider (schema_v2 tagging)
+        ChangeNotifierProvider(create: (_) => TagsProvider()),
+
+        // 12. Profile / Identity Provider (Schema v4)
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+
+        // 13. Health & Finance Provider (Schema v4)
+        ChangeNotifierProvider(create: (_) => HealthFinanceProvider()),
+
+        // 14. Tasks & Events Provider
+        ChangeNotifierProvider(create: (_) => TaskEventProvider()),
+
+        // 15. IoT Provider
+        ChangeNotifierProvider(create: (_) => IoTManagerProvider()),
+
+        // 16. Enterprise & Subscriptions Provider
+        ChangeNotifierProvider(create: (_) => EnterpriseProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
             navigatorKey: BubblesApp.navigatorKey,
+            navigatorObservers: [_AnalyticsNavigatorObserver()],
             debugShowCheckedModeBanner: false,
             title: 'Bubbles',
 
@@ -178,6 +232,27 @@ class BubblesApp extends StatelessWidget {
                         );
                       },
                 );
+              } else if (settings.name == AppRoutes.sessionAnalytics) {
+                final args = settings.arguments as Map<String, String>?;
+                return PageRouteBuilder(
+                  pageBuilder: (context, animation, secondaryAnimation) =>
+                      SessionAnalyticsScreen(
+                        sessionId: args?['sessionId'] ?? '',
+                        sessionTitle: args?['sessionTitle'] ?? 'Session',
+                      ),
+                  transitionsBuilder:
+                      (context, animation, secondaryAnimation, child) {
+                        const begin = Offset(0.0, 1.0); // Slide from bottom
+                        const end = Offset.zero;
+                        const curve = Curves.easeInOut;
+                        var tween = Tween(begin: begin, end: end)
+                            .chain(CurveTween(curve: curve));
+                        return SlideTransition(
+                          position: animation.drive(tween),
+                          child: child,
+                        );
+                      },
+                );
               }
               return null; // Let the 'routes' map handle the rest
             },
@@ -205,16 +280,26 @@ class BubblesApp extends StatelessWidget {
                   const AuthGuard(child: SessionsScreen()),
               AppRoutes.about: (context) =>
                   const AuthGuard(child: AboutScreen()),
-              AppRoutes.sessionHistory: (context) =>
-                  const AuthGuard(child: SessionHistoryScreen()),
-              AppRoutes.aiInsights: (context) =>
-                  const AuthGuard(child: AiInsightsDashboardScreen()),
+              AppRoutes.roleplaySetup: (context) =>
+                  const AuthGuard(child: RoleplaySetupScreen()),
+              AppRoutes.quests: (context) =>
+                  const AuthGuard(child: QuestsScreen()),
+              AppRoutes.graphExplorer: (context) =>
+                  const AuthGuard(child: GraphExplorerScreen()),
+              AppRoutes.healthDashboard: (context) =>
+                  const AuthGuard(child: HealthDashboardScreen()),
+              AppRoutes.expensesTracker: (context) =>
+                  const AuthGuard(child: ExpenseTrackerScreen()),
+              AppRoutes.tasks: (context) => 
+                  const AuthGuard(child: TasksScreen()),
+              AppRoutes.smartHome: (context) =>
+                  const AuthGuard(child: SmartHomeDashboardScreen()),
+              AppRoutes.tripsPlanner: (context) =>
+                  const AuthGuard(child: TripsPlannerScreen()),
+              AppRoutes.integrations: (context) =>
+                  const AuthGuard(child: IntegrationsHubScreen()),
               AppRoutes.subscription: (context) =>
                   const AuthGuard(child: SubscriptionScreen()),
-              AppRoutes.profile: (context) =>
-                  const AuthGuard(child: ExpandedUserProfileScreen()),
-              AppRoutes.search: (context) =>
-                  const AuthGuard(child: SearchDiscoveryScreen()),
             },
           );
         },
@@ -257,3 +342,28 @@ class _VoiceOverlayWrapper extends StatelessWidget {
 
 /// The Gatekeeper Widget
 /// Dynamically switches between Login and Home based on auth state.
+
+/// Navigator observer that logs screen views to audit_log.
+class _AnalyticsNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    _logScreenView(route);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute != null) _logScreenView(newRoute);
+  }
+
+  void _logScreenView(Route<dynamic> route) {
+    final routeName = route.settings.name;
+    if (routeName == null || routeName.isEmpty) return;
+    AnalyticsService.instance.logAction(
+      action: 'screen_view',
+      entityType: 'screen',
+      details: {'screen': routeName},
+    );
+  }
+}

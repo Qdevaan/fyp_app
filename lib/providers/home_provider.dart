@@ -1,10 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 
 /// Dedicated state manager for the HomeScreen.
-/// Extracts data fetching (events, highlights, profile) and
-/// Realtime subscription out of the widget.
+/// Fetches events, highlights and notifications; subscribes to Realtime
+/// inserts on both the `highlights` and `notifications` tables (schema_v2).
 class HomeProvider extends ChangeNotifier {
   final SupabaseClient _supabase = Supabase.instance.client;
 
@@ -20,6 +21,10 @@ class HomeProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _highlights = [];
   List<Map<String, dynamic>> get highlights => List.unmodifiable(_highlights);
 
+  // notifications (schema_v2 F1)
+  List<Map<String, dynamic>> _notifications = [];
+  List<Map<String, dynamic>> get notifications => List.unmodifiable(_notifications);
+
   bool _insightsLoaded = false;
   bool get insightsLoaded => _insightsLoaded;
 
@@ -27,11 +32,13 @@ class HomeProvider extends ChangeNotifier {
   int get unreadNotifications => _unreadNotifications;
 
   RealtimeChannel? _highlightsChannel;
+  RealtimeChannel? _notificationsChannel;
 
   void init() {
     loadProfile();
     loadInsights();
     subscribeToHighlights();
+    _subscribeToNotifications();
   }
 
   void clearUnread() {
@@ -47,10 +54,36 @@ class HomeProvider extends ChangeNotifier {
         .update({'is_dismissed': true})
         .eq('user_id', user.id)
         .eq('is_dismissed', false);
+    final count = _highlights.length;
     _highlights.clear();
     notifyListeners();
+    AnalyticsService.instance.logAction(
+      action: 'highlights_cleared',
+      entityType: 'highlight',
+      details: {'count': count},
+    );
   }
 
+  // ── Mark a notification as read ──────────────────────────────────────────
+  Future<void> markNotificationRead(String notifId) async {
+    try {
+      await _supabase
+          .from('notifications')
+          .update({'is_read': true})
+          .eq('id', notifId);
+      _notifications.removeWhere((n) => n['id'] == notifId);
+      notifyListeners();
+      AnalyticsService.instance.logAction(
+        action: 'notification_read',
+        entityType: 'notification',
+        entityId: notifId,
+      );
+    } catch (e) {
+      debugPrint('markNotificationRead error: $e');
+    }
+  }
+
+  // ── Realtime: highlights ──────────────────────────────────────────────────
   void subscribeToHighlights() {
     final user = AuthService.instance.currentUser;
     if (user == null) return;
@@ -68,6 +101,31 @@ class HomeProvider extends ChangeNotifier {
           callback: (payload) {
             final record = Map<String, dynamic>.from(payload.newRecord);
             _highlights.insert(0, record);
+            _unreadNotifications++;
+            notifyListeners();
+          },
+        )
+        .subscribe();
+  }
+
+  // ── Realtime: notifications (schema_v2) ───────────────────────────────────
+  void _subscribeToNotifications() {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+    _notificationsChannel = _supabase
+        .channel('home_notifications_${user.id}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
+          callback: (payload) {
+            final record = Map<String, dynamic>.from(payload.newRecord);
+            _notifications.insert(0, record);
             _unreadNotifications++;
             notifyListeners();
           },
@@ -101,8 +159,18 @@ class HomeProvider extends ChangeNotifier {
           .order('created_at', ascending: false)
           .limit(5);
 
+      // Load unread notifications
+      final notifRes = await _supabase
+          .from('notifications')
+          .select('id, title, body, notif_type, is_read, created_at')
+          .eq('user_id', user.id)
+          .eq('is_read', false)
+          .order('created_at', ascending: false)
+          .limit(20);
+
       _events = List<Map<String, dynamic>>.from(eventsRes);
       _highlights = List<Map<String, dynamic>>.from(highlightsRes);
+      _notifications = List<Map<String, dynamic>>.from(notifRes);
       _insightsLoaded = true;
       notifyListeners();
     } catch (e) {
@@ -115,6 +183,7 @@ class HomeProvider extends ChangeNotifier {
   @override
   void dispose() {
     _highlightsChannel?.unsubscribe();
+    _notificationsChannel?.unsubscribe();
     super.dispose();
   }
 }

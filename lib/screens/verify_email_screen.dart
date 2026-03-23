@@ -50,8 +50,20 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   Future<void> _resend() async {
     setState(() => _resending = true);
     try {
-      final email = Supabase.instance.client.auth.currentUser?.email ?? '';
-      await Supabase.instance.client.auth.resend(type: OtpType.email, email: email);
+      final user = _authService.currentUser;
+      if (user != null && user.email != null) {
+        await _authService.resendVerificationEmail(user.email!);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Verification email sent!'),
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -75,58 +87,36 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BgMesh(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Animated mail icon disc
-                SizedBox(
-                  width: 160, height: 160,
-                  child: AnimatedBuilder(
-                    animation: _ringCtrl,
-                    builder: (_, __) {
-                      return Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          // Expanding ring
-                          Opacity(
-                            opacity: (1.0 - _ringCtrl.value).clamp(0.0, 1.0),
-                            child: Container(
-                              width: 120 + 40 * _ringCtrl.value,
-                              height: 120 + 40 * _ringCtrl.value,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: BubblesColors.primary.withOpacity(0.3),
-                                ),
-                              ),
-                            ),
-                          ),
-                          GlassBox(
-                            width: 100, height: 100, borderRadius: 999,
-                            child: Icon(Icons.mail_outline, color: BubblesColors.primary, size: 48),
-                          ),
-                        ],
-                      );
-                    },
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          if (isDark) ...[
+            Positioned(
+              top: -120,
+              left: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
                   ),
                 ),
-                const SizedBox(height: 32),
-                Text('Check your inbox',
-                    style: GoogleFonts.manrope(
-                      fontSize: 26, fontWeight: FontWeight.w700,
-                      color: BubblesColors.textPrimaryDark, letterSpacing: -0.3,
-                    )),
-                const SizedBox(height: 12),
-                Text(
-                  "We've sent a verification link to your email address. Please check your inbox and click the link to verify your account.",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.manrope(
-                    fontSize: 14, fontWeight: FontWeight.w400,
-                    color: BubblesColors.textSecondaryDark, height: 1.5,
+              ),
+            ),
+            Positioned(
+              bottom: -120,
+              right: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -155,7 +145,93 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen>
                 ),
               ],
             ),
-          ),
+
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24.0,
+                  vertical: 16.0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Spacer(flex: 1),
+
+                    // Icon & Title
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.glassWhite
+                                : Theme.of(context).colorScheme.primary.withAlpha(26),
+                            shape: BoxShape.circle,
+                            border: isDark
+                                ? Border.all(color: AppColors.glassBorder)
+                                : null,
+                          ),
+                          child: Icon(
+                            Icons.mark_email_unread_rounded,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        Text(
+                          'Verify your email',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.manrope(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w200,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.slate900,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'We have sent a verification link to your email address. Please tap the link in the email to continue.',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.manrope(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            height: 1.6,
+                            color: isDark
+                                ? AppColors.slate400
+                                : AppColors.slate500,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(flex: 2),
+
+                    // Buttons
+                    Column(
+                      children: [
+                        AppButton(
+                          label: 'I have verified it',
+                          onTap: _checkVerification,
+                          loading: _loading,
+                          filled: true,
+                        ),
+                        const SizedBox(height: 16),
+                        AppButton(
+                          label: 'Resend Email',
+                          onTap: _resendEmail,
+                          loading: _loading,
+                          filled: false,
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(flex: 1),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

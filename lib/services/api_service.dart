@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'connection_service.dart';
+import 'auth_service.dart';
 
 class ApiService {
   final ConnectionService _connectionService;
@@ -21,7 +22,10 @@ class ApiService {
 
   /// Retries [action] up to [_maxRetries] times with exponential backoff + jitter.
   /// Only retries on network / timeout errors – not on successful HTTP responses.
-  Future<T> _withRetry<T>(Future<T> Function() action, {int? maxRetries}) async {
+  Future<T> _withRetry<T>(
+    Future<T> Function() action, {
+    int? maxRetries,
+  }) async {
     final retries = maxRetries ?? _maxRetries;
     for (int attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -35,25 +39,33 @@ class ApiService {
         if (e is! TimeoutException && e is! http.ClientException) rethrow;
       }
       final delay = _baseDelay * pow(2, attempt).toInt();
-      final jitter = Duration(milliseconds: Random().nextInt(delay.inMilliseconds ~/ 2 + 1));
+      final jitter = Duration(
+        milliseconds: Random().nextInt(delay.inMilliseconds ~/ 2 + 1),
+      );
       await Future.delayed(delay + jitter);
       debugPrint('Retry attempt ${attempt + 1}/$retries');
     }
     throw TimeoutException('All $retries retries exhausted');
   }
 
-  Future<Map<String, dynamic>?> getLiveKitToken(String userId) async {
+  Future<Map<String, dynamic>?> getToken(String userId, {String? roomName}) async {
     if (_baseUrl.isEmpty) return null;
     try {
       return await _withRetry(() async {
-        final response = await http.post(
-          Uri.parse('$_baseUrl/getToken'),
-          headers: {
-            'Content-Type': 'application/json',
-            'ngrok-skip-browser-warning': 'true',
-          },
-          body: jsonEncode({'userId': userId}),
-        ).timeout(const Duration(seconds: 10));
+        final body = {'userId': userId};
+        if (roomName != null && roomName.isNotEmpty) {
+          body['roomName'] = roomName;
+        }
+        final response = await http
+            .post(
+              Uri.parse('$_baseUrl/v1/getToken'),
+              headers: {
+                'Content-Type': 'application/json',
+                'ngrok-skip-browser-warning': 'true',
+              },
+              body: jsonEncode(body),
+            )
+            .timeout(const Duration(seconds: 10));
         if (response.statusCode == 200) {
           return jsonDecode(response.body) as Map<String, dynamic>;
         }
@@ -75,7 +87,7 @@ class ApiService {
   }) async {
     if (_baseUrl.isEmpty) throw Exception('Server URL not set.');
 
-    final uri = Uri.parse('$_baseUrl/enroll');
+    final uri = Uri.parse('$_baseUrl/v1/enroll');
 
     try {
       final request = http.MultipartRequest('POST', uri);
@@ -102,6 +114,7 @@ class ApiService {
           'Enrollment uploaded but embedding not found in database.',
         );
       }
+      AuthService.instance.updateOnboardingProgress({'voice_enrolled': true});
       return status;
     } catch (e) {
       throw Exception('Enrollment failed: $e');
@@ -114,10 +127,10 @@ class ApiService {
     try {
       final res = await Supabase.instance.client
           .from('voice_enrollments')
-          .select('enrolled_at')
+          .select('updated_at')
           .eq('user_id', userId)
           .maybeSingle();
-      return res?['enrolled_at'] as String?;
+      return res?['updated_at'] as String?;
     } catch (e) {
       debugPrint('checkEnrollmentStatus error: $e');
       return null;
@@ -131,7 +144,7 @@ class ApiService {
       return {"transcript": "", "suggestion": "No Server URL"};
 
     try {
-      var uri = Uri.parse("$_baseUrl/process_audio");
+      var uri = Uri.parse("$_baseUrl/v1/process_audio");
       var request = http.MultipartRequest('POST', uri);
       request.headers['ngrok-skip-browser-warning'] = 'true';
       request.files.add(await http.MultipartFile.fromPath('file', filePath));
@@ -163,7 +176,7 @@ class ApiService {
 
     try {
       return await _withRetry(() async {
-        var uri = Uri.parse("$_baseUrl/save_session");
+        var uri = Uri.parse("$_baseUrl/v1/save_session");
         String fullTranscript = logs
             .map((l) => "${l['speaker']}: ${l['text']}")
             .join("\n");
@@ -183,7 +196,11 @@ class ApiService {
             )
             .timeout(const Duration(seconds: 15));
 
-        return response.statusCode == 200;
+        if (response.statusCode == 200) {
+          AuthService.instance.updateOnboardingProgress({'first_wingman': true});
+          return true;
+        }
+        return false;
       });
     } catch (e) {
       debugPrint("Save Session Error: $e");
@@ -198,23 +215,24 @@ class ApiService {
 
     try {
       return await _withRetry(() async {
-      var uri = Uri.parse("$_baseUrl/ask_consultant");
-      var response = await http
-          .post(
-            uri,
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-            body: jsonEncode({"user_id": userId, "question": question}),
-          )
-          .timeout(const Duration(seconds: 30));
+        var uri = Uri.parse("$_baseUrl/v1/ask_consultant");
+        var response = await http
+            .post(
+              uri,
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              body: jsonEncode({"user_id": userId, "question": question}),
+            )
+            .timeout(const Duration(seconds: 30));
 
-      if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
-        return data['answer'] as String;
-      }
-      return "Brain Error: ${response.statusCode}";
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+          AuthService.instance.updateOnboardingProgress({'first_consultant': true});
+          return data['answer'] as String;
+        }
+        return "Brain Error: ${response.statusCode}";
       });
     } catch (e) {
       return "Connection Error: $e";
@@ -227,34 +245,36 @@ class ApiService {
     String transcript, {
     String? sessionId,
     String speakerRole = 'others',
+    String mode = 'casual',
   }) async {
     if (_baseUrl.isEmpty) return null;
 
     try {
       return await _withRetry(() async {
-      var uri = Uri.parse("$_baseUrl/process_transcript_wingman");
-      final body = <String, dynamic>{
-        "user_id": userId,
-        "transcript": transcript,
-        "speaker_role": speakerRole,
-        if (sessionId != null) "session_id": sessionId,
-      };
-      var response = await http
-          .post(
-            uri,
-            headers: {
-              "Content-Type": "application/json",
-              "ngrok-skip-browser-warning": "true",
-            },
-            body: jsonEncode(body),
-          )
-          .timeout(const Duration(seconds: 10));
+        var uri = Uri.parse("$_baseUrl/v1/process_transcript_wingman");
+        final body = <String, dynamic>{
+          "user_id": userId,
+          "transcript": transcript,
+          "speaker_role": speakerRole,
+          "mode": mode,
+          if (sessionId != null) "session_id": sessionId,
+        };
+        var response = await http
+            .post(
+              uri,
+              headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "true",
+              },
+              body: jsonEncode(body),
+            )
+            .timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        var data = jsonDecode(response.body);
-        return data['advice'] as String?;
-      }
-      return null;
+        if (response.statusCode == 200) {
+          var data = jsonDecode(response.body);
+          return data['advice'] as String?;
+        }
+        return null;
       });
     } catch (e) {
       debugPrint("Wingman API Error: $e");
@@ -264,21 +284,40 @@ class ApiService {
 
   // --- 6. SESSION LIFECYCLE ---
   /// Creates a new live session on the server and returns the session_id.
-  Future<String?> createLiveSession(String userId) async {
+  Future<String?> createLiveSession(
+      String userId, {
+      String mode = "live_wingman",
+      String? targetEntityId,
+      bool isEphemeral = false,
+      bool isMultiplayer = false,
+      String persona = "casual",
+  }) async {
     if (_baseUrl.isEmpty) return null;
     try {
       return await _withRetry(() async {
+        final body = <String, dynamic>{
+          "user_id": userId,
+          "mode": mode,
+          "is_ephemeral": isEphemeral,
+          "is_multiplayer": isMultiplayer,
+          "persona": persona,
+        };
+        if (targetEntityId != null) {
+          body["target_entity_id"] = targetEntityId;
+        }
+
         final res = await http
             .post(
-              Uri.parse("$_baseUrl/start_session"),
+              Uri.parse("$_baseUrl/v1/start_session"),
               headers: {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true",
               },
-              body: jsonEncode({"user_id": userId, "mode": "live_wingman"}),
+              body: jsonEncode(body),
             )
             .timeout(const Duration(seconds: 10));
         if (res.statusCode == 200) {
+          AuthService.instance.updateOnboardingProgress({'first_wingman': true});
           return jsonDecode(res.body)['session_id'] as String?;
         }
         return null;
@@ -296,7 +335,7 @@ class ApiService {
       await _withRetry(() async {
         await http
             .post(
-              Uri.parse("$_baseUrl/end_session"),
+              Uri.parse("$_baseUrl/v1/end_session"),
               headers: {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true",
@@ -318,6 +357,7 @@ class ApiService {
     String userId,
     String question, {
     String? sessionId,
+    String mode = 'casual',
     void Function(String sessionId)? onSessionCreated,
   }) async* {
     if (_baseUrl.isEmpty) {
@@ -328,7 +368,7 @@ class ApiService {
     try {
       final request = http.Request(
         'POST',
-        Uri.parse("$_baseUrl/ask_consultant_stream"),
+        Uri.parse("$_baseUrl/v1/ask_consultant_stream"),
       );
       request.headers['Content-Type'] = 'application/json';
       request.headers['ngrok-skip-browser-warning'] = 'true';
@@ -336,6 +376,7 @@ class ApiService {
       request.body = jsonEncode({
         'user_id': userId,
         'question': question,
+        'mode': mode,
         if (sessionId != null) 'session_id': sessionId,
       });
 
@@ -362,6 +403,7 @@ class ApiService {
               if (parsed['token'] != null) {
                 yield parsed['token'] as String;
               } else if (parsed['done'] == true) {
+                AuthService.instance.updateOnboardingProgress({'first_consultant': true});
                 final sid = parsed['session_id'] as String?;
                 if (sid != null && onSessionCreated != null)
                   onSessionCreated(sid);
@@ -388,7 +430,7 @@ class ApiService {
     try {
       final res = await http
           .post(
-            Uri.parse("$_baseUrl/ask_entity"),
+            Uri.parse("$_baseUrl/v1/ask_entity"),
             headers: {
               "Content-Type": "application/json",
               "ngrok-skip-browser-warning": "true",
@@ -405,12 +447,114 @@ class ApiService {
     }
   }
 
+
+  // --- 9. SAVE FEEDBACK ---
+  /// Saves thumbs up/down or star rating feedback on a session_log or consultant_log.
+  Future<bool> saveFeedback({
+    required String userId,
+    String? sessionId,
+    String? sessionLogId,
+    String? consultantLogId,
+    required String feedbackType, // 'thumbs' | 'star' | 'text'
+    int? value,
+    String? comment,
+  }) async {
+    if (_baseUrl.isEmpty) return false;
+    try {
+      final body = <String, dynamic>{
+        'user_id': userId,
+        'feedback_type': feedbackType,
+      };
+      if (sessionId != null) body['session_id'] = sessionId;
+      if (sessionLogId != null) body['session_log_id'] = sessionLogId;
+      if (consultantLogId != null) body['consultant_log_id'] = consultantLogId;
+      if (value != null) body['value'] = value;
+      if (comment != null && comment.isNotEmpty) body['comment'] = comment;
+
+      final res = await http
+          .post(
+            Uri.parse('$_baseUrl/v1/save_feedback'),
+            headers: {
+              'Content-Type': 'application/json',
+              'ngrok-skip-browser-warning': 'true',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+      return res.statusCode == 200;
+    } catch (e) {
+      debugPrint('saveFeedback error: $e');
+      return false;
+    }
+  }
+
+  // --- 10. GET SESSION ANALYTICS ---
+  /// Returns pre-computed session_analytics data for a session (null if not ready).
+  Future<Map<String, dynamic>?> getSessionAnalytics(String sessionId) async {
+    if (_baseUrl.isEmpty) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/v1/session_analytics/$sessionId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getSessionAnalytics error: $e');
+      return null;
+    }
+  }
+
+  // --- 11. GET COACHING REPORT ---
+  /// Returns (and lazily generates) the coaching report for a session.
+  Future<Map<String, dynamic>?> getCoachingReport(String sessionId) async {
+    if (_baseUrl.isEmpty) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('$_baseUrl/v1/coaching_report/$sessionId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 30)); // Generation can take a moment
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getCoachingReport error: $e');
+      return null;
+    }
+  }
+  // --- 11b. GET KNOWLEDGE GRAPH EXPORT ---
+  Future<Map<String, dynamic>?> getGraphExport(String userId) async {
+    if (!_connectionService.isConnected) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${_connectionService.serverUrl}/v1/graph_export/$userId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getGraphExport error: $e');
+      return null;
+    }
+  }
+  // --- 12. PARSE VOICE COMMAND ---
   Future<Map<String, dynamic>?> parseVoiceCommand(
     String userId,
     String command,
   ) async {
     if (!_connectionService.isConnected) return null;
-    final url = Uri.parse("${_connectionService.serverUrl}/voice_command");
+    final url = Uri.parse("${_connectionService.serverUrl}/v1/voice_command");
     try {
       final response = await http
           .post(
@@ -429,6 +573,44 @@ class ApiService {
       return null;
     } catch (e) {
       debugPrint('Voice command parse error: $e');
+      return null;
+    }
+  }
+  // --- 13. GAMIFICATION & QUESTS ---
+  Future<Map<String, dynamic>?> getGamification(String userId) async {
+    if (!_connectionService.isConnected) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${_connectionService.serverUrl}/v1/gamification/$userId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getGamification error: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getQuests(String userId) async {
+    if (!_connectionService.isConnected) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${_connectionService.serverUrl}/v1/quests/$userId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getQuests error: $e');
       return null;
     }
   }

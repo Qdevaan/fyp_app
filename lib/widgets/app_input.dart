@@ -138,21 +138,24 @@ class _AppInputState extends State<AppInput> {
                   ),
                 ),
               ),
-              if (widget.obscureText) ...[
-                IconButton(
-                  onPressed: () => setState(() => _obscure = !_obscure),
-                  icon: Icon(
-                    _obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                    size: 18,
-                    color: isDark ? BubblesColors.textMutedDark : BubblesColors.textMutedLight,
-                  ),
-                ),
-              ] else if (widget.suffix != null) ...[
-                const SizedBox(width: 4),
-                widget.suffix!,
-                const SizedBox(width: 8),
-              ],
-            ],
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(
+                color: isDark ? AppColors.glassBorder : AppColors.slate200,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
           ),
         ),
         if (hasError) ...[

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 import '../services/deepgram_service.dart';
+import '../services/analytics_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Dedicated state manager for the NewSession (Live Wingman) screen.
@@ -42,18 +43,30 @@ class SessionProvider extends ChangeNotifier {
   void toggleSwapSpeakers() {
     _swapSpeakers = !_swapSpeakers;
     notifyListeners();
+    AnalyticsService.instance.logAction(
+      action: 'speakers_swapped',
+      entityType: 'session',
+      entityId: _sessionId,
+      details: {'swap_speakers': _swapSpeakers},
+    );
   }
 
   /// Process new transcript from Deepgram.
   void onTranscriptReceived(DeepgramService deepgram, ApiService api) {
     if (deepgram.currentTranscript.isEmpty) return;
-    if (_sessionLogs.isNotEmpty && _sessionLogs.last['text'] == deepgram.currentTranscript) return;
+    if (_sessionLogs.isNotEmpty &&
+        _sessionLogs.last['text'] == deepgram.currentTranscript)
+      return;
 
     String serverSpeaker = deepgram.currentSpeaker == "user" ? "User" : "Other";
     String finalSpeaker = serverSpeaker;
-    if (_swapSpeakers) finalSpeaker = serverSpeaker == "User" ? "Other" : "User";
+    if (_swapSpeakers)
+      finalSpeaker = serverSpeaker == "User" ? "Other" : "User";
 
-    _sessionLogs.add({"speaker": finalSpeaker, "text": deepgram.currentTranscript});
+    _sessionLogs.add({
+      "speaker": finalSpeaker,
+      "text": deepgram.currentTranscript,
+    });
     notifyListeners();
 
     if (finalSpeaker == "Other") {
@@ -76,6 +89,7 @@ class SessionProvider extends ChangeNotifier {
         transcript,
         sessionId: _sessionId,
         speakerRole: 'others',
+        mode: _currentLiveTone,
       );
 
       _realtimeTimeoutTimer?.cancel();
@@ -103,7 +117,10 @@ class SessionProvider extends ChangeNotifier {
     _currentSuggestion = "Retrying...";
     notifyListeners();
 
-    final advice = await api.sendTranscriptToWingman(user.id, _lastTranscriptForRetry!);
+    final advice = await api.sendTranscriptToWingman(
+      user.id,
+      _lastTranscriptForRetry!,
+    );
     _currentSuggestion = advice ?? "No response from server.";
     notifyListeners();
   }
@@ -137,8 +154,17 @@ class SessionProvider extends ChangeNotifier {
         .subscribe();
   }
 
-  /// Start a session: create server record, connect Deepgram.
-  Future<void> startSession(ApiService api, DeepgramService deepgram) async {
+  String _currentLiveTone = 'casual';
+
+  Future<void> startSession(
+    ApiService api,
+    DeepgramService deepgram, {
+    String tone = 'casual',
+    String? targetEntityId,
+    bool isEphemeral = false,
+    bool isMultiplayer = false,
+  }) async {
+    _currentLiveTone = tone;
     final user = AuthService.instance.currentUser;
     if (user == null) return;
 
@@ -148,7 +174,16 @@ class SessionProvider extends ChangeNotifier {
     _sessionId = null;
     notifyListeners();
 
-    final sid = await api.createLiveSession(user.id);
+    String sessionMode = targetEntityId != null ? 'roleplay' : 'live_wingman';
+
+    final sid = await api.createLiveSession(
+      user.id, 
+      mode: sessionMode, 
+      targetEntityId: targetEntityId,
+      isEphemeral: isEphemeral,
+      isMultiplayer: isMultiplayer,
+      persona: tone,
+    );
     if (sid != null) {
       _sessionId = sid;
       subscribeToLiveSuggestions(sid);
@@ -164,6 +199,19 @@ class SessionProvider extends ChangeNotifier {
       _currentSuggestion = "Connection Failed";
     }
     notifyListeners();
+
+    AnalyticsService.instance.logAction(
+      action: 'session_started',
+      entityType: 'session',
+      entityId: _sessionId,
+      details: {
+        'mode': sessionMode,
+        'tone': tone,
+        'is_ephemeral': isEphemeral,
+        'is_multiplayer': isMultiplayer,
+        if (targetEntityId != null) 'target_entity_id': targetEntityId,
+      },
+    );
   }
 
   /// End the session and save data.
@@ -190,6 +238,8 @@ class SessionProvider extends ChangeNotifier {
       if (_sessionId != null) {
         await api.endLiveSession(_sessionId!, user.id);
         success = true;
+        // Mark first wingman as done
+        await AuthService.instance.updateOnboardingProgress({'first_wingman': true});
       } else if (_sessionLogs.isNotEmpty) {
         success = await api.saveSession(user.id, _sessionLogs);
       } else {
@@ -200,6 +250,12 @@ class SessionProvider extends ChangeNotifier {
       debugPrint("Save failed: $e");
       return false;
     } finally {
+      AnalyticsService.instance.logAction(
+        action: 'session_ended',
+        entityType: 'session',
+        entityId: _sessionId,
+        details: {'log_count': _sessionLogs.length},
+      );
       _isSaving = false;
       _sessionId = null;
       notifyListeners();

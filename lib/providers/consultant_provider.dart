@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Dedicated state manager for the Consultant chat screen.
@@ -51,6 +52,10 @@ class ConsultantProvider extends ChangeNotifier {
       ..clear()
       ..add({"role": "ai", "text": welcomeMessage});
     notifyListeners();
+    AnalyticsService.instance.logAction(
+      action: 'consultant_new_chat',
+      entityType: 'consultant',
+    );
   }
 
   // ── Load past chats for drawer ──
@@ -66,7 +71,7 @@ class ConsultantProvider extends ChangeNotifier {
       final rows = List<Map<String, dynamic>>.from(
         await _supabase
             .from('consultant_logs')
-            .select('session_id, question, created_at')
+            .select('session_id, question, query, created_at')
             .eq('user_id', user.id)
             .not('session_id', 'is', null)
             .order('created_at', ascending: true),
@@ -76,15 +81,21 @@ class ConsultantProvider extends ChangeNotifier {
       for (final r in rows) {
         final sid = r['session_id'] as String?;
         if (sid == null) continue;
-        seen.putIfAbsent(sid, () => {
-          'session_id': sid,
-          'title': r['question'] as String? ?? 'Chat',
-          'created_at': r['created_at'] as String? ?? '',
-        });
+        seen.putIfAbsent(
+          sid,
+          () => {
+            'session_id': sid,
+            'title': (r['question'] as String?) ?? (r['query'] as String?) ?? 'Chat',
+            'created_at': r['created_at'] as String? ?? '',
+          },
+        );
       }
 
       final list = seen.values.toList()
-        ..sort((a, b) => (b['created_at'] as String).compareTo(a['created_at'] as String));
+        ..sort(
+          (a, b) =>
+              (b['created_at'] as String).compareTo(a['created_at'] as String),
+        );
 
       _pastChats = list;
       _drawerLoading = false;
@@ -111,7 +122,7 @@ class ConsultantProvider extends ChangeNotifier {
       final rows = List<Map<String, dynamic>>.from(
         await _supabase
             .from('consultant_logs')
-            .select('question, answer, created_at')
+            .select('question, query, answer, response, created_at')
             .eq('session_id', sessionId)
             .eq('user_id', user.id)
             .order('created_at', ascending: true),
@@ -119,18 +130,28 @@ class ConsultantProvider extends ChangeNotifier {
 
       _currentSessionId = sessionId;
       for (final r in rows) {
-        if (r['question'] != null) {
-          _messages.add({"role": "user", "text": r['question'] as String});
+        final q = (r['question'] as String?) ?? (r['query'] as String?);
+        if (q != null) {
+          _messages.add({"role": "user", "text": q});
         }
-        if (r['answer'] != null) {
-          _messages.add({"role": "ai", "text": r['answer'] as String});
+        final a = (r['answer'] as String?) ?? (r['response'] as String?);
+        if (a != null) {
+          _messages.add({"role": "ai", "text": a});
         }
       }
       if (_messages.isEmpty) {
-        _messages.add({"role": "ai", "text": "This conversation appears to be empty."});
+        _messages.add({
+          "role": "ai",
+          "text": "This conversation appears to be empty.",
+        });
       }
       _loadingChat = false;
       notifyListeners();
+      AnalyticsService.instance.logAction(
+        action: 'consultant_chat_loaded',
+        entityType: 'consultant',
+        entityId: sessionId,
+      );
     } catch (e) {
       debugPrint('loadChatById error: $e');
       _loadingChat = false;
@@ -144,6 +165,7 @@ class ConsultantProvider extends ChangeNotifier {
   Future<void> sendMessage(
     String text,
     ApiService api, {
+    String tone = 'casual',
     void Function()? onFirstToken,
     void Function(String fullResponse)? onComplete,
   }) async {
@@ -157,6 +179,13 @@ class ConsultantProvider extends ChangeNotifier {
     _loading = true;
     notifyListeners();
 
+    AnalyticsService.instance.logAction(
+      action: 'consultant_message_sent',
+      entityType: 'consultant',
+      entityId: _currentSessionId,
+      details: {'tone': tone},
+    );
+
     final buf = StringBuffer();
     bool firstToken = true;
 
@@ -165,6 +194,7 @@ class ConsultantProvider extends ChangeNotifier {
         user.id,
         text,
         sessionId: _currentSessionId,
+        mode: tone,
         onSessionCreated: (sid) {
           _currentSessionId = sid;
           _drawerLoaded = false;
@@ -205,6 +235,10 @@ class ConsultantProvider extends ChangeNotifier {
       }
       _loading = false;
       notifyListeners();
+      
+      // Mark onboarding
+      await AuthService.instance.updateOnboardingProgress({'first_consultant': true});
+      
       onComplete?.call(buf.toString());
     } catch (e) {
       if (firstToken) {

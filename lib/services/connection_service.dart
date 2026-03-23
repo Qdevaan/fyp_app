@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 enum ConnectionStatus { disconnected, connecting, connected, error, offline }
 
@@ -34,7 +35,7 @@ class ConnectionService with ChangeNotifier {
   // --- Initialization ---
   ConnectionService() {
     _initConnectivity();
-    _loadSavedUrlAndInitialCheck();
+    _determineServerUrlAndInitialCheck();
   }
 
   Future<void> _initConnectivity() async {
@@ -60,43 +61,46 @@ class ConnectionService with ChangeNotifier {
   }
 
   // --- URL Management ---
-  Future<void> _loadSavedUrlAndInitialCheck() async {
-    final prefs = await SharedPreferences.getInstance();
-    _serverUrl = prefs.getString('server_url') ?? '';
+  void _determineServerUrlAndInitialCheck() {
+    // Check .env for a hardcoded URL first (e.g., for physical devices)
+    final customUrl = dotenv.env['LOCAL_SERVER_URL'];
+    
+    if (customUrl != null && customUrl.trim().isNotEmpty) {
+      _serverUrl = customUrl.trim();
+    } else {
+      // Default to simulator/emulator defaults based on platform
+      if (kIsWeb) {
+        _serverUrl = 'http://localhost:8000';
+      } else if (Platform.isAndroid) {
+        _serverUrl = 'http://10.0.2.2:8000';
+      } else {
+        // iOS Simulator, macOS, Windows, Linux
+        _serverUrl = 'http://127.0.0.1:8000';
+      }
+    }
+    
     notifyListeners();
 
     if (_serverUrl.isNotEmpty) {
-      await checkConnection(notifyResult: false);
+      checkConnection(notifyResult: false);
     }
     _startPeriodicChecks();
   }
 
+  // Allow setting a new custom URL manually, although not required anymore
   Future<void> saveUrl(String url) async {
-    // Normalize URL: remove trailing slash, ensure protocol
     String cleanUrl = url.trim();
     if (cleanUrl.endsWith('/')) {
       cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
     }
-
-    // If user just types an IP or domain, assume http (or https for ngrok)
+    
     if (!cleanUrl.startsWith('http')) {
-      if (cleanUrl.contains('ngrok')) {
-        cleanUrl = 'https://$cleanUrl';
-      } else {
-        // Assume local dev server on HTTP
-        cleanUrl = 'http://$cleanUrl';
-        // If it's just an IP like 192.168.1.5, append port 8000 if missing?
-        // Better to let user type port, but we can be smart:
-        if (RegExp(
-          r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$',
-        ).hasMatch(url.trim())) {
-          cleanUrl = 'http://${url.trim()}:8000';
-        }
+      cleanUrl = 'http://$cleanUrl';
+      if (RegExp(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$').hasMatch(url.trim())) {
+        cleanUrl = 'http://${url.trim()}:8000';
       }
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('server_url', cleanUrl);
     _serverUrl = cleanUrl;
     notifyListeners();
 

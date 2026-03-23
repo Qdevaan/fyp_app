@@ -2,6 +2,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/design_tokens.dart';
+import 'glass_morphism.dart';
+import 'voice/voice_overlay_controls.dart';
+import 'voice/voice_visual_indicator.dart';
 
 /// Fullscreen voice overlay shown when the wake word is detected.
 /// Covers the entire app with a frosted scrim.
@@ -60,16 +63,78 @@ class _VoiceOverlayState extends State<VoiceOverlay>
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // Frosted scrim
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(color: const Color(0xCC101e22)),
-        ),
-        // Content
-        SafeArea(
+    return Consumer<VoiceAssistantService>(
+      builder: (context, assistant, _) {
+        // Don't show on auth screens
+        if (!assistant.isActive) return const SizedBox.shrink();
+
+        // Handle pending navigation
+        final nav = assistant.consumePendingNavigation();
+        if (nav != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            BubblesApp.navigatorKey.currentState?.pushNamed(
+              nav['route'] as String,
+              arguments: nav['args'],
+            );
+          });
+        }
+
+        // Only render when overlay is visible
+        if (!assistant.isOverlayVisible) return const SizedBox.shrink();
+
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+
+        return Stack(
+          children: [
+            // Ã¢â€â‚¬Ã¢â€â‚¬ Scrim Ã¢â€â‚¬Ã¢â€â‚¬
+            Positioned.fill(
+              child: Semantics(
+                label: 'Dismiss voice assistant',
+                button: true,
+                child: GestureDetector(
+                onTap: () => assistant.hideOverlay(),
+                child: AnimatedContainer(
+                  duration: AppDurations.normal,
+                  color: (isDark ? AppColors.backgroundDark : Colors.black)
+                      .withAlpha(153),
+                ),
+              ),
+              ),
+            ),
+
+            // Ã¢â€â‚¬Ã¢â€â‚¬ Panel Ã¢â€â‚¬Ã¢â€â‚¬
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildPanel(context, assistant, isDark),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+  // PANEL
+  // Ã¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€ÂÃ¢â€Â
+
+  Widget _buildPanel(
+    BuildContext context,
+    VoiceAssistantService assistant,
+    bool isDark,
+  ) {
+    return Material(
+      type: MaterialType.transparency,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 16),
+        child: GlassCard(
+          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+          borderRadius: AppRadius.xxl,
+          borderColor: Theme.of(context).colorScheme.primary.withAlpha(isDark ? 80 : 40),
+          backgroundColor: isDark 
+              ? AppColors.backgroundDark.withAlpha(200) 
+              : Theme.of(context).colorScheme.primary.withAlpha(20), // Accent tint
           child: Column(
             children: [
               _buildTopBar(),

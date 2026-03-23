@@ -11,9 +11,15 @@ class AppRoutes {
   static const about = '/about';
   static const settings = '/settings';
   static const entities = '/entities';
-  static const sessionHistory = '/session-history';
-  static const aiInsights = '/ai-insights';
+  static const sessionAnalytics = '/session-analytics';
+  static const roleplaySetup = '/roleplay-setup';
+  static const quests = '/quests';
+  static const graphExplorer = '/graph-explorer';
+  static const healthDashboard = '/health-dashboard';
+  static const expensesTracker = '/expenses-tracker';
+  static const tasks = '/tasks';
+  static const smartHome = '/smart-home';
+  static const tripsPlanner = '/trips-planner';
+  static const integrations = '/integrations';
   static const subscription = '/subscription';
-  static const profile = '/profile';
-  static const search = '/search';
 }

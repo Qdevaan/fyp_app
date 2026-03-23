@@ -84,13 +84,112 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  void _updatePasswordStrength() {
+    final pw = _passCtrl.text;
+    double score = 0;
+    if (pw.length >= 6) score += 0.2;
+    if (pw.length >= 10) score += 0.1;
+    if (pw.contains(RegExp(r'[A-Z]'))) score += 0.2;
+    if (pw.contains(RegExp(r'[0-9]'))) score += 0.2;
+    if (pw.contains(RegExp(r'[!@#\$%\^&\*\(\)_\+\-=\[\]{};:,.<>?/\\|`~]'))) score += 0.2;
+    if (pw.length >= 14) score += 0.1;
+    setState(() => _passwordStrength = score.clamp(0.0, 1.0));
+  }
+
+  String get _strengthLabel {
+    if (_passwordStrength <= 0) return '';
+    if (_passwordStrength < 0.3) return 'Weak';
+    if (_passwordStrength < 0.6) return 'Fair';
+    if (_passwordStrength < 0.8) return 'Good';
+    return 'Strong';
+  }
+
+  Color get _strengthColor {
+    if (_passwordStrength < 0.3) return AppColors.error;
+    if (_passwordStrength < 0.6) return AppColors.warning;
+    if (_passwordStrength < 0.8) return Theme.of(context).colorScheme.primary;
+    return AppColors.success;
+  }
+
+  Future<void> _signupWithEmail() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isEmailLoading = true);
+    try {
+      await _authService.signUpWithEmail(
+        _emailCtrl.text.trim(),
+        _passCtrl.text,
+      );
+      if (!mounted) return;
+      Navigator.pushNamed(context, '/verify-email');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceAll('Exception:', '').trim()),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isEmailLoading = false);
+    }
+  }
+
+  Future<void> _signupWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      await _authService.signInWithGoogle();
+      if (mounted) setState(() => _isGoogleLoading = false);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Google Sign up failed: $e')));
+        setState(() => _isGoogleLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BgMesh(
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      body: Stack(
+        children: [
+          // Mesh gradient background
+          if (isDark) ...[
+            Positioned(
+              top: -120,
+              left: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(38), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: -120,
+              right: -120,
+              child: Container(
+                width: 400,
+                height: 400,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Theme.of(context).colorScheme.primary.withAlpha(26), Colors.transparent],
+                  ),
+                ),
+              ),
+            ),
+          ],
+
+          // Main Content
+          SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -226,9 +325,11 @@ class _SignupScreenState extends State<SignupScreen> {
                               const SizedBox(width: 8),
                               Text('Continue with Google',
                                   style: GoogleFonts.manrope(
-                                    fontSize: 14, fontWeight: FontWeight.w600,
-                                    color: BubblesColors.textPrimaryDark,
-                                  )),
+                                    fontWeight: FontWeight.w700,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
