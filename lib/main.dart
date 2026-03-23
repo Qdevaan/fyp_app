@@ -31,7 +31,19 @@ import 'screens/session_analytics_screen.dart';
 import 'screens/roleplay_setup_screen.dart';
 import 'screens/quests_screen.dart';
 import 'screens/graph_explorer_screen.dart';
+import 'screens/health_dashboard_screen.dart';
+import 'screens/expense_tracker_screen.dart';
+import 'screens/tasks_screen.dart';
+import 'screens/smart_home_dashboard_screen.dart';
+import 'screens/trips_planner_screen.dart';
+import 'screens/integrations_hub_screen.dart';
+import 'screens/subscription_screen.dart';
 import 'providers/tags_provider.dart';
+import 'providers/profile_provider.dart';
+import 'providers/health_finance_provider.dart';
+import 'providers/task_event_provider.dart';
+import 'providers/iot_manager_provider.dart';
+import 'providers/enterprise_provider.dart';
 import 'widgets/auth_guard.dart';
 import 'routes/app_routes.dart';
 
@@ -125,6 +137,21 @@ class BubblesApp extends StatelessWidget {
 
         // 11. Tags Provider (schema_v2 tagging)
         ChangeNotifierProvider(create: (_) => TagsProvider()),
+
+        // 12. Profile / Identity Provider (Schema v4)
+        ChangeNotifierProvider(create: (_) => ProfileProvider()),
+
+        // 13. Health & Finance Provider (Schema v4)
+        ChangeNotifierProvider(create: (_) => HealthFinanceProvider()),
+
+        // 14. Tasks & Events Provider
+        ChangeNotifierProvider(create: (_) => TaskEventProvider()),
+
+        // 15. IoT Provider
+        ChangeNotifierProvider(create: (_) => IoTManagerProvider()),
+
+        // 16. Enterprise & Subscriptions Provider
+        ChangeNotifierProvider(create: (_) => EnterpriseProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -246,6 +273,20 @@ class BubblesApp extends StatelessWidget {
                   const AuthGuard(child: QuestsScreen()),
               AppRoutes.graphExplorer: (context) =>
                   const AuthGuard(child: GraphExplorerScreen()),
+              AppRoutes.healthDashboard: (context) =>
+                  const AuthGuard(child: HealthDashboardScreen()),
+              AppRoutes.expensesTracker: (context) =>
+                  const AuthGuard(child: ExpenseTrackerScreen()),
+              AppRoutes.tasks: (context) => 
+                  const AuthGuard(child: TasksScreen()),
+              AppRoutes.smartHome: (context) =>
+                  const AuthGuard(child: SmartHomeDashboardScreen()),
+              AppRoutes.tripsPlanner: (context) =>
+                  const AuthGuard(child: TripsPlannerScreen()),
+              AppRoutes.integrations: (context) =>
+                  const AuthGuard(child: IntegrationsHubScreen()),
+              AppRoutes.subscription: (context) =>
+                  const AuthGuard(child: SubscriptionScreen()),
             },
           );
         },
