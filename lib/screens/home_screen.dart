@@ -639,6 +639,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                 strokeWidth: 2)),
                                   ),
                                 )
+                              else if (home.events.isEmpty &&
                                   home.highlights.isEmpty &&
                                   home.notifications.isEmpty)
                                 SliverToBoxAdapter(

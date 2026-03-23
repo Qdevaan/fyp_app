@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
+import '../services/auth_service.dart';
 import 'package:provider/provider.dart';
 
 class QuestsScreen extends StatefulWidget {
@@ -24,17 +25,27 @@ class _QuestsScreenState extends State<QuestsScreen> {
 
   Future<void> _fetchData() async {
     final api = context.read<ApiService>();
+    final userId = AuthService.instance.currentUser?.id ?? '';
+    if (userId.isEmpty) {
+      if (mounted) {
+        setState(() {
+          _error = 'User not logged in';
+          _isLoading = false;
+        });
+      }
+      return;
+    }
     try {
       // Assuming api.getGamification() and api.getQuests() exist,
       // but if not implement them in apiservice or make a direct http call.
       // We will make a direct fetch here if ApiService doesn't have it yet.
-      final gamification = await api.getGamification();
-      final questsRes = await api.getQuests();
+      final gamification = await api.getGamification(userId);
+      final questsRes = await api.getQuests(userId);
       
       if (mounted) {
         setState(() {
           _gamification = gamification;
-          _quests = questsRes['quests'] ?? [];
+          _quests = questsRes?['quests'] ?? [];
           _isLoading = false;
         });
       }

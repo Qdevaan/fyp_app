@@ -530,12 +530,12 @@ class ApiService {
     }
   }
   // --- 11b. GET KNOWLEDGE GRAPH EXPORT ---
-  Future<Map<String, dynamic>?> getGraphExport() async {
-    if (!_connectionService.isConnected || authUserId == null) return null;
+  Future<Map<String, dynamic>?> getGraphExport(String userId) async {
+    if (!_connectionService.isConnected) return null;
     try {
       final res = await http
           .get(
-            Uri.parse('${_connectionService.serverUrl}/v1/graph_export/$authUserId'),
+            Uri.parse('${_connectionService.serverUrl}/v1/graph_export/$userId'),
             headers: {'ngrok-skip-browser-warning': 'true'},
           )
           .timeout(const Duration(seconds: 15));
@@ -577,12 +577,12 @@ class ApiService {
     }
   }
   // --- 13. GAMIFICATION & QUESTS ---
-  Future<Map<String, dynamic>?> getGamification() async {
-    if (!_connectionService.isConnected || authUserId == null) return null;
+  Future<Map<String, dynamic>?> getGamification(String userId) async {
+    if (!_connectionService.isConnected) return null;
     try {
       final res = await http
           .get(
-            Uri.parse('${_connectionService.serverUrl}/v1/gamification/$authUserId'),
+            Uri.parse('${_connectionService.serverUrl}/v1/gamification/$userId'),
             headers: {'ngrok-skip-browser-warning': 'true'},
           )
           .timeout(const Duration(seconds: 10));
@@ -596,12 +596,12 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>?> getQuests() async {
-    if (!_connectionService.isConnected || authUserId == null) return null;
+  Future<Map<String, dynamic>?> getQuests(String userId) async {
+    if (!_connectionService.isConnected) return null;
     try {
       final res = await http
           .get(
-            Uri.parse('${_connectionService.serverUrl}/v1/quests/$authUserId'),
+            Uri.parse('${_connectionService.serverUrl}/v1/quests/$userId'),
             headers: {'ngrok-skip-browser-warning': 'true'},
           )
           .timeout(const Duration(seconds: 10));

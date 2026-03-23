@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:force_directed_graphview/force_directed_graphview.dart';
 import 'package:provider/provider.dart';
-
+import '../services/auth_service.dart';
 import '../services/api_service.dart';
 
 class GraphExplorerScreen extends StatefulWidget {
@@ -23,7 +23,12 @@ class _GraphExplorerScreenState extends State<GraphExplorerScreen> {
 
   Future<void> _loadGraph() async {
     final apiService = context.read<ApiService>();
-    final data = await apiService.getGraphExport();
+    final userId = AuthService.instance.currentUser?.id ?? '';
+    if (userId.isEmpty) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
+    final data = await apiService.getGraphExport(userId);
     if (data != null && mounted) {
       final controller = GraphController<Node<Map<String, dynamic>>, Edge<Node<Map<String, dynamic>>, Map<String, dynamic>>>();
 
