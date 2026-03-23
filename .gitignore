@@ -66,3 +66,4 @@ server/.env
 .env
 new_server/.env
 server_old/
+env/

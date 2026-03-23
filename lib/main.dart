@@ -54,7 +54,7 @@ Future<void> main() async {
   // (to avoid leaking API keys in the APK). It still loads from the project
   // root during development. For release builds, pass keys via --dart-define.
   try {
-    await dotenv.load(fileName: ".env");
+    await dotenv.load(fileName: "env/.env");
   } catch (e) {
     debugPrint('⚠️ .env not found as asset — using platform environment / --dart-define');
   }

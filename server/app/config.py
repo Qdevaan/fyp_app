@@ -6,7 +6,14 @@ Reads from environment variables (loaded from .env by python-dotenv).
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+# Try to load from root env folder first
+root_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "env", ".env"))
+if os.path.exists(root_env):
+    load_dotenv(root_env)
+else:
+    # Fallback to local .env in server directory
+    local_env = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
+    load_dotenv(local_env)
 
 
 class Settings:
