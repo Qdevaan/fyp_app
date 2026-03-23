@@ -4,9 +4,14 @@ class Session {
   final String? title;
   final String? summary;
   final String sessionType;
+  final String mode;
+  final bool isEphemeral;
+  final bool isMultiplayer;
+  final String persona;
   final String? deviceId;
   final DateTime startTime;
   final DateTime? endTime;
+  final DateTime? endedAt;
   final String status;
   final bool isStarred;
   final double? sentimentScore;
@@ -21,9 +26,14 @@ class Session {
     this.title,
     this.summary,
     this.sessionType = 'general',
+    this.mode = 'general',
+    this.isEphemeral = false,
+    this.isMultiplayer = false,
+    this.persona = 'casual',
     this.deviceId,
     required this.startTime,
     this.endTime,
+    this.endedAt,
     this.status = 'active',
     this.isStarred = false,
     this.sentimentScore,
@@ -40,9 +50,14 @@ class Session {
       title: json['title'],
       summary: json['summary'],
       sessionType: json['session_type'] ?? 'general',
+      mode: json['mode'] ?? json['session_type'] ?? 'general',
+      isEphemeral: json['is_ephemeral'] ?? false,
+      isMultiplayer: json['is_multiplayer'] ?? false,
+      persona: json['persona'] ?? 'casual',
       deviceId: json['device_id'],
       startTime: DateTime.parse(json['start_time']),
       endTime: json['end_time'] != null ? DateTime.parse(json['end_time']) : null,
+      endedAt: json['ended_at'] != null ? DateTime.parse(json['ended_at']) : null,
       status: json['status'] ?? 'active',
       isStarred: json['is_starred'] ?? false,
       sentimentScore: json['sentiment_score']?.toDouble(),
@@ -60,9 +75,14 @@ class Session {
       'title': title,
       'summary': summary,
       'session_type': sessionType,
+      'mode': mode,
+      'is_ephemeral': isEphemeral,
+      'is_multiplayer': isMultiplayer,
+      'persona': persona,
       'device_id': deviceId,
       'start_time': startTime.toIso8601String(),
       'end_time': endTime?.toIso8601String(),
+      'ended_at': endedAt?.toIso8601String() ?? endTime?.toIso8601String(),
       'status': status,
       'is_starred': isStarred,
       'sentiment_score': sentimentScore,
@@ -79,8 +99,12 @@ class SessionLog {
   final String sessionId;
   final int turnIndex;
   final String role;
+  final String? speakerLabel;
   final String? content;
   final String? contentHtml;
+  final double? sentimentScore;
+  final String? sentimentLabel;
+  final double? confidence;
   final String? modelUsed;
   final int? latencyMs;
   final int? tokensUsed;
@@ -94,8 +118,12 @@ class SessionLog {
     required this.sessionId,
     required this.turnIndex,
     required this.role,
+    this.speakerLabel,
     this.content,
     this.contentHtml,
+    this.sentimentScore,
+    this.sentimentLabel,
+    this.confidence,
     this.modelUsed,
     this.latencyMs,
     this.tokensUsed,
@@ -110,8 +138,12 @@ class SessionLog {
         sessionId: json['session_id'],
         turnIndex: json['turn_index'],
         role: json['role'],
+        speakerLabel: json['speaker_label'],
         content: json['content'],
         contentHtml: json['content_html'],
+        sentimentScore: json['sentiment_score']?.toDouble(),
+        sentimentLabel: json['sentiment_label'],
+        confidence: json['confidence']?.toDouble(),
         modelUsed: json['model_used'],
         latencyMs: json['latency_ms'],
         tokensUsed: json['tokens_used'],
@@ -126,9 +158,13 @@ class SessionLog {
         'session_id': sessionId,
         'turn_index': turnIndex,
         'role': role,
+        'speaker_label': speakerLabel,
         'content': content,
         'content_html': contentHtml,
-        'model_used': modelUsed,
+        'sentiment_score': sentimentScore,
+        'sentiment_label': sentimentLabel,
+        'confidence': confidence,
+        'modelUsed': modelUsed,
         'latency_ms': latencyMs,
         'tokens_used': tokensUsed,
         'finish_reason': finishReason,

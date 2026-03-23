@@ -61,7 +61,8 @@ server/__pycache__/
 server/new_server.py
 Stitch_UI
 stitch
-server
+server/.env
 # Environment Variables
 .env
 new_server/.env
+server_old/

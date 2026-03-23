@@ -70,22 +70,26 @@ class Entity {
   final String id;
   final String userId;
   final String canonicalName;
+  final String displayName;
   final String entityType;
   final List<String> aliases;
   final String? description;
   final int mentionCount;
   final bool isArchived;
+  final DateTime? lastSeenAt;
   final DateTime createdAt;
 
   Entity({
     required this.id,
     required this.userId,
     required this.canonicalName,
+    required this.displayName,
     required this.entityType,
     this.aliases = const [],
     this.description,
     this.mentionCount = 0,
     this.isArchived = false,
+    this.lastSeenAt,
     required this.createdAt,
   });
 
@@ -94,11 +98,13 @@ class Entity {
       id: json['id'],
       userId: json['user_id'],
       canonicalName: json['canonical_name'],
+      displayName: json['display_name'] ?? json['canonical_name'],
       entityType: json['entity_type'],
       aliases: List<String>.from(json['aliases'] ?? []),
       description: json['description'],
       mentionCount: json['mention_count'] ?? 0,
       isArchived: json['is_archived'] ?? false,
+      lastSeenAt: json['last_seen_at'] != null ? DateTime.parse(json['last_seen_at']) : null,
       createdAt: DateTime.parse(json['created_at']),
     );
   }
@@ -108,11 +114,13 @@ class Entity {
       'id': id,
       'user_id': userId,
       'canonical_name': canonicalName,
+      'display_name': displayName,
       'entity_type': entityType,
       'aliases': aliases,
       'description': description,
       'mention_count': mentionCount,
       'is_archived': isArchived,
+      'last_seen_at': lastSeenAt?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
     };
   }

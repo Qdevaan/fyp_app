@@ -1,3 +1,7 @@
+"""
+Input sanitization — strips prompt-injection patterns and caps input length.
+"""
+
 import re
 
 # Patterns that attempt to override system-level LLM instructions
@@ -13,6 +17,7 @@ _INJECTION_PATTERNS = re.compile(
     r"|(?:<\|im_end\|>)"
     r"|(?:###\s*(?:System|Human|Assistant))"
 )
+
 
 def sanitize_input(text: str, max_length: int = 5000) -> str:
     """Strip prompt-injection patterns and cap length to prevent abuse."""
