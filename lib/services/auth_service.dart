@@ -2,6 +2,7 @@ import 'dart:convert'; // Needed for JSON encoding/decoding
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Import this
+import 'analytics_service.dart';
 
 class AuthService {
   // Singleton Pattern
@@ -34,6 +35,11 @@ class AuthService {
         redirectTo: 'io.supabase.bubbles://login-callback/',
         authScreenLaunchMode: LaunchMode.externalApplication,
       );
+      AnalyticsService.instance.logAction(
+        action: 'user_login',
+        entityType: 'auth',
+        details: {'method': 'google'},
+      );
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -58,6 +64,11 @@ class AuthService {
         password: password,
         emailRedirectTo: 'io.supabase.bubbles://login-callback/',
       );
+      AnalyticsService.instance.logAction(
+        action: 'user_signup',
+        entityType: 'auth',
+        details: {'method': 'email'},
+      );
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -66,6 +77,11 @@ class AuthService {
   Future<void> signInWithEmail(String email, String password) async {
     try {
       await _client.auth.signInWithPassword(email: email, password: password);
+      AnalyticsService.instance.logAction(
+        action: 'user_login',
+        entityType: 'auth',
+        details: {'method': 'email'},
+      );
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -74,6 +90,11 @@ class AuthService {
   /// Sign out the current user and CLEAR local cache.
   Future<void> signOut() async {
     try {
+      AnalyticsService.instance.logAction(
+        action: 'user_logout',
+        entityType: 'auth',
+      );
+      await AnalyticsService.instance.flushNow();
       await _client.auth.signOut();
       // Clear the locally saved profile so the next user doesn't see it
       final prefs = await SharedPreferences.getInstance();
@@ -174,6 +195,13 @@ class AuthService {
 
       // Mark profile as done in onboarding_progress
       await updateOnboardingProgress({'profile_done': true});
+
+      AnalyticsService.instance.logAction(
+        action: 'profile_updated',
+        entityType: 'profile',
+        entityId: user.id,
+        details: {'fields': updates.keys.where((k) => k != 'id' && k != 'updated_at').toList()},
+      );
     } catch (e) {
       throw _handleAuthError(e);
     }
@@ -203,6 +231,11 @@ class AuthService {
           );
 
       final publicUrl = _client.storage.from('avatars').getPublicUrl(fileName);
+      AnalyticsService.instance.logAction(
+        action: 'avatar_uploaded',
+        entityType: 'profile',
+        entityId: user.id,
+      );
       return publicUrl;
     } catch (e) {
       throw _handleAuthError(e);

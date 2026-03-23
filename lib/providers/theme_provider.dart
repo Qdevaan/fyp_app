@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import '../theme/design_tokens.dart';
 
 class ThemeProvider extends ChangeNotifier {
@@ -39,10 +40,12 @@ class ThemeProvider extends ChangeNotifier {
       if (user == null) return;
       final row = await Supabase.instance.client
           .from('user_settings')
-          .select('theme')
+          .select('theme, accent_color')
           .eq('user_id', user.id)
           .maybeSingle();
-      if (row != null && row['theme'] != null) {
+      if (row == null) return;
+      final prefs = await SharedPreferences.getInstance();
+      if (row['theme'] != null) {
         final String t = row['theme'];
         ThemeMode mode = ThemeMode.system;
         if (t == 'dark') mode = ThemeMode.dark;
@@ -50,27 +53,33 @@ class ThemeProvider extends ChangeNotifier {
         
         if (mode != _themeMode) {
           _themeMode = mode;
-          final prefs = await SharedPreferences.getInstance();
           await prefs.setInt(_themeModeKey, mode.index);
-          notifyListeners();
         }
       }
+      if (row['accent_color'] != null) {
+        final int? colorVal = int.tryParse(row['accent_color']);
+        if (colorVal != null) {
+          _seedColor = Color(colorVal);
+          await prefs.setInt(_colorKey, colorVal);
+        }
+      }
+      notifyListeners();
     } catch (e) {
       debugPrint('ThemeProvider._loadFromSupabase: $e');
     }
   }
 
-  Future<void> _upsertThemePref(String val) async {
+  Future<void> _upsertSetting(Map<String, dynamic> updates) async {
     try {
       final user = AuthService.instance.currentUser;
       if (user == null) return;
       await Supabase.instance.client.from('user_settings').upsert({
         'user_id': user.id,
-        'theme': val,
+        ...updates,
         'updated_at': DateTime.now().toUtc().toIso8601String(),
       });
     } catch (e) {
-      debugPrint('ThemeProvider._upsertThemePref: $e');
+      debugPrint('ThemeProvider._upsertSetting: $e');
     }
   }
 
@@ -79,6 +88,12 @@ class ThemeProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_colorKey, color.value);
+    _upsertSetting({'accent_color': color.value.toString()});
+    AnalyticsService.instance.logAction(
+      action: 'settings_changed',
+      entityType: 'user_settings',
+      details: {'key': 'accent_color', 'value': color.value.toString()},
+    );
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -89,7 +104,12 @@ class ThemeProvider extends ChangeNotifier {
     String tStr = 'system';
     if (mode == ThemeMode.dark) tStr = 'dark';
     else if (mode == ThemeMode.light) tStr = 'light';
-    _upsertThemePref(tStr);
+    _upsertSetting({'theme': tStr});
+    AnalyticsService.instance.logAction(
+      action: 'settings_changed',
+      entityType: 'user_settings',
+      details: {'key': 'theme', 'value': tStr},
+    );
   }
 
   TextTheme get _manropeTextTheme => GoogleFonts.manropeTextTheme();

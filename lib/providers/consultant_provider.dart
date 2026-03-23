@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Dedicated state manager for the Consultant chat screen.
@@ -51,6 +52,10 @@ class ConsultantProvider extends ChangeNotifier {
       ..clear()
       ..add({"role": "ai", "text": welcomeMessage});
     notifyListeners();
+    AnalyticsService.instance.logAction(
+      action: 'consultant_new_chat',
+      entityType: 'consultant',
+    );
   }
 
   // ── Load past chats for drawer ──
@@ -142,6 +147,11 @@ class ConsultantProvider extends ChangeNotifier {
       }
       _loadingChat = false;
       notifyListeners();
+      AnalyticsService.instance.logAction(
+        action: 'consultant_chat_loaded',
+        entityType: 'consultant',
+        entityId: sessionId,
+      );
     } catch (e) {
       debugPrint('loadChatById error: $e');
       _loadingChat = false;
@@ -168,6 +178,13 @@ class ConsultantProvider extends ChangeNotifier {
     _messages.add({"role": "user", "text": text, "time": time});
     _loading = true;
     notifyListeners();
+
+    AnalyticsService.instance.logAction(
+      action: 'consultant_message_sent',
+      entityType: 'consultant',
+      entityId: _currentSessionId,
+      details: {'tone': tone},
+    );
 
     final buf = StringBuffer();
     bool firstToken = true;

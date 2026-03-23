@@ -1,12 +1,105 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import '../widgets/app_logo.dart';
 import '../widgets/glass_morphism.dart';
 import '../theme/design_tokens.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
+
+  void _showFeedbackDialog(BuildContext context) {
+    int selectedRating = 0;
+    final textController = TextEditingController();
+    final theme = Theme.of(context);
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text('Rate Bubbles', style: GoogleFonts.manrope(fontWeight: FontWeight.bold)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (i) {
+                      return IconButton(
+                        icon: Icon(
+                          i < selectedRating ? Icons.star_rounded : Icons.star_border_rounded,
+                          color: theme.colorScheme.primary,
+                          size: 36,
+                        ),
+                        onPressed: () => setDialogState(() => selectedRating = i + 1),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: textController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      hintText: 'Tell us what you think...',
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: selectedRating == 0
+                      ? null
+                      : () async {
+                          Navigator.pop(ctx);
+                          await _submitFeedback(context, selectedRating, textController.text);
+                        },
+                  child: const Text('Submit'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _submitFeedback(BuildContext context, int rating, String text) async {
+    final user = AuthService.instance.currentUser;
+    if (user == null) return;
+    try {
+      await Supabase.instance.client.from('app_feedback').insert({
+        'user_id': user.id,
+        'rating': rating,
+        'feedback_text': text.isNotEmpty ? text : null,
+        'app_version': '1.0.4',
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      });
+      AnalyticsService.instance.logAction(
+        action: 'app_feedback_submitted',
+        entityType: 'app_feedback',
+        details: {'rating': rating},
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Thank you for your feedback!')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to submit: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +259,11 @@ class AboutScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _showFeedbackDialog(context),
+        icon: const Icon(Icons.rate_review_rounded),
+        label: const Text('Rate App'),
       ),
     );
   }

@@ -47,23 +47,22 @@ app.*.map.json
 /android/app/release
 
 
+# Custom / Project Files
 secrets.txt
 content.pdf
 implementation_plan.md
 task.md
-# Environment variables (contains API keys)
-.env
-server/.env
 
-# Python cache
+# Environment Variables (contains API keys)
+.env
+env/
+server/.env
+new_server/.env
+
+# Python / Server related
 __pycache__/
 server/__pycache__/
 server/new_server.py
+server_old/
 Stitch_UI
 stitch
-server/.env
-# Environment Variables
-.env
-new_server/.env
-server_old/
-env/

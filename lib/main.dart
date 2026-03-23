@@ -8,6 +8,8 @@ import 'services/livekit_service.dart';
 import 'services/deepgram_service.dart';
 import 'services/voice_assistant_service.dart';
 import 'services/wake_word_service.dart';
+import 'services/analytics_service.dart';
+import 'services/device_service.dart';
 import 'providers/theme_provider.dart';
 import 'providers/settings_provider.dart';
 import 'providers/consultant_provider.dart';
@@ -73,6 +75,16 @@ Future<void> main() async {
     FlutterError.presentError(details);
     debugPrint('FlutterError: ${details.exceptionAsString()}');
   };
+
+  // ── Auth-state listener: register device & flush analytics on login/logout ──
+  Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+    final event = data.event;
+    if (event == AuthChangeEvent.signedIn) {
+      DeviceService.instance.registerDevice();
+    } else if (event == AuthChangeEvent.signedOut) {
+      AnalyticsService.instance.flushNow();
+    }
+  });
 
   runApp(const BubblesApp());
 }
@@ -157,6 +169,7 @@ class BubblesApp extends StatelessWidget {
         builder: (context, themeProvider, child) {
           return MaterialApp(
             navigatorKey: BubblesApp.navigatorKey,
+            navigatorObservers: [_AnalyticsNavigatorObserver()],
             debugShowCheckedModeBanner: false,
             title: 'Bubbles',
 
@@ -314,3 +327,28 @@ class _VoiceOverlayWrapper extends StatelessWidget {
 
 /// The Gatekeeper Widget
 /// Dynamically switches between Login and Home based on auth state.
+
+/// Navigator observer that logs screen views to audit_log.
+class _AnalyticsNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    _logScreenView(route);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+    if (newRoute != null) _logScreenView(newRoute);
+  }
+
+  void _logScreenView(Route<dynamic> route) {
+    final routeName = route.settings.name;
+    if (routeName == null || routeName.isEmpty) return;
+    AnalyticsService.instance.logAction(
+      action: 'screen_view',
+      entityType: 'screen',
+      details: {'screen': routeName},
+    );
+  }
+}
