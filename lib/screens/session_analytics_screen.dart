@@ -120,10 +120,33 @@ class _AnalyticsTab extends StatelessWidget {
             _StatRow('Avg Latency', '${(a['avg_advice_latency_ms'] as num).toStringAsFixed(0)} ms'),
         ]),
         const SizedBox(height: 12),
+        _SectionCard(title: '🗣️ Talk-Time & Engagement', children: [
+          if (a['talk_time_user_seconds'] != null)
+            _StatRow('Your Talk Time', _formatDuration((a['talk_time_user_seconds'] as num).toDouble())),
+          if (a['talk_time_others_seconds'] != null)
+            _StatRow('Others\' Talk Time', _formatDuration((a['talk_time_others_seconds'] as num).toDouble())),
+          if (a['longest_monologue_seconds'] != null)
+            _StatRow('Longest Monologue', _formatDuration((a['longest_monologue_seconds'] as num).toDouble())),
+          if (a['user_filler_count'] != null)
+            _StatRow('Filler Words Used', '${a['user_filler_count']}'),
+          if (a['mutual_engagement_score'] != null)
+            _StatRow('Engagement Score', '${(a['mutual_engagement_score'] as num).toStringAsFixed(1)} / 10.0'),
+        ]),
+        const SizedBox(height: 12),
         _SectionCard(title: '😊 Sentiment', children: [
           _StatRow('Dominant Mood', _capitalize('${a['dominant_sentiment'] ?? 'unknown'}')),
           if (a['avg_sentiment_score'] != null)
             _StatRow('Avg Score', (a['avg_sentiment_score'] as num).toStringAsFixed(3)),
+          if (a['sentiment_trend'] != null && (a['sentiment_trend'] as List).isNotEmpty) ...[
+            const SizedBox(height: 12),
+            const Text('Emotion Flow:', style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 60,
+              width: double.infinity,
+              child: _SentimentTrendChart(trend: a['sentiment_trend'] as List),
+            ),
+          ],
         ]),
         const SizedBox(height: 12),
         _SectionCard(title: '🧠 Memory & Insights', children: [
@@ -326,4 +349,67 @@ class _LegendDot extends StatelessWidget {
       Text(label, style: const TextStyle(fontSize: 12)),
     ]);
   }
+}
+
+class _SentimentTrendChart extends StatelessWidget {
+  final List trend;
+  const _SentimentTrendChart({required this.trend});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: _TrendPainter(trend),
+    );
+  }
+}
+
+class _TrendPainter extends CustomPainter {
+  final List data;
+  _TrendPainter(this.data);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (data.isEmpty) return;
+
+    final paint = Paint()
+      ..color = Colors.blueAccent
+      ..strokeWidth = 2.0
+      ..style = PaintingStyle.stroke;
+
+    final dotPaint = Paint()..style = PaintingStyle.fill;
+    
+    final path = Path();
+    final double stepX = size.width / (data.length > 1 ? data.length - 1 : 1);
+    
+    for (int i = 0; i < data.length; i++) {
+      final item = data[i] as Map<String, dynamic>;
+      final score = (item['score'] as num?)?.toDouble() ?? 0.0;
+      final normScore = (score + 1) / 2; // 0.0 to 1.0 mapping from -1.0 to 1.0
+      final y = size.height * (1 - normScore);
+      final x = i * stepX;
+      
+      if (i == 0) {
+        path.moveTo(x, y);
+      } else {
+        path.lineTo(x, y);
+      }
+      
+      if (score > 0.2) dotPaint.color = Colors.green;
+      else if (score < -0.2) dotPaint.color = Colors.red;
+      else dotPaint.color = Colors.grey;
+
+      canvas.drawCircle(Offset(x, y), 3, dotPaint);
+    }
+    
+    canvas.drawPath(path, paint);
+    
+    final zeroY = size.height / 2;
+    final gridPaint = Paint()
+      ..color = Colors.white24
+      ..strokeWidth = 1.0;
+    canvas.drawLine(Offset(0, zeroY), Offset(size.width, zeroY), gridPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrendPainter oldDelegate) => true;
 }

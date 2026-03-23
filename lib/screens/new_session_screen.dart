@@ -77,6 +77,10 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     final api = Provider.of<ApiService>(context, listen: false);
     final user = AuthService.instance.currentUser;
 
+    // Retrieve arguments
+    final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final targetEntityId = args?['targetEntityId'] as String?;
+
     if (user == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -221,7 +225,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         }
       }
     } else {
-      await _session.startSession(api, deepgram);
+      await _session.startSession(api, deepgram, targetEntityId: targetEntityId);
     }
   }
 
@@ -319,7 +323,9 @@ class _NewSessionScreenState extends State<NewSessionScreen>
               Expanded(
                 child: Center(
                   child: Text(
-                    'Live Wingman',
+                    (ModalRoute.of(context)?.settings.arguments as Map?)?['targetEntityName'] != null
+                        ? 'Roleplay: ${(ModalRoute.of(context)!.settings.arguments as Map)['targetEntityName']}'
+                        : 'Live Wingman',
                     style: GoogleFonts.manrope(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,

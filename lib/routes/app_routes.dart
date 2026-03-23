@@ -12,4 +12,6 @@ class AppRoutes {
   static const settings = '/settings';
   static const entities = '/entities';
   static const sessionAnalytics = '/session-analytics';
+  static const roleplaySetup = '/roleplay-setup';
+  static const quests = '/quests';
 }

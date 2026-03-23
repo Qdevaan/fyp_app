@@ -32,6 +32,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/Documentation
 
 # Symbolication related
 app.*.symbols
@@ -47,7 +48,8 @@ app.*.map.json
 
 secrets.txt
 content.pdf
-
+implementation_plan.md
+task.md
 # Environment variables (contains API keys)
 .env
 server/.env

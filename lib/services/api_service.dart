@@ -280,10 +280,18 @@ class ApiService {
 
   // --- 6. SESSION LIFECYCLE ---
   /// Creates a new live session on the server and returns the session_id.
-  Future<String?> createLiveSession(String userId) async {
+  Future<String?> createLiveSession(String userId, {String mode = "live_wingman", String? targetEntityId}) async {
     if (_baseUrl.isEmpty) return null;
     try {
       return await _withRetry(() async {
+        final body = <String, dynamic>{
+          "user_id": userId,
+          "mode": mode,
+        };
+        if (targetEntityId != null) {
+          body["target_entity_id"] = targetEntityId;
+        }
+
         final res = await http
             .post(
               Uri.parse("$_baseUrl/v1/start_session"),
@@ -291,7 +299,7 @@ class ApiService {
                 "Content-Type": "application/json",
                 "ngrok-skip-browser-warning": "true",
               },
-              body: jsonEncode({"user_id": userId, "mode": "live_wingman"}),
+              body: jsonEncode(body),
             )
             .timeout(const Duration(seconds: 10));
         if (res.statusCode == 200) {
@@ -533,6 +541,44 @@ class ApiService {
       return null;
     } catch (e) {
       debugPrint('Voice command parse error: $e');
+      return null;
+    }
+  }
+  // --- 13. GAMIFICATION & QUESTS ---
+  Future<Map<String, dynamic>?> getGamification() async {
+    if (!_connectionService.isConnected || authUserId == null) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${_connectionService.serverUrl}/v1/gamification/$authUserId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getGamification error: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getQuests() async {
+    if (!_connectionService.isConnected || authUserId == null) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${_connectionService.serverUrl}/v1/quests/$authUserId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getQuests error: $e');
       return null;
     }
   }

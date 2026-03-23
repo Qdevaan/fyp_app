@@ -149,11 +149,11 @@ class SessionProvider extends ChangeNotifier {
 
   String _currentLiveTone = 'casual';
 
-  /// Start a session: create server record, connect Deepgram.
   Future<void> startSession(
     ApiService api,
     DeepgramService deepgram, {
     String tone = 'casual',
+    String? targetEntityId,
   }) async {
     _currentLiveTone = tone;
     final user = AuthService.instance.currentUser;
@@ -165,7 +165,9 @@ class SessionProvider extends ChangeNotifier {
     _sessionId = null;
     notifyListeners();
 
-    final sid = await api.createLiveSession(user.id);
+    String sessionMode = targetEntityId != null ? 'roleplay' : 'live_wingman';
+
+    final sid = await api.createLiveSession(user.id, mode: sessionMode, targetEntityId: targetEntityId);
     if (sid != null) {
       _sessionId = sid;
       subscribeToLiveSuggestions(sid);

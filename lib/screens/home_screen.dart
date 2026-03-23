@@ -555,6 +555,41 @@ class _HomeScreenState extends State<HomeScreen> {
                                   ),
                                 ),
                               ),
+                              SliverToBoxAdapter(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 0),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: _QuickActionCard(
+                                          icon: Icons.theater_comedy_outlined,
+                                          iconColor: Colors.deepPurple,
+                                          iconBg: Colors.deepPurple.withAlpha(51),
+                                          title: 'Roleplay Mode',
+                                          subtitle: 'Practice with personas',
+                                          onTap: () =>
+                                              Navigator.pushNamed(
+                                                  context, '/roleplay-setup'),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _QuickActionCard(
+                                          icon: Icons.emoji_events,
+                                          iconColor: Colors.amber,
+                                          iconBg: Colors.amber.withAlpha(51),
+                                          title: 'Quests & XP',
+                                          subtitle: 'Daily challenges',
+                                          onTap: () =>
+                                              Navigator.pushNamed(
+                                                  context, '/quests'),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
 
                               // --- RECENT INSIGHTS ---
                               SliverToBoxAdapter(
