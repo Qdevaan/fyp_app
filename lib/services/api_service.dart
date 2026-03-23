@@ -48,10 +48,14 @@ class ApiService {
     throw TimeoutException('All $retries retries exhausted');
   }
 
-  Future<Map<String, dynamic>?> getLiveKitToken(String userId) async {
+  Future<Map<String, dynamic>?> getToken(String userId, {String? roomName}) async {
     if (_baseUrl.isEmpty) return null;
     try {
       return await _withRetry(() async {
+        final body = {'userId': userId};
+        if (roomName != null && roomName.isNotEmpty) {
+          body['roomName'] = roomName;
+        }
         final response = await http
             .post(
               Uri.parse('$_baseUrl/v1/getToken'),
@@ -59,7 +63,7 @@ class ApiService {
                 'Content-Type': 'application/json',
                 'ngrok-skip-browser-warning': 'true',
               },
-              body: jsonEncode({'userId': userId}),
+              body: jsonEncode(body),
             )
             .timeout(const Duration(seconds: 10));
         if (response.statusCode == 200) {
@@ -280,13 +284,23 @@ class ApiService {
 
   // --- 6. SESSION LIFECYCLE ---
   /// Creates a new live session on the server and returns the session_id.
-  Future<String?> createLiveSession(String userId, {String mode = "live_wingman", String? targetEntityId}) async {
+  Future<String?> createLiveSession(
+      String userId, {
+      String mode = "live_wingman",
+      String? targetEntityId,
+      bool isEphemeral = false,
+      bool isMultiplayer = false,
+      String persona = "casual",
+  }) async {
     if (_baseUrl.isEmpty) return null;
     try {
       return await _withRetry(() async {
         final body = <String, dynamic>{
           "user_id": userId,
           "mode": mode,
+          "is_ephemeral": isEphemeral,
+          "is_multiplayer": isMultiplayer,
+          "persona": persona,
         };
         if (targetEntityId != null) {
           body["target_entity_id"] = targetEntityId;
@@ -515,7 +529,25 @@ class ApiService {
       return null;
     }
   }
-
+  // --- 11b. GET KNOWLEDGE GRAPH EXPORT ---
+  Future<Map<String, dynamic>?> getGraphExport() async {
+    if (!_connectionService.isConnected || authUserId == null) return null;
+    try {
+      final res = await http
+          .get(
+            Uri.parse('${_connectionService.serverUrl}/v1/graph_export/$authUserId'),
+            headers: {'ngrok-skip-browser-warning': 'true'},
+          )
+          .timeout(const Duration(seconds: 15));
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return null;
+    } catch (e) {
+      debugPrint('getGraphExport error: $e');
+      return null;
+    }
+  }
   // --- 12. PARSE VOICE COMMAND ---
   Future<Map<String, dynamic>?> parseVoiceCommand(
     String userId,

@@ -154,6 +154,8 @@ class SessionProvider extends ChangeNotifier {
     DeepgramService deepgram, {
     String tone = 'casual',
     String? targetEntityId,
+    bool isEphemeral = false,
+    bool isMultiplayer = false,
   }) async {
     _currentLiveTone = tone;
     final user = AuthService.instance.currentUser;
@@ -167,7 +169,14 @@ class SessionProvider extends ChangeNotifier {
 
     String sessionMode = targetEntityId != null ? 'roleplay' : 'live_wingman';
 
-    final sid = await api.createLiveSession(user.id, mode: sessionMode, targetEntityId: targetEntityId);
+    final sid = await api.createLiveSession(
+      user.id, 
+      mode: sessionMode, 
+      targetEntityId: targetEntityId,
+      isEphemeral: isEphemeral,
+      isMultiplayer: isMultiplayer,
+      persona: tone,
+    );
     if (sid != null) {
       _sessionId = sid;
       subscribeToLiveSuggestions(sid);

@@ -186,6 +186,9 @@ create table public.sessions (
     participants    text[],              -- list of participant names (free text)
     tags            text[],              -- quick string tags for filtering
     is_starred      bool        not null default false,
+    is_ephemeral    bool        not null default false, -- Section 5: Ephemeral Sessions
+    is_multiplayer  bool        not null default false, -- Section 5: Multiplayer / Co-Pilot Mode
+    persona         text                 default 'casual', -- Section 5: Customizable AI Personas
     created_at      timestamptz not null default timezone('utc', now()),
     ended_at        timestamptz,
     deleted_at      timestamptz          -- soft delete

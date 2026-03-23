@@ -36,6 +36,7 @@ dependencies:
   flutter_sound: ^9.2.13
   connectivity_plus: ^7.0.0
   flutter_image_compress: ^2.4.0
+  force_directed_graphview: ^0.6.2
 
 flutter_launcher_icons:
   android: "launcher_icon"

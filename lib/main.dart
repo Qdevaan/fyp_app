@@ -30,6 +30,7 @@ import 'screens/entity_screen.dart';
 import 'screens/session_analytics_screen.dart';
 import 'screens/roleplay_setup_screen.dart';
 import 'screens/quests_screen.dart';
+import 'screens/graph_explorer_screen.dart';
 import 'providers/tags_provider.dart';
 import 'widgets/auth_guard.dart';
 import 'routes/app_routes.dart';
@@ -243,6 +244,8 @@ class BubblesApp extends StatelessWidget {
                   const AuthGuard(child: RoleplaySetupScreen()),
               AppRoutes.quests: (context) =>
                   const AuthGuard(child: QuestsScreen()),
+              AppRoutes.graphExplorer: (context) =>
+                  const AuthGuard(child: GraphExplorerScreen()),
             },
           );
         },

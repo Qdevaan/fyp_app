@@ -30,6 +30,12 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
 
+  // Section 5: Settings
+  bool _isIncognito = false;
+  bool _isMultiplayer = false;
+  String _selectedPersona = 'casual';
+  final TextEditingController _roomNameController = TextEditingController();
+
   // Animations (local only)
   late AnimationController _pulseController;
   late AnimationController _blobController;
@@ -59,6 +65,7 @@ class _NewSessionScreenState extends State<NewSessionScreen>
     deepgram.removeListener(_onDeepgramUpdate);
     deepgram.disconnect();
     _scrollController.dispose();
+    _roomNameController.dispose();
     _pulseController.dispose();
     _blobController.dispose();
     super.dispose();
@@ -225,7 +232,14 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         }
       }
     } else {
-      await _session.startSession(api, deepgram, targetEntityId: targetEntityId);
+      await _session.startSession(
+        api, 
+        deepgram, 
+        targetEntityId: targetEntityId,
+        tone: _selectedPersona,
+        isEphemeral: _isIncognito,
+        isMultiplayer: _isMultiplayer,
+      );
     }
   }
 
@@ -385,6 +399,10 @@ class _NewSessionScreenState extends State<NewSessionScreen>
                     color: AppColors.warning,
                     isDark: isDark,
                   ),
+                  const SizedBox(height: 20),
+
+                  // Section 5 Settings
+                  _buildSection5Settings(isDark),
                   const SizedBox(height: 20),
 
                   // Server offline warning banner
@@ -994,8 +1012,115 @@ class _NewSessionScreenState extends State<NewSessionScreen>
         ],
       ),
     );
-  }
-}
+  }// ========================
+  // SECTION 5: ADVANCED SETTINGS UI
+  // ========================
+  Widget _buildSection5Settings(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          // Persona Selection
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "AI Persona",
+                  style: GoogleFonts.manrope(
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : AppColors.slate900,
+                  ),
+                ),
+              ),
+              DropdownButton<String>(
+                value: _selectedPersona,
+                items: [
+                  'casual',
+                  'formal',
+                  'business',
+                  'stoic',
+                  'aggressive_coach',
+                  'empathetic_friend',
+                  'serious'
+                ]
+                    .map((tone) => DropdownMenuItem(
+                          value: tone,
+                          child: Text(
+                            tone.replaceAll('_', ' ').toUpperCase(),
+                            style: GoogleFonts.manrope(fontSize: 12),
+                          ),
+                        ))
+                    .toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _selectedPersona = val);
+                },
+                dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.keyboard_arrow_down, size: 16),
+              ),
+            ],
+          ),
+          
+          // Incognito / Ephemeral Mode
+          SwitchListTile(
+            title: Text(
+              "Incognito Session",
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppColors.slate900,
+              ),
+            ),
+            subtitle: Text(
+              "Session will not be saved to DB or Memory",
+              style: GoogleFonts.manrope(fontSize: 11, color: Colors.grey),
+            ),
+            value: _isIncognito,
+            onChanged: (val) => setState(() => _isIncognito = val),
+            activeColor: AppColors.primary,
+            contentPadding: EdgeInsets.zero,
+          ),
+          
+          // Multiplayer Mode
+          SwitchListTile(
+            title: Text(
+              "Multiplayer / Co-Pilot",
+              style: GoogleFonts.manrope(
+                fontWeight: FontWeight.w600,
+                color: isDark ? Colors.white : AppColors.slate900,
+              ),
+            ),
+            subtitle: Text(
+              "Add others to this LiveKit room",
+              style: GoogleFonts.manrope(fontSize: 11, color: Colors.grey),
+            ),
+            value: _isMultiplayer,
+            onChanged: (val) => setState(() => _isMultiplayer = val),
+            activeColor: AppColors.primary,
+            contentPadding: EdgeInsets.zero,
+          ),
+          
+          // Show room name input only if multiplayer
+          if (_isMultiplayer)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
+              child: TextField(
+                controller: _roomNameController,
+                decoration: InputDecoration(
+                  labelText: 'Shared Room Name (optional)',
+                  hintText: 'e.g. sales-call-123',
+                  labelStyle: GoogleFonts.manrope(fontSize: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  isDense: true,
+                ),
+                style: GoogleFonts.manrope(fontSize: 14),
+              ),
+            ),
+        ],
+      ),
+    );
+  }}
 
 // --- Sub Widgets ---
 

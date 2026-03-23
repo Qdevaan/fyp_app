@@ -31,13 +31,13 @@ class LiveKitService extends ChangeNotifier {
 
   String? _lastUserId;
 
-  Future<void> connect(String userId) async {
+  Future<void> connect(String userId, {String roomName = ""}) async {
     if (_isConnected) return;
     _lastUserId = userId;
 
     // 1. Get Token from Server
     try {
-      final tokenData = await _apiService.getLiveKitToken(userId);
+      final tokenData = await _apiService.getToken(userId, roomName: roomName);
       if (tokenData == null) {
         debugPrint("Failed to get LiveKit token — null response");
         return;

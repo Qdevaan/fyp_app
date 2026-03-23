@@ -94,6 +94,16 @@ class AppDrawer extends StatelessWidget {
                     Navigator.pushNamed(context, '/sessions');
                   },
                 ),
+                const SizedBox(height: 4),
+                _DrawerItem(
+                  icon: Icons.hub_rounded,
+                  label: 'Knowledge Graph',
+                  isDark: isDark,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/graph-explorer');
+                  },
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -388,3 +398,4 @@ class _DrawerItem extends StatelessWidget {
     );
   }
 }
+
