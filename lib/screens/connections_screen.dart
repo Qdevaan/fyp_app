@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../theme/design_tokens.dart';
 import '../services/connection_service.dart';
@@ -15,7 +14,6 @@ class ConnectionsScreen extends StatefulWidget {
 
 class _ConnectionsScreenState extends State<ConnectionsScreen> {
   final _urlController = TextEditingController();
-  bool _isScanning = false;
 
   @override
   void initState() {
@@ -37,61 +35,19 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
       if (service.isConnected) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Connected to Brain!"),
+            content: Text("✅ Connected to Brain!"),
             backgroundColor: AppColors.success,
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("ÃƒÂ¢Ã‚ÂÃ…â€™ Connection Failed. Check URL."),
+            content: Text("❌ Connection Failed. Check URL."),
             backgroundColor: AppColors.error,
           ),
         );
       }
     }
-  }
-
-  void _scanQr() {
-    setState(() => _isScanning = true);
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.black,
-      builder: (ctx) => Scaffold(
-        appBar: AppBar(
-          title: Text(
-            "Scan Server QR",
-            style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
-          ),
-          backgroundColor: AppColors.backgroundDark,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () => Navigator.pop(ctx),
-          ),
-        ),
-        body: MobileScanner(
-          onDetect: (capture) {
-            final List<Barcode> barcodes = capture.barcodes;
-            for (final barcode in barcodes) {
-              if (barcode.rawValue != null) {
-                final code = barcode.rawValue!;
-                if (code.startsWith('http')) {
-                  setState(() {
-                    _urlController.text = code;
-                    _isScanning = false;
-                  });
-                  Navigator.pop(ctx);
-                  _saveAndTest();
-                }
-                break;
-              }
-            }
-          },
-        ),
-      ),
-    );
   }
 
   @override
@@ -399,7 +355,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                     : AppColors.slate900,
                               ),
                               decoration: InputDecoration(
-                                hintText: 'https://your-server.ngrok-free.app',
+                                hintText: 'http://192.168.x.x:8000',
                                 hintStyle: GoogleFonts.manrope(
                                   color: isDark
                                       ? AppColors.slate600
@@ -435,7 +391,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
                     const SizedBox(height: 16),
 
-                    // -- 2-column action buttons (matches HTML grid) ----
+                    // -- 1-column action button ----
                     Row(
                       children: [
                         Expanded(
@@ -445,15 +401,6 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                             label: 'Test Connection',
                             loading: isConnecting,
                             onTap: isConnecting ? null : _saveAndTest,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _ActionButton(
-                            isDark: isDark,
-                            icon: Icons.qr_code_scanner_rounded,
-                            label: 'Scan QR',
-                            onTap: _scanQr,
                           ),
                         ),
                       ],
@@ -605,7 +552,7 @@ class __HowToConnectSectionState extends State<_HowToConnectSection> {
     ),
     (
       '2',
-      'Enter the server\'s local URL or find the QR code in your server dashboard settings.',
+      'If not automatically detected, enter the server\'s local URL to connect to your Docker container.',
     ),
     (
       '3',

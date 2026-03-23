@@ -62,3 +62,6 @@ server/new_server.py
 Stitch_UI
 stitch
 server
+# Environment Variables
+.env
+new_server/.env
