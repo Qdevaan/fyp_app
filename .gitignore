@@ -66,3 +66,5 @@ server/new_server.py
 server_old/
 Stitch_UI
 stitch
+
+.soft_delete/
