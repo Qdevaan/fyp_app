@@ -1,5 +1,6 @@
 """
 Entity routes — entity query, graph export, deletion endpoints.
+All deletions are audit-logged.
 """
 
 import asyncio
@@ -7,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request
 from app.config import settings
 from app.database import db
 from app.models.requests import EntityQueryRequest
-from app.services import brain_svc, entity_svc, graph_svc, vector_svc
+from app.services import brain_svc, entity_svc, graph_svc, vector_svc, audit_svc
 from app.utils.rate_limit import limiter
 
 router = APIRouter()
@@ -58,6 +59,14 @@ async def ask_entity_endpoint(request: Request, req: EntityQueryRequest):
             answer = comp.choices[0].message.content.strip()
         except Exception:
             answer = f"Known facts:\n{ctx}"
+
+        # Audit log
+        audit_svc.log(
+            user_id, "entity_queried",
+            entity_type="entity", entity_id=eid,
+            details={"entity_name": req.entity_name},
+        )
+
         return {"answer": answer, "entity": entity}
     except Exception as e:
         return {"answer": f"Error: {e}", "entity": None}
@@ -77,24 +86,39 @@ async def get_graph_export(user_id: str):
 
 
 @router.delete("/entities/{entity_id}")
-async def delete_entity(entity_id: str):
+async def delete_entity(entity_id: str, user_id: str = None):
     if db:
         db.table("entity_attributes").delete().eq("entity_id", entity_id).execute()
         db.table("entity_relations").delete().eq("source_id", entity_id).execute()
         db.table("entity_relations").delete().eq("target_id", entity_id).execute()
         db.table("entities").delete().eq("id", entity_id).execute()
+
+    audit_svc.log(
+        user_id, "entity_deleted",
+        entity_type="entity", entity_id=entity_id,
+    )
     return {"status": "deleted", "entity_id": entity_id}
 
 
 @router.delete("/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, user_id: str = None):
     if db:
         db.table("sessions").delete().eq("id", session_id).execute()
+
+    audit_svc.log(
+        user_id, "session_deleted",
+        entity_type="session", entity_id=session_id,
+    )
     return {"status": "deleted", "session_id": session_id}
 
 
 @router.delete("/memories/{memory_id}")
-async def delete_memory(memory_id: str):
+async def delete_memory(memory_id: str, user_id: str = None):
     if db:
         db.table("memory").delete().eq("id", memory_id).execute()
+
+    audit_svc.log(
+        user_id, "memory_deleted",
+        entity_type="memory", entity_id=memory_id,
+    )
     return {"status": "deleted", "memory_id": memory_id}

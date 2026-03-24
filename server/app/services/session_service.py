@@ -1,11 +1,12 @@
 """
 SessionService — session lifecycle, turn logging, consultant history.
 Uses the unified db_final schema (sessions, session_logs, consultant_logs, sentiment_logs).
+Every action records all available schema columns.
 """
 
 import uuid
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from app.database import db
 
@@ -25,6 +26,8 @@ class SessionService:
         is_ephemeral: bool = False,
         is_multiplayer: bool = False,
         persona: str = "casual",
+        device_id: str = None,
+        session_type: str = None,
     ) -> str:
         """Create a new session row and return its UUID."""
         if not db:
@@ -40,20 +43,21 @@ class SessionService:
             return session_id
 
         try:
+            row = {
+                "user_id": user_id,
+                "title": "Live Wingman Session",
+                "session_type": session_type or mode,
+                "mode": mode,
+                "status": "active",
+                "is_ephemeral": is_ephemeral,
+                "is_multiplayer": is_multiplayer,
+                "persona": persona,
+            }
+            if device_id:
+                row["device_id"] = device_id
             result = (
                 db.table("sessions")
-                .insert(
-                    {
-                        "user_id": user_id,
-                        "title": "Live Wingman Session",
-                        "session_type": mode,
-                        "mode": mode,
-                        "status": "active",
-                        "is_ephemeral": is_ephemeral,
-                        "is_multiplayer": is_multiplayer,
-                        "persona": persona,
-                    }
-                )
+                .insert(row)
                 .execute()
             )
             session_id = result.data[0]["id"]
@@ -104,8 +108,13 @@ class SessionService:
         speaker_label: str = None,
         confidence: float = None,
         is_ephemeral: bool = False,
+        model_used: str = None,
+        latency_ms: int = None,
+        tokens_used: int = None,
+        finish_reason: str = None,
+        turn_index: int = None,
     ) -> Optional[Dict[str, Any]]:
-        """Log a single message to session_logs with inline sentiment."""
+        """Log a single message to session_logs with inline sentiment and LLM metadata."""
         if not db or not session_id or not content.strip():
             return None
         if is_ephemeral:
@@ -149,11 +158,25 @@ class SessionService:
             elif stress_level > 0.2:
                 sentiment_label += "_tense"
 
+            # ── Compute turn_index if not provided ────────────────────────
+            if turn_index is None:
+                try:
+                    count_res = (
+                        db.table("session_logs")
+                        .select("id", count="exact")
+                        .eq("session_id", session_id)
+                        .execute()
+                    )
+                    turn_index = (count_res.count or 0) + 1
+                except Exception:
+                    turn_index = 0
+
             # ── Insert session_log row ────────────────────────────────────
             row = {
                 "session_id": session_id,
                 "role": role,
                 "content": content.strip(),
+                "turn_index": turn_index,
                 "sentiment_score": sentiment_score,
                 "sentiment_label": sentiment_label,
             }
@@ -161,6 +184,14 @@ class SessionService:
                 row["speaker_label"] = speaker_label
             if confidence is not None:
                 row["confidence"] = confidence
+            if model_used:
+                row["model_used"] = model_used
+            if latency_ms is not None:
+                row["latency_ms"] = latency_ms
+            if tokens_used is not None:
+                row["tokens_used"] = tokens_used
+            if finish_reason:
+                row["finish_reason"] = finish_reason
 
             res = db.table("session_logs").insert(row).execute()
             logged_row = res.data[0] if res.data else row
@@ -179,18 +210,10 @@ class SessionService:
                 user_id = None
 
             if user_id and role in ["user", "others", "llm"]:
-                logs_res = (
-                    db.table("session_logs")
-                    .select("id", count="exact")
-                    .eq("session_id", session_id)
-                    .execute()
-                )
-                turn_idx = logs_res.count or 1
-
                 sent_row = {
                     "session_id": session_id,
                     "user_id": user_id,
-                    "turn_index": turn_idx,
+                    "turn_index": turn_index,
                     "speaker_role": role,
                     "sentiment_score": sentiment_score,
                     "score": sentiment_score,
@@ -206,12 +229,12 @@ class SessionService:
     def log_batch_messages(
         self, session_id: str, logs: List[Dict[str, Any]], is_ephemeral: bool = False
     ):
-        """Log a batch of messages to session_logs."""
+        """Log a batch of messages to session_logs with sequential turn indices."""
         if not db or not logs or is_ephemeral:
             return
         try:
             db_logs = []
-            for log in logs:
+            for idx, log in enumerate(logs, start=1):
                 role = log.get("speaker", "unknown").lower()
                 content = log.get("text", "")
                 if content:
@@ -220,6 +243,7 @@ class SessionService:
                             "session_id": session_id,
                             "role": role,
                             "content": content,
+                            "turn_index": idx,
                         }
                     )
             if db_logs:
@@ -234,7 +258,7 @@ class SessionService:
     # ── Session Completion ────────────────────────────────────────────────────
 
     def end_session(self, session_id: str, summary: str = None, is_ephemeral: bool = False):
-        """Mark session as completed."""
+        """Mark session as completed and update aggregate sentiment on session."""
         if not db or not session_id:
             return
         if is_ephemeral:
@@ -248,18 +272,74 @@ class SessionService:
             }
             if summary:
                 update["summary"] = summary
+
+            # Compute aggregate sentiment for the session
+            try:
+                sent_res = (
+                    db.table("session_logs")
+                    .select("sentiment_score")
+                    .eq("session_id", session_id)
+                    .not_.is_("sentiment_score", "null")
+                    .execute()
+                )
+                scores = [
+                    r["sentiment_score"]
+                    for r in (sent_res.data or [])
+                    if r.get("sentiment_score") is not None
+                ]
+                if scores:
+                    update["sentiment_score"] = round(sum(scores) / len(scores), 4)
+            except Exception as e:
+                print(f"⚠️ Session Service: Could not compute aggregate sentiment: {e}")
+
             db.table("sessions").update(update).eq("id", session_id).execute()
             print(f"✅ Session Service: Session {session_id} marked completed")
         except Exception as e:
             print(f"❌ Session Service Error ending session: {e}")
+
+    # ── Token Usage Tracking ──────────────────────────────────────────────────
+
+    def update_session_token_usage(
+        self,
+        session_id: str,
+        tokens_prompt: int = 0,
+        tokens_completion: int = 0,
+    ):
+        """Increment token usage counters on a session."""
+        if not db or not session_id or (tokens_prompt == 0 and tokens_completion == 0):
+            return
+        try:
+            # Fetch current values
+            res = (
+                db.table("sessions")
+                .select("token_usage_prompt, token_usage_completion, total_cost_usd")
+                .eq("id", session_id)
+                .maybe_single()
+                .execute()
+            )
+            current = res.data or {}
+            new_prompt = (current.get("token_usage_prompt") or 0) + tokens_prompt
+            new_completion = (current.get("token_usage_completion") or 0) + tokens_completion
+            # Rough cost estimate: $0.05 per 1M tokens for fast models
+            cost_delta = ((tokens_prompt + tokens_completion) / 1_000_000) * 0.05
+            new_cost = (current.get("total_cost_usd") or 0) + cost_delta
+
+            db.table("sessions").update({
+                "token_usage_prompt": new_prompt,
+                "token_usage_completion": new_completion,
+                "total_cost_usd": round(new_cost, 6),
+            }).eq("id", session_id).execute()
+        except Exception as e:
+            print(f"⚠️ Session Service: Token usage update failed: {e}")
 
     # ── Consultant History ────────────────────────────────────────────────────
 
     def log_consultant_qa(
         self, user_id: str, question: str, answer: str, session_id: str = None,
         is_ephemeral: bool = False,
+        model_used: str = None, latency_ms: int = None, tokens_used: int = None,
     ):
-        """Log Q&A to consultant_logs and session_logs."""
+        """Log Q&A to consultant_logs and session_logs with full metadata."""
         if not db or is_ephemeral:
             return
         try:
@@ -275,7 +355,12 @@ class SessionService:
             ).execute()
             if session_id:
                 self.log_message(session_id, "user", question)
-                self.log_message(session_id, "llm", answer)
+                self.log_message(
+                    session_id, "llm", answer,
+                    model_used=model_used,
+                    latency_ms=latency_ms,
+                    tokens_used=tokens_used,
+                )
             print(f"📝 Session Service: Logged consultant Q&A for {user_id}")
         except Exception as e:
             print(f"❌ Session Service Error logging consultant Q&A: {e}")

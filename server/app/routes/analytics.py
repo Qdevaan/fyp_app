@@ -1,5 +1,6 @@
 """
 Analytics routes — feedback, session analytics, coaching reports.
+Records every action to the audit_log and uses all schema columns.
 """
 
 import json
@@ -10,7 +11,7 @@ from fastapi import APIRouter, HTTPException, Request
 from app.config import settings
 from app.database import db
 from app.models.requests import FeedbackRequest
-from app.services import brain_svc, session_svc
+from app.services import brain_svc, session_svc, audit_svc
 from app.utils.rate_limit import limiter
 from app.utils.text_sanitizer import sanitize_input
 
@@ -38,7 +39,17 @@ async def save_feedback(request: Request, req: FeedbackRequest):
             row["rating"] = req.value
         if req.comment:
             row["comment"] = sanitize_input(req.comment, 1000)
-        db.table("feedback").insert(row).execute()
+        result = db.table("feedback").insert(row).execute()
+        feedback_id = result.data[0]["id"] if result.data else None
+
+        # Audit log
+        audit_svc.log(
+            req.user_id, "feedback_submitted",
+            entity_type="feedback", entity_id=feedback_id,
+            details={"feedback_type": req.feedback_type, "value": req.value,
+                     "session_id": req.session_id},
+        )
+
         return {"status": "ok"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -221,6 +232,14 @@ async def get_coaching_report(request: Request, session_id: str):
             **{k: v for k, v in report_data.items() if k in allowed_keys},
         }
         ins_res = db.table("coaching_reports").insert(report_row).execute()
+
+        # Audit log
+        audit_svc.log(
+            user_id, "coaching_report_generated",
+            entity_type="coaching_report", entity_id=session_id,
+            details={"model_used": settings.CONSULTANT_MODEL},
+        )
+
         return ins_res.data[0] if ins_res.data else report_row
     except HTTPException:
         raise
@@ -237,7 +256,7 @@ async def _compute_session_analytics(session_id: str, user_id: str):
     try:
         logs_res = (
             db.table("session_logs")
-            .select("role, sentiment_score, latency_ms")
+            .select("role, content, sentiment_score, latency_ms")
             .eq("session_id", session_id)
             .execute()
         )
@@ -246,6 +265,17 @@ async def _compute_session_analytics(session_id: str, user_id: str):
         user_turns = sum(1 for l in logs if l.get("role") == "user")
         others_turns = sum(1 for l in logs if l.get("role") == "others")
         llm_turns = sum(1 for l in logs if l.get("role") == "llm")
+
+        # Word counts
+        user_word_count = 0
+        assistant_word_count = 0
+        for l in logs:
+            content = str(l.get("content", ""))
+            wc = len(content.split())
+            if l.get("role") == "user":
+                user_word_count += wc
+            elif l.get("role") in ("llm", "assistant"):
+                assistant_word_count += wc
 
         latencies = [
             l["latency_ms"]
@@ -315,6 +345,9 @@ async def _compute_session_analytics(session_id: str, user_id: str):
             "user_turns": user_turns,
             "others_turns": others_turns,
             "llm_turns": llm_turns,
+            "user_word_count": user_word_count,
+            "assistant_word_count": assistant_word_count,
+            "average_latency_ms": int(avg_latency) if avg_latency else None,
             "avg_advice_latency_ms": avg_latency,
             "total_duration_seconds": total_duration,
             "memories_saved": mem_res.count or 0,
@@ -326,5 +359,12 @@ async def _compute_session_analytics(session_id: str, user_id: str):
         }
         db.table("session_analytics").upsert(analytics_row).execute()
         print(f"📊 Analytics computed for session {session_id}")
+
+        # Audit log
+        audit_svc.log(
+            user_id, "session_analytics_computed",
+            entity_type="session_analytics", entity_id=session_id,
+            details={"total_turns": total_turns, "user_word_count": user_word_count},
+        )
     except Exception as e:
         print(f"❌ _compute_session_analytics error: {e}")

@@ -43,7 +43,8 @@ class VectorService:
             return "Error searching past memories."
 
     async def save_memory(
-        self, user_id: str, content: str, session_id: str = None
+        self, user_id: str, content: str, session_id: str = None,
+        memory_type: str = "general",
     ):
         """Save content to the user's long-term memory with embedding."""
         if not db or not content.strip():
@@ -57,7 +58,7 @@ class VectorService:
             data = {
                 "user_id": user_id,
                 "content": content.strip(),
-                "memory_type": "general",
+                "memory_type": memory_type,
                 "embedding": vec,
             }
             if session_id:

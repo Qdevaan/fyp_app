@@ -1,11 +1,12 @@
 """
 BrainService — LLM inference layer using Groq (Llama 3).
 Handles wingman advice, consultant Q&A, knowledge extraction, summarization.
+Every call captures token usage, latency, model_used, and finish_reason.
 """
 
 import json
 import time
-from typing import List
+from typing import Any, Dict, List, Optional
 
 from groq import Groq, AsyncGroq
 
@@ -30,6 +31,20 @@ class BrainService:
             return text
         allowed_words = int(limit / 1.3)
         return " ".join(text.split()[:allowed_words]) + "... [Truncated]"
+
+    @staticmethod
+    def _extract_metadata(completion, model: str, latency_ms: int) -> Dict[str, Any]:
+        """Extract standard LLM metadata from a Groq completion response."""
+        usage = getattr(completion, "usage", None)
+        choice = completion.choices[0] if completion.choices else None
+        return {
+            "model_used": model,
+            "latency_ms": latency_ms,
+            "tokens_prompt": usage.prompt_tokens if usage else 0,
+            "tokens_completion": usage.completion_tokens if usage else 0,
+            "tokens_used": (usage.prompt_tokens + usage.completion_tokens) if usage else 0,
+            "finish_reason": choice.finish_reason if choice else None,
+        }
 
     # ── Persona Prompt Builder ────────────────────────────────────────────────
 
@@ -72,8 +87,9 @@ class BrainService:
         vector_context: str,
         mode: str = "casual",
         persona: str = "casual",
-    ) -> str:
-        """Fast 8B model advice for real-time wingman coaching."""
+    ) -> Dict[str, Any]:
+        """Fast 8B model advice for real-time wingman coaching.
+        Returns dict with 'answer' and LLM metadata."""
         is_roleplay = mode == "roleplay"
         mode_instruction = self._persona_instruction(mode, persona)
 
@@ -107,6 +123,7 @@ class BrainService:
 
         for attempt in range(2):
             try:
+                t0 = time.time()
                 completion = self.client.chat.completions.create(
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -116,11 +133,16 @@ class BrainService:
                     temperature=0.6,
                     max_tokens=60,
                 )
-                return completion.choices[0].message.content.strip()
+                latency_ms = int((time.time() - t0) * 1000)
+                meta = self._extract_metadata(completion, settings.WINGMAN_MODEL, latency_ms)
+                answer = completion.choices[0].message.content.strip()
+                return {"answer": answer, **meta}
             except Exception as e:
                 print(f"❌ Brain Service wingman error (attempt {attempt + 1}): {e}")
                 if attempt == 1:
-                    return "WAITING"
+                    return {"answer": "WAITING", "model_used": settings.WINGMAN_MODEL,
+                            "latency_ms": 0, "tokens_prompt": 0, "tokens_completion": 0,
+                            "tokens_used": 0, "finish_reason": "error"}
                 time.sleep(0.5)
 
     # ── Consultant ────────────────────────────────────────────────────────────
@@ -186,13 +208,15 @@ class BrainService:
         session_summaries: str = "",
         mode: str = "casual",
         persona: str = "casual",
-    ) -> str:
-        """Blocking consultant Q&A using the 70B model."""
+    ) -> Dict[str, Any]:
+        """Blocking consultant Q&A using the 70B model.
+        Returns dict with 'answer' and LLM metadata."""
         system_prompt = self._build_consultant_system_prompt(
             history, graph_context, vector_context, session_summaries, mode, persona
         )
         for attempt in range(3):
             try:
+                t0 = time.time()
                 completion = self.client.chat.completions.create(
                     messages=[
                         {"role": "system", "content": system_prompt},
@@ -202,11 +226,17 @@ class BrainService:
                     temperature=0.7,
                     max_tokens=800,
                 )
-                return completion.choices[0].message.content
+                latency_ms = int((time.time() - t0) * 1000)
+                meta = self._extract_metadata(completion, settings.CONSULTANT_MODEL, latency_ms)
+                answer = completion.choices[0].message.content
+                return {"answer": answer, **meta}
             except Exception as e:
                 print(f"❌ Brain Service consultant error (attempt {attempt + 1}): {e}")
                 if attempt == 2:
-                    return "I'm having trouble right now, please try again. — Bubbles"
+                    return {"answer": "I'm having trouble right now, please try again. — Bubbles",
+                            "model_used": settings.CONSULTANT_MODEL, "latency_ms": 0,
+                            "tokens_prompt": 0, "tokens_completion": 0, "tokens_used": 0,
+                            "finish_reason": "error"}
                 time.sleep(1 + attempt)
 
     # ── Extraction Pipelines ──────────────────────────────────────────────────
@@ -247,6 +277,7 @@ class BrainService:
             '- if nothing found, return {"entities": [], "relations": []}'
         )
         try:
+            t0 = time.time()
             completion = self.client.chat.completions.create(
                 messages=[
                     {"role": "system", "content": prompt},
@@ -257,6 +288,7 @@ class BrainService:
                 temperature=0.1,
                 max_tokens=800,
             )
+            latency_ms = int((time.time() - t0) * 1000)
             content = completion.choices[0].message.content
             data = json.loads(content)
             entities = [e for e in data.get("entities", []) if e.get("name")]
@@ -265,10 +297,11 @@ class BrainService:
                 for r in data.get("relations", [])
                 if r.get("source") and r.get("target")
             ]
-            return {"entities": entities, "relations": relations}
+            meta = self._extract_metadata(completion, settings.WINGMAN_MODEL, latency_ms)
+            return {"entities": entities, "relations": relations, **meta}
         except Exception as e:
             print(f"❌ Brain Service Error extracting entities: {e}")
-            return {"entities": [], "relations": []}
+            return {"entities": [], "relations": [], "tokens_used": 0}
 
     def extract_events(self, transcript: str) -> List[dict]:
         """Extract calendar items, deadlines, scheduled events."""
@@ -296,6 +329,64 @@ class BrainService:
             return [e for e in data.get("events", []) if e.get("title")]
         except Exception as e:
             print(f"❌ Brain Service Error extracting events: {e}")
+            return []
+
+    def extract_tasks(self, transcript: str) -> List[dict]:
+        """Extract action items and tasks from transcript."""
+        prompt = (
+            "Extract any action items, to-dos, or tasks mentioned in the text.\n"
+            "Return JSON ONLY:\n"
+            '{"tasks": [{"title": "string", "description": "string or null", '
+            '"priority": "low|medium|high|urgent"}]}\n'
+            '- If no tasks found, return {"tasks": []}'
+        )
+        try:
+            completion = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": transcript},
+                ],
+                model=settings.WINGMAN_MODEL,
+                response_format={"type": "json_object"},
+                temperature=0.1,
+                max_tokens=400,
+            )
+            content = completion.choices[0].message.content
+            data = json.loads(content)
+            return [t for t in data.get("tasks", []) if t.get("title")]
+        except Exception as e:
+            print(f"❌ Brain Service Error extracting tasks: {e}")
+            return []
+
+    def extract_highlights(self, transcript: str) -> List[dict]:
+        """Extract insights, key facts, and action items as typed highlights."""
+        prompt = (
+            "Analyse the transcript and extract important highlights.\n"
+            "Return JSON ONLY:\n"
+            '{"highlights": [{"type": "insight|action_item|key_fact", '
+            '"title": "short title", "body": "detailed description"}]}\n'
+            "- insight: interesting observations or patterns\n"
+            "- action_item: things someone needs to do\n"
+            "- key_fact: important factual information stated\n"
+            '- If nothing notable, return {"highlights": []}\n'
+            "- Max 5 highlights."
+        )
+        try:
+            completion = self.client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": transcript[:4000]},
+                ],
+                model=settings.WINGMAN_MODEL,
+                response_format={"type": "json_object"},
+                temperature=0.2,
+                max_tokens=600,
+            )
+            content = completion.choices[0].message.content
+            data = json.loads(content)
+            return [h for h in data.get("highlights", []) if h.get("title")]
+        except Exception as e:
+            print(f"❌ Brain Service Error extracting highlights: {e}")
             return []
 
     def generate_summary(self, transcript: str) -> str:

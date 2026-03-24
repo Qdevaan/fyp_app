@@ -1,5 +1,6 @@
 """
 Session routes — start, save, end, wingman transcript processing.
+Every action is comprehensively recorded via the schema.
 """
 
 import asyncio
@@ -16,7 +17,7 @@ from app.models.requests import (
     EndSessionRequest,
     WingmanRequest,
 )
-from app.services import graph_svc, vector_svc, brain_svc, session_svc, entity_svc
+from app.services import graph_svc, vector_svc, brain_svc, session_svc, entity_svc, audit_svc
 from app.utils.rate_limit import limiter
 from app.utils.text_sanitizer import sanitize_input
 
@@ -47,6 +48,13 @@ def _evict_if_over_capacity():
         print(f"🧹 Evicted {to_remove} oldest session(s) from global state")
 
 
+def _get_client_info(request: Request) -> dict:
+    """Extract client IP and user-agent from the request for audit logging."""
+    ip = request.client.host if request.client else None
+    ua = request.headers.get("user-agent")
+    return {"ip_address": ip, "user_agent": ua}
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # POST /start_session
 # ══════════════════════════════════════════════════════════════════════════════
@@ -61,6 +69,8 @@ async def start_session_endpoint(request: Request, req: StartSessionRequest):
         is_ephemeral=req.is_ephemeral,
         is_multiplayer=req.is_multiplayer,
         persona=req.persona,
+        device_id=req.device_id,
+        session_type=req.session_type,
     )
 
     LIVE_SESSIONS[req.user_id] = session_id
@@ -74,6 +84,17 @@ async def start_session_endpoint(request: Request, req: StartSessionRequest):
         SESSION_METADATA[session_id]["target_entity_id"] = req.target_entity_id
 
     _evict_if_over_capacity()
+
+    # Audit log
+    client = _get_client_info(request)
+    audit_svc.log(
+        req.user_id, "session_started",
+        entity_type="session", entity_id=session_id,
+        details={"mode": req.mode, "persona": req.persona,
+                 "is_ephemeral": req.is_ephemeral, "is_multiplayer": req.is_multiplayer},
+        ip_address=client["ip_address"], user_agent=client["user_agent"],
+    )
+
     return {"session_id": session_id}
 
 
@@ -86,7 +107,7 @@ async def start_session_endpoint(request: Request, req: StartSessionRequest):
 async def process_transcript_wingman(request: Request, req: WingmanRequest):
     """
     Real-time wingman: log turn, generate advice, extract entities,
-    detect conflicts, extract events, save to memory.
+    detect conflicts, extract events/tasks, save to memory.
     """
     user_id = req.user_id
     transcript = sanitize_input(req.transcript)
@@ -95,11 +116,13 @@ async def process_transcript_wingman(request: Request, req: WingmanRequest):
 
     is_ephemeral = SESSION_METADATA.get(session_id, {}).get("is_ephemeral", False)
 
-    # 0. Log incoming transcript
+    # 0. Log incoming transcript with confidence
     if session_id:
         session_svc.log_message(
             session_id, speaker_role, transcript,
-            speaker_label=req.speaker_label, is_ephemeral=is_ephemeral,
+            speaker_label=req.speaker_label,
+            confidence=req.confidence,
+            is_ephemeral=is_ephemeral,
         )
 
     # 1. Load contexts in parallel
@@ -125,16 +148,33 @@ async def process_transcript_wingman(request: Request, req: WingmanRequest):
     if e_ctx:
         g_ctx = f"ROLEPLAY TARGET ENTITY CONTEXT:\n{e_ctx}\n\n" + g_ctx
 
-    # 2. Get advice (only for 'others' speech)
-    advice = "WAITING"
+    # 2. Get advice (only for 'others' speech) — now returns metadata dict
+    advice_text = "WAITING"
+    advice_meta = {}
     if speaker_role == "others":
-        advice = brain_svc.get_wingman_advice(
+        result = brain_svc.get_wingman_advice(
             user_id, transcript, g_ctx, v_ctx, req.mode, req.persona,
         )
+        advice_text = result.get("answer", "WAITING")
+        advice_meta = result
 
-    # 3. Log LLM advice
-    if session_id and advice and advice != "WAITING":
-        session_svc.log_message(session_id, "llm", advice, is_ephemeral=is_ephemeral)
+    # 3. Log LLM advice with full metadata
+    if session_id and advice_text and advice_text != "WAITING":
+        session_svc.log_message(
+            session_id, "llm", advice_text,
+            is_ephemeral=is_ephemeral,
+            model_used=advice_meta.get("model_used"),
+            latency_ms=advice_meta.get("latency_ms"),
+            tokens_used=advice_meta.get("tokens_used"),
+            finish_reason=advice_meta.get("finish_reason"),
+        )
+        # Track token usage on session
+        if session_id and not is_ephemeral:
+            session_svc.update_session_token_usage(
+                session_id,
+                tokens_prompt=advice_meta.get("tokens_prompt", 0),
+                tokens_completion=advice_meta.get("tokens_completion", 0),
+            )
 
     # 4. Extract entities
     extraction = brain_svc.extract_entities_full(transcript)
@@ -142,6 +182,13 @@ async def process_transcript_wingman(request: Request, req: WingmanRequest):
     if extraction.get("entities"):
         await asyncio.to_thread(
             entity_svc.persist_extraction, user_id, extraction, session_id,
+        )
+    # Track entity extraction token usage
+    if session_id and not is_ephemeral and extraction.get("tokens_used"):
+        session_svc.update_session_token_usage(
+            session_id,
+            tokens_prompt=extraction.get("tokens_prompt", 0),
+            tokens_completion=extraction.get("tokens_completion", 0),
         )
 
     # 5. Update graph + detect conflicts
@@ -157,10 +204,18 @@ async def process_transcript_wingman(request: Request, req: WingmanRequest):
     if events:
         await asyncio.to_thread(entity_svc.save_events, user_id, events, session_id)
 
-    # 7. Save to long-term memory
-    await vector_svc.save_memory(user_id, f"{speaker_role.capitalize()}: {transcript}")
+    # 7. Extract tasks
+    tasks = brain_svc.extract_tasks(transcript)
+    if tasks:
+        await asyncio.to_thread(entity_svc.save_tasks, user_id, tasks, session_id)
 
-    # 8. Rolling summarization every 20 turns
+    # 8. Save to long-term memory (with session_id)
+    await vector_svc.save_memory(
+        user_id, f"{speaker_role.capitalize()}: {transcript}",
+        session_id=session_id,
+    )
+
+    # 9. Rolling summarization every 20 turns
     if session_id:
         TURN_COUNTERS[session_id] = TURN_COUNTERS.get(session_id, 0) + 1
         if TURN_COUNTERS[session_id] % 20 == 0:
@@ -205,7 +260,7 @@ async def process_transcript_wingman(request: Request, req: WingmanRequest):
 
             asyncio.create_task(_rolling_summarize())
 
-    return {"advice": advice}
+    return {"advice": advice_text}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -246,22 +301,41 @@ async def save_session_endpoint(request: Request, req: SaveSessionRequest):
     if events:
         await asyncio.to_thread(entity_svc.save_events, user_id, events, session_id)
 
-    # 5. Update knowledge graph
+    # 5. Extract tasks
+    tasks = brain_svc.extract_tasks(transcript)
+    if tasks:
+        await asyncio.to_thread(entity_svc.save_tasks, user_id, tasks, session_id)
+
+    # 6. Extract highlights
+    highlights = brain_svc.extract_highlights(transcript)
+    if highlights:
+        await asyncio.to_thread(entity_svc.save_highlights, user_id, highlights, session_id)
+
+    # 7. Update knowledge graph
     if new_rels:
         graph_svc.load_graph(user_id)
         graph_svc.update_local_graph(user_id, new_rels)
         graph_svc.save_graph(user_id)
 
-    # 6. Generate summary and mark completed
+    # 8. Generate summary and mark completed
     summary = brain_svc.generate_summary(transcript)
     session_svc.end_session(session_id, summary=summary or None)
 
-    # 7. Save to long-term memory
+    # 9. Save to long-term memory (with session_id)
     mem_content = (
         f"Session Summary: {summary}" if summary
         else f"Session Transcript: {transcript[:1000]}"
     )
-    await vector_svc.save_memory(user_id, mem_content)
+    await vector_svc.save_memory(user_id, mem_content, session_id=session_id)
+
+    # 10. Audit log
+    client = _get_client_info(request)
+    audit_svc.log(
+        user_id, "session_saved",
+        entity_type="session", entity_id=session_id,
+        details={"turns": len(logs)},
+        ip_address=client["ip_address"], user_agent=client["user_agent"],
+    )
 
     return {"status": "success", "session_id": session_id}
 
@@ -304,7 +378,21 @@ async def end_session_endpoint(request: Request, req: EndSessionRequest):
                     f"Session Summary: {summary}" if summary
                     else full_transcript[:500]
                 )
-                await vector_svc.save_memory(req.user_id, mem_content)
+                await vector_svc.save_memory(
+                    req.user_id, mem_content, session_id=req.session_id,
+                )
+
+                # Extract highlights and tasks on session end
+                highlights = brain_svc.extract_highlights(full_transcript)
+                if highlights:
+                    await asyncio.to_thread(
+                        entity_svc.save_highlights, req.user_id, highlights, req.session_id,
+                    )
+                tasks = brain_svc.extract_tasks(full_transcript)
+                if tasks:
+                    await asyncio.to_thread(
+                        entity_svc.save_tasks, req.user_id, tasks, req.session_id,
+                    )
 
         # Clean up in-memory state
         for k, v in list(LIVE_SESSIONS.items()):
@@ -319,5 +407,13 @@ async def end_session_endpoint(request: Request, req: EndSessionRequest):
 
     # Fire analytics in background
     asyncio.create_task(_compute_session_analytics(req.session_id, req.user_id))
+
+    # Audit log
+    client = _get_client_info(request)
+    audit_svc.log(
+        req.user_id, "session_ended",
+        entity_type="session", entity_id=req.session_id,
+        ip_address=client["ip_address"], user_agent=client["user_agent"],
+    )
 
     return {"status": "completed", "session_id": req.session_id}

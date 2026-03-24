@@ -15,6 +15,8 @@ class StartSessionRequest(BaseModel):
     is_ephemeral: bool = False
     is_multiplayer: bool = False
     persona: str = "casual"
+    device_id: Optional[str] = None
+    session_type: Optional[str] = None
 
 
 class SaveSessionRequest(BaseModel):
@@ -53,6 +55,7 @@ class WingmanRequest(BaseModel):
     session_id: Optional[str] = None
     speaker_role: str = "others"
     speaker_label: Optional[str] = None
+    confidence: Optional[float] = None
     mode: str = Field("live_wingman", description="Session mode")
     persona: str = Field("casual", description="Persona tone")
 

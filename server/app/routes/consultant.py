@@ -1,5 +1,6 @@
 """
 Consultant routes — blocking, streaming, and batch.
+All actions record LLM metadata (tokens, latency, model, finish_reason).
 """
 
 import asyncio
@@ -12,7 +13,7 @@ from starlette.responses import StreamingResponse
 
 from app.config import settings
 from app.models.requests import ConsultantRequest, BatchConsultantRequest
-from app.services import graph_svc, vector_svc, brain_svc, session_svc, entity_svc
+from app.services import graph_svc, vector_svc, brain_svc, session_svc, entity_svc, audit_svc
 from app.routes.sessions import SESSION_METADATA
 from app.utils.rate_limit import limiter
 from app.utils.text_sanitizer import sanitize_input
@@ -62,21 +63,44 @@ async def ask_consultant_endpoint(request: Request, req: ConsultantRequest):
     if e_ctx:
         g_ctx = f"ROLEPLAY TARGET ENTITY CONTEXT:\n{e_ctx}\n\n" + g_ctx
 
-    # 2. Get answer
+    # 2. Get answer — now returns metadata dict
     safe_question = sanitize_input(req.question)
-    answer = brain_svc.ask_consultant(
+    result = brain_svc.ask_consultant(
         req.user_id, safe_question, h_ctx, g_ctx, v_ctx,
         session_summaries=s_ctx, mode=req.mode, persona=req.persona,
     )
+    answer = result.get("answer", "")
 
-    # 3. Log Q&A
+    # 3. Log Q&A with full metadata
     session_svc.log_consultant_qa(
         req.user_id, req.question, answer, session_id=session_id,
+        model_used=result.get("model_used"),
+        latency_ms=result.get("latency_ms"),
+        tokens_used=result.get("tokens_used"),
     )
 
-    # 4. Save to memory + graph
-    await vector_svc.save_memory(req.user_id, f"Q: {req.question}\nA: {answer}")
+    # 4. Track token usage on session
+    session_svc.update_session_token_usage(
+        session_id,
+        tokens_prompt=result.get("tokens_prompt", 0),
+        tokens_completion=result.get("tokens_completion", 0),
+    )
+
+    # 5. Save to memory + graph
+    await vector_svc.save_memory(
+        req.user_id, f"Q: {req.question}\nA: {answer}",
+        session_id=session_id,
+    )
     graph_svc.save_graph(req.user_id)
+
+    # 6. Audit log
+    audit_svc.log(
+        req.user_id, "consultant_query",
+        entity_type="consultant_log", entity_id=session_id,
+        details={"mode": req.mode, "persona": req.persona,
+                 "latency_ms": result.get("latency_ms"),
+                 "tokens_used": result.get("tokens_used")},
+    )
 
     return {"answer": answer, "session_id": session_id}
 
@@ -134,8 +158,11 @@ async def ask_consultant_stream_endpoint(request: Request, req: ConsultantReques
     _uid = req.user_id
     _question = safe_question
 
+    import time as _time
+
     async def generate():
         full_response: List[str] = []
+        stream_start = _time.time()
         try:
             stream = await brain_svc.aclient.chat.completions.create(
                 messages=[
@@ -162,11 +189,21 @@ async def ask_consultant_stream_endpoint(request: Request, req: ConsultantReques
         except Exception as e:
             yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-        # Post-stream: log and persist
+        # Post-stream: log and persist with metadata
+        stream_latency = int((_time.time() - stream_start) * 1000)
         full_answer = "".join(full_response)
         if full_answer:
             try:
-                session_svc.log_message(_sid, "llm", full_answer)
+                # Estimate token usage for streaming (approximate)
+                est_prompt_tokens = brain_svc._estimate_tokens(system_prompt + _question)
+                est_completion_tokens = brain_svc._estimate_tokens(full_answer)
+
+                session_svc.log_message(
+                    _sid, "llm", full_answer,
+                    model_used=settings.CONSULTANT_MODEL,
+                    latency_ms=stream_latency,
+                    tokens_used=est_prompt_tokens + est_completion_tokens,
+                )
                 from app.database import db as _db
                 _db.table("consultant_logs").insert(
                     {
@@ -178,8 +215,26 @@ async def ask_consultant_stream_endpoint(request: Request, req: ConsultantReques
                         "session_id": _sid,
                     }
                 ).execute()
-                await vector_svc.save_memory(_uid, f"Q: {_question}\nA: {full_answer}")
+                await vector_svc.save_memory(
+                    _uid, f"Q: {_question}\nA: {full_answer}",
+                    session_id=_sid,
+                )
                 graph_svc.save_graph(_uid)
+
+                # Track token usage
+                session_svc.update_session_token_usage(
+                    _sid,
+                    tokens_prompt=est_prompt_tokens,
+                    tokens_completion=est_completion_tokens,
+                )
+
+                # Audit
+                audit_svc.log(
+                    _uid, "consultant_stream_query",
+                    entity_type="consultant_log", entity_id=_sid,
+                    details={"latency_ms": stream_latency,
+                             "tokens_est": est_prompt_tokens + est_completion_tokens},
+                )
             except Exception as e:
                 print(f"❌ Stream post-processing error: {e}")
 
@@ -202,13 +257,10 @@ async def ask_consultant_batch(req: BatchConsultantRequest):
     answers = []
     for q in req.questions:
         try:
-            creq = ConsultantRequest(user_id=req.user_id, question=q, mode=req.mode)
-            # Create a minimal mock Request object for the rate limiter
-            from starlette.testclient import TestClient
-            ans = {"answer": brain_svc.ask_consultant(
+            result = brain_svc.ask_consultant(
                 req.user_id, q, "", "", "", mode=req.mode,
-            ), "session_id": None}
-            answers.append(ans)
+            )
+            answers.append({"answer": result.get("answer", ""), "session_id": None})
         except Exception as e:
             answers.append({"error": str(e)})
     return {"status": "completed", "answers": answers}

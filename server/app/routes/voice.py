@@ -1,5 +1,6 @@
 """
 Voice routes — voice command parsing & speaker enrollment.
+Records audit logs for voice commands and enrollments.
 """
 
 import asyncio
@@ -12,7 +13,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
 from app.config import settings
 from app.models.requests import VoiceCommandRequest, TokenRequest
-from app.services import graph_svc, vector_svc, brain_svc, session_svc
+from app.services import graph_svc, vector_svc, brain_svc, session_svc, audit_svc
 from app.utils.rate_limit import limiter
 from app.utils.text_sanitizer import sanitize_input
 from livekit import api
@@ -54,6 +55,15 @@ async def voice_command(request: Request, req: VoiceCommandRequest):
 
     print(f"🎙️ Voice Command from {user_id}: '{command}'")
 
+    # Audit log the voice command
+    client_ip = request.client.host if request.client else None
+    audit_svc.log(
+        user_id, "voice_command_received",
+        entity_type="voice_command",
+        details={"command": command[:200]},
+        ip_address=client_ip,
+    )
+
     # 1. Use LLM to classify intent
     try:
         intent_prompt = (
@@ -83,6 +93,13 @@ async def voice_command(request: Request, req: VoiceCommandRequest):
         print(f"❌ Voice Command: Intent parsing failed: {e}")
         intent = "general_chat"
         query = command
+
+    # Audit log the parsed intent
+    audit_svc.log(
+        user_id, "voice_command_parsed",
+        entity_type="voice_command",
+        details={"intent": intent, "query": query[:200]},
+    )
 
     # 2. Route based on intent
     if intent == "start_session":
@@ -114,12 +131,25 @@ async def voice_command(request: Request, req: VoiceCommandRequest):
                 asyncio.to_thread(session_svc.fetch_session_summaries, user_id, 3),
             )
 
-            answer = brain_svc.ask_consultant(
+            result = brain_svc.ask_consultant(
                 user_id, question, h_ctx, g_ctx, v_ctx, session_summaries=s_ctx,
             )
-            session_svc.log_consultant_qa(user_id, question, answer, session_id=vc_session_id)
+            answer = result.get("answer", "")
+            session_svc.log_consultant_qa(
+                user_id, question, answer, session_id=vc_session_id,
+                model_used=result.get("model_used"),
+                latency_ms=result.get("latency_ms"),
+                tokens_used=result.get("tokens_used"),
+            )
             session_svc.end_session(vc_session_id, summary=f"Q: {question[:100]}")
             graph_svc.save_graph(user_id)
+
+            # Track token usage
+            session_svc.update_session_token_usage(
+                vc_session_id,
+                tokens_prompt=result.get("tokens_prompt", 0),
+                tokens_completion=result.get("tokens_completion", 0),
+            )
 
             return {"action": "speak", "target": None, "response": answer}
         except Exception as e:
@@ -197,10 +227,31 @@ async def enroll_voice(
 
         from supabase import create_client
         svc_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_SERVICE_KEY)
+
+        # Check existing enrollment for samples_count increment
+        existing = svc_client.table("voice_enrollments").select(
+            "samples_count"
+        ).eq("user_id", user_id).maybe_single().execute()
+        current_count = 0
+        if existing.data:
+            current_count = existing.data.get("samples_count", 0) or 0
+
         svc_client.table("voice_enrollments").upsert(
-            {"user_id": user_id, "embedding": embedding, "model_version": "v1"},
+            {
+                "user_id": user_id,
+                "embedding": embedding,
+                "model_version": "v1",
+                "samples_count": current_count + 1,
+            },
             on_conflict="user_id",
         ).execute()
+
+        # Audit log
+        audit_svc.log(
+            user_id, "voice_enrolled",
+            entity_type="voice_enrollment",
+            details={"user_name": user_name, "samples_count": current_count + 1},
+        )
 
         return {"status": "enrolled", "user_id": user_id, "user_name": user_name}
     except Exception as exc:

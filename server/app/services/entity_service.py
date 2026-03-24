@@ -1,6 +1,6 @@
 """
-EntityService — entity CRUD, fuzzy matching, event/conflict persistence.
-Uses db_final schema: entities, entity_attributes, entity_relations, highlights, events.
+EntityService — entity CRUD, fuzzy matching, event/conflict/task/highlight persistence.
+Uses db_final schema: entities, entity_attributes, entity_relations, highlights, events, tasks.
 """
 
 from datetime import datetime
@@ -128,6 +128,7 @@ class EntityService:
                 }
                 if source_session:
                     row["source_session"] = source_session
+                    row["source_session_id"] = source_session
                 db.table("entity_attributes").upsert(
                     row, on_conflict="entity_id,attribute_key"
                 ).execute()
@@ -352,3 +353,70 @@ class EntityService:
                 )
         except Exception as e:
             print(f"❌ Entity Service Error saving events: {e}")
+
+    # ── Tasks ─────────────────────────────────────────────────────────────────
+
+    def save_tasks(
+        self, user_id: str, tasks: List[dict], session_id: str = None
+    ):
+        """Write extracted action items/tasks to the tasks table."""
+        if not db or not tasks:
+            return
+        try:
+            rows = []
+            for t in tasks:
+                row = {
+                    "user_id": user_id,
+                    "title": t.get("title", ""),
+                    "status": "pending",
+                }
+                if t.get("description"):
+                    row["description"] = t["description"]
+                priority = t.get("priority", "medium")
+                if priority in ("low", "medium", "high", "urgent"):
+                    row["priority"] = priority
+                else:
+                    row["priority"] = "medium"
+                if session_id:
+                    row["source_session_id"] = session_id
+                rows.append(row)
+            if rows:
+                db.table("tasks").insert(rows).execute()
+                print(
+                    f"✅ Entity Service: Saved {len(rows)} task(s) for {user_id}"
+                )
+        except Exception as e:
+            print(f"❌ Entity Service Error saving tasks: {e}")
+
+    # ── Highlights ────────────────────────────────────────────────────────────
+
+    def save_highlights(
+        self, user_id: str, highlights: List[dict], session_id: str = None
+    ):
+        """Write extracted highlights (insights, action_items, key_facts) to highlights table."""
+        if not db or not highlights:
+            return
+        try:
+            rows = []
+            for h in highlights:
+                hl_type = h.get("type", "insight")
+                valid_types = ("conflict", "action_item", "insight", "key_fact")
+                if hl_type not in valid_types:
+                    hl_type = "insight"
+                row = {
+                    "user_id": user_id,
+                    "highlight_type": hl_type,
+                    "title": h.get("title", ""),
+                    "body": h.get("body", ""),
+                    "content": h.get("body", h.get("title", "")),
+                }
+                if session_id:
+                    row["session_id"] = session_id
+                rows.append(row)
+            if rows:
+                db.table("highlights").insert(rows).execute()
+                print(
+                    f"💡 Entity Service: Saved {len(rows)} highlight(s) for {user_id}"
+                )
+        except Exception as e:
+            print(f"❌ Entity Service Error saving highlights: {e}")
